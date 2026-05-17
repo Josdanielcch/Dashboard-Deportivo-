@@ -1,0 +1,83 @@
+### Variables Globales
+@baseUrl = http://localhost:3000/api
+@authToken = <TU_TOKEN_AQUÍ>
+@userId = 10
+
+# ==========================================
+# 1. POST - Crear Usuario
+# ==========================================
+POST {{baseUrl}}/users/
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "username": "jose_unefa",
+  "password": "password123",
+  "full_name": "Jose Daniel UNEFA",
+  "role_id": 1
+}
+
+###
+
+# ==========================================
+# 2. GET - Obtener Todos los Usuarios
+# ==========================================
+GET {{baseUrl}}/users/
+Authorization: Bearer {{authToken}}
+
+###
+
+# ==========================================
+# 3. GET - Obtener Usuario por ID
+# ==========================================
+GET {{baseUrl}}/users/{{userId}}
+Authorization: Bearer {{authToken}}
+
+###
+
+# ==========================================
+# 4. PUT - Actualizar Usuario (Completo)
+# ==========================================
+PUT {{baseUrl}}/users/{{userId}}
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "full_name": "Jose Daniel Modificado",
+  "role_id": 1,
+  "status": "Activated"
+}
+
+###
+
+# ==========================================
+# 5. PATCH - Actualizar Estado (Parcial)
+# ==========================================
+PATCH {{baseUrl}}/users/{{userId}}/status
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "status": "Disabled"
+}
+
+###
+
+# ==========================================
+# 6. DELETE - Deshabilitar Usuario
+# ==========================================
+DELETE {{baseUrl}}/users/{{userId}}
+Authorization: Bearer {{authToken}}
+
+###
+
+# ==========================================
+# EXTRA: Login para obtener el Token
+# ==========================================
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin_alex",
+  "password": "Alextachira"
+}

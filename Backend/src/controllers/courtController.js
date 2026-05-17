@@ -1,0 +1,91 @@
+// src/controllers/courtController.js
+const pool = require('../config/database');
+
+const getAllCourts = async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT id, court_name, status 
+      FROM courts 
+      ORDER BY id
+    `);
+    
+    res.json({
+      success: true,
+      count: result.rows.length,
+      data: result.rows
+    });
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: 'Error al obtener canchas' });
+  }
+};
+
+const getCourtById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query('SELECT * FROM courts WHERE id = $1', [id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Cancha no encontrada' });
+    }
+    
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al obtener cancha' });
+  }
+};
+
+const createCourt = async (req, res) => {
+  try {
+    const { court_name, status } = req.body;
+    
+    if (!court_name) {
+      return res.status(400).json({ error: 'El nombre es requerido' });
+    }
+    
+    const result = await pool.query(
+      'INSERT INTO courts (court_name, status) VALUES ($1, $2) RETURNING *',
+      [court_name, status || 'Available']
+    );
+    
+    res.status(201).json({
+      success: true,
+      message: 'Cancha creada',
+      data: result.rows[0]
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al crear' });
+  }
+};
+
+const updateCourtStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    
+    const validStatuses = ['Available', 'Occupied', 'Maintenance', 'Out_of_service'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ error: 'Estado inválido' });
+    }
+    
+    const result = await pool.query(
+      'UPDATE courts SET status = $1 WHERE id = $2 RETURNING *',
+      [status, id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Cancha no encontrada' });
+    }
+    
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al actualizar' });
+  }
+};
+
+module.exports = {
+  getAllCourts,
+  getCourtById,
+  createCourt,
+  updateCourtStatus
+};
