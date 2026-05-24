@@ -16,8 +16,36 @@ const app = express();
 
 // Middlewares globales
 app.use(helmet());
+
+// CORS robusto y dinámico para desarrollo y producción
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:5174'
+];
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || '*',
+  origin: function (origin, callback) {
+    // Permitir peticiones sin origen (como Postman o llamadas directas del servidor)
+    if (!origin) return callback(null, true);
+    
+    // Permitir cualquier subdominio/puerto de localhost o 127.0.0.1 para desarrollo fluido
+    if (
+      origin.startsWith('http://localhost:') || 
+      origin.startsWith('http://127.0.0.1:') || 
+      origin.startsWith('https://localhost:') || 
+      origin.startsWith('https://127.0.0.1:')
+    ) {
+      return callback(null, true);
+    }
+    
+    if (allowedOrigins.indexOf(origin) !== -1 || origin === process.env.CORS_ORIGIN) {
+      return callback(null, true);
+    } else {
+      return callback(new Error('Bloqueado por política CORS'));
+    }
+  },
   credentials: true
 }));
 app.use(compression());

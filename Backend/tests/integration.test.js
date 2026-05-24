@@ -29,6 +29,8 @@ describe("Pruebas de integración - Backend Canchas", () => {
   });
 
   test("POST /api/auth/recover-password devuelve mensaje de recuperación", async () => {
+    pool.query.mockResolvedValueOnce({ rows: [] });
+
     const res = await request(app)
       .post("/api/auth/recover-password")
       .send({ email: "cliente@example.com" });
