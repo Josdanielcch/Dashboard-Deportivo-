@@ -6,7 +6,7 @@ const courtController = require('../controllers/courtController');
 
 router.get('/', protect, courtController.getAllCourts);
 router.get('/:id', protect, courtController.getCourtById);
-router.post('/', protect, authorize('admin'), courtController.createCourt);
-router.put('/:id/status', protect, authorize('admin'), courtController.updateCourtStatus);
+router.post('/', protect, authorize(1), courtController.createCourt);
+router.put('/:id/status', protect, authorize(1), courtController.updateCourtStatus);
 
 module.exports = router;

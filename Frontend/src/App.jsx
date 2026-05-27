@@ -6,15 +6,20 @@ import {
   Calendar, 
   MapPin, 
   DollarSign, 
-  TrendingUp 
+  TrendingUp,
+  LayoutDashboard,
+  Users
 } from 'lucide-react';
 import AuthPage from './pages/AuthPage';
+import CourtsPage from './pages/CourtsPage';
+import BookingsPage from './pages/BookingsPage';
+import CustomersPage from './pages/CustomersPage';
 
 export default function App() {
   const [token, setToken] = useState(null);
   const [user, setUser] = useState(null);
+  const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard' | 'courts' | 'bookings' | 'customers'
 
-  // Restore session from localStorage on mount
   useEffect(() => {
     const savedToken = localStorage.getItem('token');
     const savedUser = localStorage.getItem('user');
@@ -34,18 +39,84 @@ export default function App() {
   const handleLogout = () => {
     setToken(null);
     setUser(null);
+    setActiveTab('dashboard');
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+  };
+
+  const renderPage = () => {
+    switch (activeTab) {
+      case 'courts':    return <CourtsPage user={user} />;
+      case 'bookings':  return <BookingsPage user={user} />;
+      case 'customers': return <CustomersPage user={user} />;
+      default:          return (
+        <>
+          {/* Greeting */}
+          <div style={styles.greetingRow}>
+            <h1 style={styles.greetingTitle}>¡Hola de nuevo, {user.full_name || user.username}! 👋</h1>
+            <p style={styles.greetingSub}>Bienvenido al panel central de SportSpaces OS. Todo listo para la jornada de hoy.</p>
+          </div>
+
+          {/* Metrics Cards */}
+          <div style={styles.gridMetrics}>
+            <div style={styles.cardGlass}>
+              <div style={styles.metricHeader}>
+                <MapPin style={styles.metricIcon} />
+                <span style={styles.metricTitle}>Complejos Deportivos</span>
+              </div>
+              <div style={styles.metricVal}>4</div>
+              <div style={styles.metricSub}>Canchas de Fútbol, Pádel y Tenis</div>
+            </div>
+
+            <div style={styles.cardGlass}>
+              <div style={styles.metricHeader}>
+                <Calendar style={{...styles.metricIcon, color: '#3b82f6'}} />
+                <span style={styles.metricTitle}>Reservas para Hoy</span>
+              </div>
+              <div style={styles.metricVal}>18</div>
+              <div style={styles.metricSub}>95% de ocupación en las canchas</div>
+            </div>
+
+            <div style={styles.cardGlass}>
+              <div style={styles.metricHeader}>
+                <DollarSign style={{...styles.metricIcon, color: '#eab308'}} />
+                <span style={styles.metricTitle}>Ingresos de la Semana</span>
+              </div>
+              <div style={styles.metricVal}>$1,240</div>
+              <div style={{...styles.metricSub, color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px'}}>
+                <TrendingUp size={14} />
+                <span>+12.4% que la semana anterior</span>
+              </div>
+            </div>
+          </div>
+
+          {/* System Status Panel */}
+          <div style={styles.statusPanel}>
+            <h3 style={{ margin: '0 0 12px 0', fontSize: '15px', fontWeight: '600' }}>Panel Informativo del Sistema</h3>
+            <div style={styles.panelContent}>
+              <div style={styles.statusBadge}>
+                <span style={styles.dotActive}></span>
+                <span>Servidor API Conectado: <strong>http://localhost:3000</strong></span>
+              </div>
+              <div style={styles.statusBadge}>
+                <span style={styles.dotActive}></span>
+                <span>Base de Datos Neon: <strong>postgresql://...neon.tech</strong></span>
+              </div>
+            </div>
+          </div>
+        </>
+      );
+    }
   };
 
   return (
     <>
       {token && user ? (
-        // Premium Dashboard Mock (Visible after successful login)
-        <div className="dashboard-container animate-fade-in" style={styles.dashboardContainer}>
-          
-          {/* Header NavBar */}
+        <div style={styles.dashboardContainer}>
+
+          {/* Header */}
           <header style={styles.header}>
+            {/* Logo */}
             <div style={styles.logoGroup}>
               <div style={styles.logoBadge}>
                 <Sparkles style={styles.logoSpark} />
@@ -53,7 +124,30 @@ export default function App() {
               </div>
               <h2 style={styles.logoTitle}>SportSpaces</h2>
             </div>
-            
+
+            {/* Nav Tabs */}
+            <nav style={styles.navBar}>
+              {[
+                { id: 'dashboard', label: 'Dashboard', Icon: LayoutDashboard },
+                { id: 'courts',    label: 'Canchas',   Icon: MapPin },
+                { id: 'bookings',  label: 'Reservas',  Icon: Calendar },
+                { id: 'customers', label: 'Clientes',  Icon: Users },
+              ].map(({ id, label, Icon }) => (
+                <button
+                  key={id}
+                  style={activeTab === id
+                    ? { ...styles.navLink, ...styles.navLinkActive }
+                    : styles.navLink
+                  }
+                  onClick={() => setActiveTab(id)}
+                >
+                  <Icon size={15} />
+                  <span>{label}</span>
+                </button>
+              ))}
+            </nav>
+
+            {/* User info + Logout */}
             <div style={styles.userProfile}>
               <div style={styles.userInfo}>
                 <span style={styles.fullName}>{user.full_name || 'Usuario'}</span>
@@ -62,92 +156,32 @@ export default function App() {
               <div style={styles.avatar}>
                 <UserIcon size={18} />
               </div>
-              <button 
-                onClick={handleLogout} 
-                title="Cerrar Sesión" 
-                style={styles.logoutBtn}
-              >
+              <button onClick={handleLogout} title="Cerrar Sesión" style={styles.logoutBtn}>
                 <LogOut size={16} />
                 <span>Salir</span>
               </button>
             </div>
           </header>
 
-          {/* Main Grid Content */}
+          {/* Page Content */}
           <main style={styles.mainContent}>
-            
-            {/* Greeting */}
-            <div style={styles.greetingRow}>
-              <h1 style={styles.greetingTitle}>¡Hola de nuevo, {user.full_name || user.username}! 👋</h1>
-              <p style={styles.greetingSub}>Bienvenido al panel central de SportSpaces OS. Todo listo para la jornada de hoy.</p>
-            </div>
-
-            {/* Metrics Cards */}
-            <div style={styles.gridMetrics}>
-              <div style={styles.cardGlass}>
-                <div style={styles.metricHeader}>
-                  <MapPin style={styles.metricIcon} />
-                  <span style={styles.metricTitle}>Complejos Deportivos</span>
-                </div>
-                <div style={styles.metricVal}>4</div>
-                <div style={styles.metricSub}>Canchas de Fútbol, Pádel y Tenis</div>
-              </div>
-
-              <div style={styles.cardGlass}>
-                <div style={styles.metricHeader}>
-                  <Calendar style={{...styles.metricIcon, color: '#3b82f6'}} />
-                  <span style={styles.metricTitle}>Reservas para Hoy</span>
-                </div>
-                <div style={styles.metricVal}>18</div>
-                <div style={styles.metricSub}>95% de ocupación en las canchas</div>
-              </div>
-
-              <div style={styles.cardGlass}>
-                <div style={styles.metricHeader}>
-                  <DollarSign style={{...styles.metricIcon, color: '#eab308'}} />
-                  <span style={styles.metricTitle}>Ingresos de la Semana</span>
-                </div>
-                <div style={styles.metricVal}>$1,240</div>
-                <div style={{...styles.metricSub, color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px'}}>
-                  <TrendingUp size={14} />
-                  <span>+12.4% que la semana anterior</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Quick Actions / Status */}
-            <div style={styles.statusPanel}>
-              <h3>Panel Informativo del Sistema</h3>
-              <div style={styles.panelContent}>
-                <div style={styles.statusBadge}>
-                  <span style={styles.dotActive}></span>
-                  <span>Servidor API Conectado: <strong>http://localhost:3000</strong></span>
-                </div>
-                <div style={styles.statusBadge}>
-                  <span style={styles.dotActive}></span>
-                  <span>Base de Datos Neon: <strong>postgresql://...neon.tech</strong></span>
-                </div>
-              </div>
-            </div>
-
+            {renderPage()}
           </main>
+
         </div>
       ) : (
-        // Authentication Page
         <AuthPage onLoginSuccess={handleLoginSuccess} />
       )}
     </>
   );
 }
 
-// Inline styles for the beautiful premium dashboard layout
 const styles = {
   dashboardContainer: {
     width: '100%',
     minHeight: '100vh',
     display: 'flex',
     flexDirection: 'column',
-    alignSelf: 'stretch',
     background: '#0b0f19',
     color: '#f8fafc',
   },
@@ -160,6 +194,9 @@ const styles = {
     backdropFilter: 'blur(10px)',
     borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
     boxShadow: '0 4px 20px rgba(0, 0, 0, 0.2)',
+    position: 'sticky',
+    top: 0,
+    zIndex: 100,
   },
   logoGroup: {
     display: 'flex',
@@ -190,10 +227,34 @@ const styles = {
     letterSpacing: '-0.3px',
     color: '#f8fafc',
   },
+  navBar: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+  },
+  navLink: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    background: 'transparent',
+    border: 'none',
+    color: '#94a3b8',
+    padding: '8px 14px',
+    borderRadius: '8px',
+    fontSize: '14px',
+    fontWeight: '500',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+  },
+  navLinkActive: {
+    background: 'rgba(16, 185, 129, 0.12)',
+    color: '#10b981',
+    fontWeight: '600',
+  },
   userProfile: {
     display: 'flex',
     alignItems: 'center',
-    gap: '16px',
+    gap: '14px',
   },
   userInfo: {
     display: 'flex',
@@ -237,7 +298,7 @@ const styles = {
   mainContent: {
     flex: 1,
     padding: '40px',
-    maxWidth: '1200px',
+    maxWidth: '1280px',
     width: '100%',
     margin: '0 auto',
     display: 'flex',
@@ -259,7 +320,7 @@ const styles = {
   },
   gridMetrics: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
     gap: '24px',
   },
   cardGlass: {
@@ -315,7 +376,6 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     gap: '8px',
-    marginTop: '12px',
   },
   dotActive: {
     width: '8px',
@@ -323,5 +383,6 @@ const styles = {
     borderRadius: '50%',
     background: '#10b981',
     boxShadow: '0 0 8px #10b981',
+    display: 'inline-block',
   }
 };
