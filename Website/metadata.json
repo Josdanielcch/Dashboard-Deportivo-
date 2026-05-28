@@ -1,0 +1,6 @@
+{
+  "name": "CourtConnect",
+  "description": "La plataforma definitiva para deportistas. Reserva, compite y mejora en las mejores canchas de pádel, tenis, fútbol y básquetbol cerca de ti en segundos.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
