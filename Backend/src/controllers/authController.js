@@ -44,6 +44,10 @@ const login = async (req, res) => {
       { expiresIn: process.env.JWT_EXPIRES_IN || "7d" },
     );
 
+    const customerQuery = "SELECT id, phone, email FROM customers WHERE email = $1";
+    const customerResult = await pool.query(customerQuery, [user.username]);
+    const customer = customerResult.rows[0];
+
     return res.json({
       success: true,
       message: "Login exitoso",
@@ -54,6 +58,9 @@ const login = async (req, res) => {
         full_name: user.full_name,
         role_id: user.role_id,
         status: user.status,
+        customer_id: customer ? customer.id : null,
+        phone: customer ? customer.phone : null,
+        email: customer ? customer.email : null,
       },
     });
   } catch (error) {
@@ -62,8 +69,102 @@ const login = async (req, res) => {
   }
 };
 
+const register = async (req, res) => {
+  try {
+    const { full_name, email, phone, password, username } = req.body;
+    const userName = username?.trim() || email?.trim();
+
+    if (!full_name || !email || !phone || !password || !userName) {
+      return res.status(400).json({ error: "Todos los campos son requeridos" });
+    }
+
+    // Verificar si el nombre de usuario ya existe
+    const existingUser = await pool.query(
+      "SELECT id FROM users WHERE username = $1",
+      [userName]
+    );
+
+    if (existingUser.rows.length > 0) {
+      return res.status(409).json({ error: "El usuario ya existe" });
+    }
+
+    // Si existe el cliente por correo o teléfono, no se duplicará.
+    const existingCustomer = await pool.query(
+      "SELECT id FROM customers WHERE email = $1 OR phone = $2",
+      [email, phone]
+    );
+
+    const customerId = existingCustomer.rows[0]?.id;
+
+    const salt = await bcrypt.genSalt(10);
+    const password_hash = await bcrypt.hash(password, salt);
+
+    const roleId = 10; // Normalmente un usuario final
+    // Asegurar que el rol 10 exista antes de registrar el usuario
+    await pool.query(
+      "INSERT INTO roles (id, role_name, description) VALUES ($1, $2, $3) ON CONFLICT (id) DO NOTHING",
+      [roleId, 'Client', 'Cliente Final del Sitio Web']
+    );
+
+    const userResult = await pool.query(
+      `INSERT INTO users (username, password_hash, full_name, role_id, email)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id, username, full_name, role_id, status`,
+      [userName, password_hash, full_name, roleId, email]
+    );
+
+    let newCustomerId = customerId;
+    if (!newCustomerId) {
+      const customerResult = await pool.query(
+        `INSERT INTO customers (full_name, email, phone)
+         VALUES ($1, $2, $3)
+         RETURNING id`,
+        [full_name, email, phone]
+      );
+      newCustomerId = customerResult.rows[0].id;
+    }
+
+    const token = jwt.sign(
+      { id: userResult.rows[0].id, username: userResult.rows[0].username, role_id: roleId },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
+    );
+
+    return res.status(201).json({
+      success: true,
+      message: "Registro exitoso",
+      token,
+      user: userResult.rows[0],
+      customer_id: newCustomerId,
+    });
+  } catch (error) {
+    console.error("Register error:", error);
+    if (error.code === '23505') {
+      return res.status(409).json({ error: 'Usuario o cliente ya existe' });
+    }
+    res.status(500).json({ error: "Error en el servidor al registrar usuario" });
+  }
+};
+
 const getMe = async (req, res) => {
-  res.json({ success: true, user: req.user });
+  try {
+    const customerQuery = "SELECT id, phone, email FROM customers WHERE email = $1";
+    const customerResult = await pool.query(customerQuery, [req.user.username]);
+    const customer = customerResult.rows[0];
+    res.json({
+      success: true,
+      user: {
+        id: req.user.id,
+        username: req.user.username,
+        role_id: req.user.role_id,
+        customer_id: customer ? customer.id : null,
+        phone: customer ? customer.phone : null,
+        email: customer ? customer.email : null,
+      }
+    });
+  } catch (error) {
+    res.json({ success: true, user: req.user });
+  }
 };
 
 const recoverPassword = async (req, res) => {
@@ -193,4 +294,4 @@ const resetPassword = async (req, res) => {
   }
 };
 
-module.exports = { login, getMe, recoverPassword, resetPassword };
+module.exports = { login, register, getMe, recoverPassword, resetPassword };

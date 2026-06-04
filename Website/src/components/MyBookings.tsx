@@ -106,7 +106,7 @@ export default function MyBookings({ bookings, onCancelBooking, setCurrentTab }:
                 <div className="flex items-center justify-between pt-2">
                   <div className="text-xs">
                     <span className="text-zinc-500 mr-1 uppercase font-mono text-[9px] tracking-wider block">Pagado</span>
-                    <span className="font-extrabold text-[#c0ff00] text-sm md:text-base">${booking.price} MXN</span>
+                    <span className="font-extrabold text-[#c0ff00] text-sm md:text-base">${booking.price} USD</span>
                   </div>
 
                   <button
@@ -146,7 +146,7 @@ export default function MyBookings({ bookings, onCancelBooking, setCurrentTab }:
                     <span className="bg-red-950/45 text-red-400 border border-red-900/40 px-2.5 py-1 rounded text-[9px] font-black uppercase tracking-wider font-mono">
                       CANCELADA
                     </span>
-                    <span className="font-mono text-zinc-400 font-bold">${b.price} MXN</span>
+                    <span className="font-mono text-zinc-400 font-bold">${b.price} USD</span>
                   </div>
                 </div>
               ))}

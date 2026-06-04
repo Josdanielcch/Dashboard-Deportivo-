@@ -57,10 +57,10 @@ const checkAvailability = async (req, res) => {
       WHERE court_id = $1 
         AND booking_date = $2
         AND status NOT IN ('Cancelled', 'No_show')
-        AND (start_time, end_time) OVERLAPS ($3, $4)
+        AND (start_time, end_time) OVERLAPS ($3::time, $4::time)
     `, [court_id, booking_date, start_time, end_time]);
     
-    const available = result.rows[0].conflict_count === 0;
+    const available = parseInt(result.rows[0].conflict_count, 10) === 0;
     res.json({ 
       success: true, 
       available,
@@ -78,6 +78,8 @@ const createBooking = async (req, res) => {
     await client.query('BEGIN');
     
     const { customer_id, court_id, booking_date, start_time, end_time, user_id } = req.body;
+    // Use provided user_id or null (user_id is nullable in bookings)
+    const bookingUserId = user_id || null;
     
     // Validaciones
     if (!customer_id || !court_id || !booking_date || !start_time || !end_time) {
@@ -88,37 +90,23 @@ const createBooking = async (req, res) => {
     const conflict = await client.query(`
       SELECT COUNT(*) FROM bookings
       WHERE court_id = $1 AND booking_date = $2 AND status NOT IN ('Cancelled', 'No_show')
-      AND (start_time, end_time) OVERLAPS ($3, $4)
+      AND (start_time, end_time) OVERLAPS ($3::time, $4::time)
     `, [court_id, booking_date, start_time, end_time]);
     
-    if (parseInt(conflict.rows[0].count) > 0) {
+    if (parseInt(conflict.rows[0].count, 10) > 0) {
       await client.query('ROLLBACK');
       return res.status(409).json({ error: 'Horario no disponible' });
     }
     
-    // Obtener tarifa de la cancha
-    const courtRate = await client.query(
-      'SELECT hourly_rate FROM courts WHERE id = $1',
-      [court_id]
-    );
-    const hourlyRate = courtRate.rows[0]?.hourly_rate || 0;
-    
-    // Calcular horas
+    // Calcular horas (la cancha no tiene hourly_rate en DB, calculamos duración)
     const hoursDiff = (new Date(`1970-01-01T${end_time}`) - new Date(`1970-01-01T${start_time}`)) / (1000 * 60 * 60);
-    const totalAmount = hourlyRate * hoursDiff;
     
     // Crear reserva
     const result = await client.query(`
       INSERT INTO bookings (customer_id, court_id, user_id, booking_date, start_time, end_time, status)
       VALUES ($1, $2, $3, $4, $5, $6, 'Pending')
       RETURNING *
-    `, [customer_id, court_id, user_id, booking_date, start_time, end_time]);
-    
-    // Actualizar estado de la cancha a Occupied
-    await client.query(
-      "UPDATE courts SET status = 'Occupied' WHERE id = $1",
-      [court_id]
-    );
+    `, [customer_id, court_id, bookingUserId, booking_date, start_time, end_time]);
     
     await client.query('COMMIT');
     
@@ -127,15 +115,15 @@ const createBooking = async (req, res) => {
       message: 'Reserva creada exitosamente',
       data: {
         ...result.rows[0],
-        total_amount: totalAmount,
-        hourly_rate: hourlyRate,
+        total_amount: null,
+        hourly_rate: 0,
         hours: hoursDiff
       }
     });
   } catch (error) {
     await client.query('ROLLBACK');
-    console.error(error);
-    res.status(500).json({ error: 'Error al crear reserva' });
+    console.error('Error createBooking:', error);
+    res.status(500).json({ error: 'Error al crear reserva', detail: error.message });
   } finally {
     client.release();
   }

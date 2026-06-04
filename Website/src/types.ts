@@ -2,6 +2,7 @@ export type SportType = 'padel' | 'tenis' | 'futbol' | 'basquet';
 
 export interface Court {
   id: string;
+  backendId?: number;
   name: string;
   sport: SportType;
   type: string; // 'indoor' | 'outdoor' | 'arcilla' | 'sintetico' | 'duela' etc.
@@ -36,4 +37,5 @@ export interface User {
   email: string;
   phone: string;
   membershipLevel: 'standard' | 'pro';
+  customerId?: number;
 }

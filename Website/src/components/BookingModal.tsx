@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Court, User, Booking } from '../types';
 import { MOCK_TIME_SLOTS } from '../data';
+import { createCustomer, createBooking, checkAvailability } from '../api';
 import { X, Calendar as CalendarIcon, Clock, CreditCard, CheckCircle, Flame, Mail, Phone, User as UserIcon, Ticket, Sparkles } from 'lucide-react';
 
 interface BookingModalProps {
@@ -28,6 +29,9 @@ export default function BookingModal({
   const [guestEmail, setGuestEmail] = useState(currentUser?.email || '');
   const [guestPhone, setGuestPhone] = useState(currentUser?.phone || '');
   const [formError, setFormError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
+  const [slotAvailability, setSlotAvailability] = useState<{ available: boolean; message: string } | null>(null);
   
   const [isSuccess, setIsSuccess] = useState(false);
   const [createdBooking, setCreatedBooking] = useState<Booking | null>(null);
@@ -42,7 +46,50 @@ export default function BookingModal({
   const discountAmount = Math.round(baseCost * discountRate);
   const totalCost = baseCost - discountAmount;
 
-  const handleBookingSubmit = (e: React.FormEvent) => {
+  const parseSlotTimes = (slotTime: string) => {
+    const [start_time, end_time] = slotTime.split(' - ').map((value) => value.trim());
+    return { start_time, end_time };
+  };
+
+  const handleSlotSelect = async (slotTime: string) => {
+    setSelectedSlot(slotTime);
+    setSlotAvailability(null);
+    if (!court.backendId) {
+      setSlotAvailability({ available: false, message: 'ID de cancha no disponible para la reserva.' });
+      return;
+    }
+
+    setIsCheckingAvailability(true);
+    try {
+      const { start_time, end_time } = parseSlotTimes(slotTime);
+      const availability = await checkAvailability({
+        court_id: court.backendId,
+        booking_date: bookingDate,
+        start_time,
+        end_time,
+      });
+      setSlotAvailability({
+        available: availability.available,
+        message: availability.message,
+      });
+    } catch (error: any) {
+      setSlotAvailability({
+        available: false,
+        message: error?.message || 'No se pudo verificar disponibilidad.',
+      });
+    } finally {
+      setIsCheckingAvailability(false);
+    }
+  };
+
+  React.useEffect(() => {
+    if (selectedSlot) {
+      handleSlotSelect(selectedSlot);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bookingDate]);
+
+  const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError('');
 
@@ -60,31 +107,74 @@ export default function BookingModal({
       return;
     }
 
-    // Email validation
     if (!/\S+@\S+\.\S+/.test(finalEmail)) {
-      setFormError('Por favor enter un correo electrónico válido.');
+      setFormError('Por favor ingresa un correo electrónico válido.');
       return;
     }
 
-    const newBooking: Booking = {
-      id: 'book-' + Math.random().toString(36).substr(2, 9).toUpperCase(),
-      courtId: court.id,
-      courtName: court.name,
-      courtImage: court.imageUrl,
-      sport: court.sport,
-      date: bookingDate,
-      timeSlot: selectedSlot,
-      price: totalCost,
-      status: 'confirmed',
-      userName: finalName,
-      userEmail: finalEmail,
-      userPhone: finalPhone,
-      createdAt: new Date().toISOString(),
-    };
+    if (!court.backendId) {
+      setFormError('No se puede reservar: falta el identificador de cancha en el backend.');
+      return;
+    }
 
-    onAddBooking(newBooking);
-    setCreatedBooking(newBooking);
-    setIsSuccess(true);
+    if (slotAvailability && slotAvailability.available === false) {
+      setFormError(slotAvailability.message || 'Este horario ya está ocupado.');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const { start_time, end_time } = parseSlotTimes(selectedSlot);
+      let customerId = currentUser?.customerId;
+
+      if (!customerId) {
+        // Crear cliente en el backend (registro de usuario para la reserva)
+        const customerResponse = await createCustomer({
+          full_name: finalName,
+          email: finalEmail,
+          phone: finalPhone,
+        });
+
+        customerId = customerResponse.data?.id;
+        if (!customerId) {
+          throw new Error('No se pudo obtener el id de cliente del backend.');
+        }
+      }
+
+      const bookingResponse = await createBooking({
+        customer_id: customerId,
+        court_id: court.backendId,
+        booking_date: bookingDate,
+        start_time,
+        end_time,
+      });
+
+      const bookingData = bookingResponse.data;
+      const newBooking: Booking = {
+        id: `BKG-${bookingData.id}`,
+        courtId: court.id,
+        courtName: court.name,
+        courtImage: court.imageUrl,
+        sport: court.sport,
+        date: bookingDate,
+        timeSlot: `${start_time} - ${end_time}`,
+        price: bookingData.total_amount ?? totalCost,
+        status: bookingData.status === 'Pending' ? 'confirmed' : bookingData.status.toLowerCase(),
+        userName: finalName,
+        userEmail: finalEmail,
+        userPhone: finalPhone,
+        createdAt: new Date().toISOString(),
+      };
+
+      onAddBooking(newBooking);
+      setCreatedBooking(newBooking);
+      setIsSuccess(true);
+    } catch (error: any) {
+      setFormError(error?.message || 'Error al crear la reserva. Intenta de nuevo.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const getSportLabel = (sport: string) => {
@@ -165,7 +255,7 @@ export default function BookingModal({
 
               <div className="flex justify-between text-sm font-bold text-white border-t border-white/10 pt-3">
                 <span>Total pagado:</span>
-                <span className="text-[#c0ff00] font-black">${createdBooking.price} MXN</span>
+                <span className="text-[#c0ff00] font-black">${createdBooking.price} USD</span>
               </div>
             </div>
 
@@ -189,7 +279,7 @@ export default function BookingModal({
                 </div>
                 <div className="mt-4 pt-3 border-t border-white/10 flex justify-between text-xs">
                   <span className="text-zinc-500 font-semibold">Costo regular:</span>
-                  <span className="font-bold text-zinc-200">${court.pricePerHour} MXN / hora</span>
+                  <span className="font-bold text-zinc-200">${court.pricePerHour} USD / hora</span>
                 </div>
               </div>
 
@@ -227,7 +317,7 @@ export default function BookingModal({
                     <button
                       key={slot.id}
                       type="button"
-                      onClick={() => setSelectedSlot(slot.time)}
+                      onClick={() => handleSlotSelect(slot.time)}
                       className={`py-2.5 px-3 rounded-xl border text-center transition-all cursor-pointer ${
                         isSelected
                           ? 'border-[#c0ff00] bg-[#c0ff00]/10 text-[#c0ff00] font-black ring-1 ring-[#c0ff00] shadow-sm shadow-[#c0ff00]/5'
@@ -242,6 +332,19 @@ export default function BookingModal({
                   );
                 })}
               </div>
+              {selectedSlot && (
+                <div className="mt-3 text-xs font-semibold">
+                  {isCheckingAvailability ? (
+                    <span className="text-[#c0ff00]">Verificando disponibilidad...</span>
+                  ) : slotAvailability ? (
+                    <span className={slotAvailability.available ? 'text-emerald-400' : 'text-red-400'}>
+                      {slotAvailability.message}
+                    </span>
+                  ) : (
+                    <span className="text-zinc-400">Selecciona el turno para verificar disponibilidad en el backend.</span>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* User Contact Info */}
@@ -345,7 +448,7 @@ export default function BookingModal({
                 
                 <div className="flex justify-between text-xs">
                   <span className="text-zinc-400">Turno de cancha (1.5 horas)</span>
-                  <span className="font-semibold text-zinc-200">${baseCost} MXN</span>
+                  <span className="font-semibold text-zinc-200">${baseCost} USD</span>
                 </div>
 
                 {isPro ? (
@@ -353,7 +456,7 @@ export default function BookingModal({
                     <span className="flex items-center gap-1 font-semibold">
                       <Sparkles className="h-3.5 w-3.5 fill-green-400" /> Descuento Membresía PRO (25% desc.)
                     </span>
-                    <span>-${discountAmount} MXN</span>
+                    <span>-${discountAmount} USD</span>
                   </div>
                 ) : (
                   <div className="bg-[#c0ff00]/5 rounded-xl p-3 text-[10px] text-zinc-300 flex items-center justify-between gap-4 mt-1 border border-[#c0ff00]/15">
@@ -376,7 +479,7 @@ export default function BookingModal({
                 <div className="flex justify-between text-sm font-black text-white pt-2.5 border-t border-white/10">
                   <span className="uppercase tracking-wide text-xs text-zinc-500">Total a pagar:</span>
                   <span className="text-lg text-[#c0ff00] font-black tracking-normal">
-                    ${totalCost} MXN
+                    ${totalCost} USD
                   </span>
                 </div>
               </div>
@@ -401,10 +504,15 @@ export default function BookingModal({
               
               <button
                 type="submit"
-                className="flex-1 py-3.5 px-4 bg-[#c0ff00] text-black rounded-xl text-xs font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg shadow-[#c0ff00]/5 cursor-pointer"
+                disabled={isSubmitting || isCheckingAvailability}
+                className={`flex-1 py-3.5 px-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-[#c0ff00]/5 ${
+                  isSubmitting || isCheckingAvailability
+                    ? 'bg-zinc-700 text-zinc-300 cursor-not-allowed border border-white/10'
+                    : 'bg-[#c0ff00] text-black hover:scale-105 cursor-pointer'
+                }`}
                 id="modal-submit-booking"
               >
-                Confirmar Reserva
+                {isSubmitting ? 'Reservando...' : 'Confirmar Reserva'}
               </button>
             </div>
           </form>
