@@ -50,52 +50,99 @@ export default function App() {
       }
     }
 
-    // 2. Bookings (initialize with beautiful sample dummy bookings if none exists)
-    const savedBookings = localStorage.getItem('courtconnect_bookings');
-    if (savedBookings) {
-      try {
-        setBookings(JSON.parse(savedBookings));
-      } catch (err) {
-        console.error('Failed to parse bookings', err);
-      }
-    } else {
-      // Prefilled bookings to showcase the design immediately
-      const defaultBookings: Booking[] = [
-        {
-          id: 'CC-A899E2',
-          courtId: 'court-1',
-          courtName: 'Cancha Central Padel 1',
-          courtImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCrK7kD9iB7twRwcrmMZeAd-AaejnMF-N5b18ei_MNi77qds9xXqzQu8Y07WfPMAg69oQz6WUHjEIWRolvq34BGGwZKtAjF1tnFAwTBR_mLa9OvGhwmAMJpYA-XHoZ_7ikUbuaVI6fTj1OUwTUMDaOoZ0Cl4BvO_08oXYSSoeRnflr47QDl1EKeXk3njkjQWj70rcMdhzbZyRbksyLrwML9fCW00AklWNpk6Kx0tkA3UkT2ei9FEmOTZ09Yvc51OFAPqBFnYTD8O2g',
-          sport: 'padel',
-          date: '2026-05-28',
-          timeSlot: '17:30 - 19:00',
-          price: 338, // 450 * 1.5 with 25% PRO discount
-          status: 'confirmed',
-          userName: 'José Daniel',
-          userEmail: 'josdanielcch@gmail.com',
-          userPhone: '+52 55 9876 5432',
-          createdAt: new Date().toISOString()
-        },
-        {
-          id: 'CC-B110B2',
-          courtId: 'court-3',
-          courtName: 'Estadio Urbano Sky',
-          courtImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB94KbkV0VHtWs83FMAxH31xsdN-r6945eD6mEXUX_pq4vv9ZOc3Ca_SqU93EEoXnCDJJwsdKg_j9Yy7LevuebLGgLiaVqVkysZYgoLH9QZOwnbWEp5CQWPs3LtgBMLcPjsGmgpVqLHL6L14Ce-n4yQi7jhPYrAJNLv8_A4nkvVUR8E3fZoYEOTNMS5ugsPC3_FjPBG6ycZ_k0pfWexLDEt_Te-zx_JyqpZ3ohRvJ2V69V0YW-f68kZB4aYXqW0CMtw1qS69fDrCAs',
-          sport: 'futbol',
-          date: '2026-05-30',
-          timeSlot: '19:00 - 20:30',
-          price: 675, // 600 * 1.5 with 25% PRO discount
-          status: 'confirmed',
-          userName: 'José Daniel',
-          userEmail: 'josdanielcch@gmail.com',
-          userPhone: '+52 55 9876 5432',
-          createdAt: new Date(Date.now() - 3600000).toISOString()
-        }
-      ];
-      setBookings(defaultBookings);
-      localStorage.setItem('courtconnect_bookings', JSON.stringify(defaultBookings));
+    // 2. Check for recovery token
+    const params = new URLSearchParams(window.location.search);
+    const urlToken = params.get('token');
+    if (urlToken) {
+      setCurrentTab('auth');
     }
   }, []);
+
+  // Sync bookings from backend if logged in, otherwise from localStorage
+  useEffect(() => {
+    const fetchBookings = async () => {
+      if (currentUser?.customerId) {
+        try {
+          const { getCustomerBookings } = await import('./api');
+          const response = await getCustomerBookings(currentUser.customerId);
+          if (response && response.success && Array.isArray(response.data)) {
+            const backendBookings: Booking[] = response.data.map((b: any) => {
+              const courtDetail = INITIAL_COURTS.find((c) => c.backendId === b.court_id);
+              const cleanStart = b.start_time ? b.start_time.split(':').slice(0, 2).join(':') : '';
+              const cleanEnd = b.end_time ? b.end_time.split(':').slice(0, 2).join(':') : '';
+              const cleanDate = b.booking_date ? b.booking_date.split('T')[0] : '';
+              
+              return {
+                id: `BKG-${b.id}`,
+                courtId: courtDetail?.id || `court-${b.court_id}`,
+                courtName: b.court_name || courtDetail?.name || 'Cancha',
+                courtImage: courtDetail?.imageUrl || 'https://images.unsplash.com/photo-1544698310-74ea9d1c8258',
+                sport: (courtDetail?.sport || 'padel') as SportType,
+                date: cleanDate,
+                timeSlot: `${cleanStart} - ${cleanEnd}`,
+                price: parseFloat(b.total_amount || '30'),
+                status: b.status === 'Cancelled' || b.status === 'No_show' ? 'cancelled' : 'confirmed',
+                userName: currentUser.name,
+                userEmail: currentUser.email,
+                userPhone: currentUser.phone,
+                createdAt: new Date().toISOString()
+              };
+            });
+            setBookings(backendBookings);
+            return;
+          }
+        } catch (error) {
+          console.error('Error fetching bookings from backend:', error);
+        }
+      }
+      
+      // Fallback to localStorage
+      const savedBookings = localStorage.getItem('courtconnect_bookings');
+      if (savedBookings) {
+        try {
+          setBookings(JSON.parse(savedBookings));
+        } catch (err) {
+          console.error('Failed to parse bookings', err);
+        }
+      } else {
+        const defaultBookings: Booking[] = [
+          {
+            id: 'CC-A899E2',
+            courtId: 'court-1',
+            courtName: 'Cancha Central Padel 1',
+            courtImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCrK7kD9iB7twRwcrmMZeAd-AaejnMF-N5b18ei_MNi77qds9xXqzQu8Y07WfPMAg69oQz6WUHjEIWRolvq34BGGwZKtAjF1tnFAwTBR_mLa9OvGhwmAMJpYA-XHoZ_7ikUbuaVI6fTj1OUwTUMDaOoZ0Cl4BvO_08oXYSSoeRnflr47QDl1EKeXk3njkjQWj70rcMdhzbZyRbksyLrwML9fCW00AklWNpk6Kx0tkA3UkT2ei9FEmOTZ09Yvc51OFAPqBFnYTD8O2g',
+            sport: 'padel',
+            date: '2026-05-28',
+            timeSlot: '17:30 - 19:00',
+            price: 338,
+            status: 'confirmed',
+            userName: 'Josedaniel',
+            userEmail: 'josdanielcch@gmail.com',
+            userPhone: '+52 55 9876 5432',
+            createdAt: new Date().toISOString()
+          },
+          {
+            id: 'CC-B110B2',
+            courtId: 'court-3',
+            courtName: 'Estadio Urbano Sky',
+            courtImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB94KbkV0VHtWs83FMAxH31xsdN-r6945eD6mEXUX_pq4vv9ZOc3Ca_SqU93EEoXnCDJJwsdKg_j9Yy7LevuebLGgLiaVqVkysZYgoLH9QZOwnbWEp5CQWPs3LtgBMLcPjsGmgpVqLHL6L14Ce-n4yQi7jhPYrAJNLv8_A4nkvVUR8E3fZoYEOTNMS5ugsPC3_FjPBG6ycZ_k0pfWexLDEt_Te-zx_JyqpZ3ohRvJ2V69V0YW-f68kZB4aYXqW0CMtw1qS69fDrCAs',
+            sport: 'futbol',
+            date: '2026-05-30',
+            timeSlot: '19:00 - 20:30',
+            price: 675,
+            status: 'confirmed',
+            userName: 'Josedaniel',
+            userEmail: 'josdanielcch@gmail.com',
+            userPhone: '+52 55 9876 5432',
+            createdAt: new Date(Date.now() - 3600000).toISOString()
+          }
+        ];
+        setBookings(defaultBookings);
+        localStorage.setItem('courtconnect_bookings', JSON.stringify(defaultBookings));
+      }
+    };
+    fetchBookings();
+  }, [currentUser]);
 
   // Update localStorage when bookings are modified
   const updateLocalStorageBookings = (updatedBookings: Booking[]) => {
@@ -106,6 +153,7 @@ export default function App() {
   // Logout handler
   const handleLogout = () => {
     localStorage.removeItem('courtconnect_user_session');
+    localStorage.removeItem('courtconnect_token');
     setCurrentUser(null);
     setCurrentTab('home');
   };
@@ -113,7 +161,6 @@ export default function App() {
   // Login/Register handler
   const handleLoginSuccess = (user: User) => {
     setCurrentUser(user);
-    // If the user was trying to book a court, go back to reservation flow
     if (selectedCourtForBooking) {
       setCurrentTab('explore');
     } else {
@@ -122,7 +169,18 @@ export default function App() {
   };
 
   // Cancel reservation
-  const handleCancelBooking = (bookingId: string) => {
+  const handleCancelBooking = async (bookingId: string) => {
+    const isBackend = bookingId.startsWith('BKG-');
+    if (isBackend) {
+      try {
+        const numericId = parseInt(bookingId.replace('BKG-', ''), 10);
+        const { updateBookingStatus } = await import('./api');
+        await updateBookingStatus(numericId, 'Cancelled');
+      } catch (err) {
+        console.error('Failed to cancel booking on backend', err);
+      }
+    }
+
     const updated = bookings.map((b) => {
       if (b.id === bookingId) {
         return { ...b, status: 'cancelled' as const };

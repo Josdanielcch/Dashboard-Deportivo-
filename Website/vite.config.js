@@ -13,6 +13,7 @@ export default defineConfig(() => {
     },
      server: {
       port: 4000, // <-- Define aquí tu puerto local preferido
+      allowedHosts: true,
       hmr: process.env.DISABLE_HMR !== 'true',
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
     },

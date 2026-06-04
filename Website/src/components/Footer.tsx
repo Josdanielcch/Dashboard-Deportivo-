@@ -31,7 +31,7 @@ export default function Footer({ setCurrentTab }: FooterProps) {
           La plataforma definitiva para deportistas. Reserva, compite y mejora en un solo lugar. Conectamos clubes urbanos de alto nivel con jugadores apasionados.
         </p>
         <div className="flex items-center gap-2 text-xs text-zinc-500 font-mono mt-1">
-          <MapPin className="h-3 w-3" /> CDMX, México
+          <MapPin className="h-3 w-3" /> Tachira, Venezuela
         </div>
       </div>
 
