@@ -1,6 +1,5 @@
 // src/app.js
 const express = require('express');
-const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const compression = require('compression');
@@ -8,6 +7,12 @@ const compression = require('compression');
 // Importar rutas
 const authRoutes = require('./routes/authRoutes');
 const courtRoutes = require('./routes/courtRoutes');
+const customerRoutes = require('./routes/customerRoutes');
+const bookingRoutes = require('./routes/bookingRoutes');
+const productRoutes = require('./routes/productRoutes');
+const billingRoutes = require('./routes/billingRoutes');
+const auditRoutes = require('./routes/auditRoutes');
+const userRoutes = require('./routes/userRoutes');
 
 // Middleware de error
 const { errorHandler } = require('./middleware/errorHandler');
@@ -17,23 +22,38 @@ const app = express();
 // Middlewares globales
 app.use(helmet());
 
-// CORS robusto y dinámico para desarrollo y producción
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:5174',
-  'http://127.0.0.1:5173',
-  'http://127.0.0.1:5174',
-  'https://rococo-malasada-e1ce07.netlify.app'
-];
+// --- INICIO DEL BLOQUE CORS MANUAL DEFINITIVO ---
+app.use((req, res, next) => {
+  // Lista de dominios permitidos (Netlify y tu entorno local)
+  const allowedOrigins = [
+    'https://rococo-malasada-e1ce07.netlify.app',
+    'http://localhost:5173',
+    'http://localhost:5174'
+  ];
+  const origin = req.headers.origin;
 
-app.use(cors({
-    origin: ['https://rococo-malasada-e1ce07.netlify.app', 'http://localhost:5173'],
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
+  // Si la petición viene de un dominio permitido, le damos acceso
+  if (allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+  } else {
+    // Por defecto forzamos Netlify por si acaso
+    res.header('Access-Control-Allow-Origin', 'https://rococo-malasada-e1ce07.netlify.app');
+  }
 
-app.options('*', cors());
+  // Cabeceras obligatorias para el navegador
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+
+  // Interceptar y aprobar automáticamente la petición OPTIONS (Preflight)
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  next();
+});
+// --- FIN DEL BLOQUE CORS MANUAL DEFINITIVO ---
+
 app.use(compression());
 app.use(morgan('combined'));
 app.use(express.json());
@@ -52,16 +72,6 @@ app.get('/api/health', (req, res) => {
 // Rutas de la API
 app.use('/api/auth', authRoutes);
 app.use('/api/courts', courtRoutes);
-
-// Importar nuevas rutas
-const customerRoutes = require('./routes/customerRoutes');
-const bookingRoutes = require('./routes/bookingRoutes');
-const productRoutes = require('./routes/productRoutes');
-const billingRoutes = require('./routes/billingRoutes');
-const auditRoutes = require('./routes/auditRoutes');
-const userRoutes = require('./routes/userRoutes');
-
-// ... después de las otras rutas
 app.use('/api/customers', customerRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/products', productRoutes);
@@ -71,13 +81,13 @@ app.use('/api/users', userRoutes);
 
 // Ruta 404
 app.use((req, res) => {
-  res.status(404).json({ 
+  res.status(404).json({
     error: 'Ruta no encontrada',
     path: req.originalUrl
   });
 });
 
-// Middleware de error
+// Middleware de error global
 app.use(errorHandler);
 
 module.exports = app;
