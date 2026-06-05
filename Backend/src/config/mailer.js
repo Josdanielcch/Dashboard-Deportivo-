@@ -1,9 +1,9 @@
 const nodemailer = require("nodemailer");
 
-// Solo creamos el transportador si existen variables configuradas
+// Solo creamos el transportador si existen variables
 const createTransporter = () => {
     if (!process.env.SMTP_HOST) {
-        console.warn("⚠️ SMTP no configurado: Envío de correos deshabilitado.");
+        console.warn("⚠️ SMTP no configurado: El envío de correos está deshabilitado.");
         return null;
     }
     return nodemailer.createTransport({
@@ -21,11 +21,8 @@ const transporter = createTransporter();
 // Verificación segura: No detiene el servidor si falla
 if (transporter) {
     transporter.verify((error, success) => {
-        if (error) {
-            console.error("❌ Error SMTP (No bloqueante):", error.message);
-        } else {
-            console.log("📌 Servidor de correos listo");
-        }
+        if (error) console.error("❌ Error SMTP (No bloqueante):", error.message);
+        else console.log("📌 Servidor de correos listo");
     });
 }
 

@@ -1,11 +1,6 @@
-// server.js (en la raíz de Backend)
-require('dotenv').config();
-const app = require('./src/app');
+const cors = require('cors');
 
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
-  console.log(`📝 Health check: http://localhost:${PORT}/api/health`);
-  console.log(`🔧 Environment: ${process.env.NODE_ENV}`);
-});
+app.use(cors({
+    origin: 'https://rococo-malasada-e1ce07.netlify.app/', // Tu URL de Netlify
+    credentials: true
+}));
