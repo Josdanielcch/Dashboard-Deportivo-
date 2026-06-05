@@ -209,29 +209,29 @@ const recoverPassword = async (req, res) => {
     const resetLink = `${process.env.FRONTEND_URL || "http://localhost:5173"}/reset-password?token=${token}`;
 
     // Enviamos el correo usando Nodemailer
-    await mailer.sendMail({
-      from: `"SportSpaces OS" <no-reply@sportspaces.com>`,
-      to: email,
-      subject: "Recuperación de contraseña - SportSpaces OS",
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e4e4e7; border-radius: 8px;">
-          <h2 style="color: #10b981; text-align: center; margin-top: 0;">🏟️ SportSpaces OS</h2>
-          <hr style="border: 0; border-top: 1px solid #e4e4e7; margin: 20px 0;">
-          <p>Hola, <strong>${user.full_name || user.username}</strong>,</p>
-          <p> Hemos recibido una solicitud para restablecer tu contraseña en la plataforma de gestión de complejos deportivos <strong>SportSpaces OS</strong>.</p>
-          <p>Para proceder con el restablecimiento de tu contraseña, por favor haz clic en el siguiente botón:</p>
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${resetLink}" style="background-color: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Restablecer Contraseña</a>
-          </div>
-          <p style="font-size: 13px; color: #ef4444; font-weight: 500; text-align: center;">Este enlace tiene una validez de 1 hora.</p>
-          <hr style="border: 0; border-top: 1px solid #e4e4e7; margin: 20px 0;">
-          <p style="font-size: 12px; color: #71717a;">Si el botón no funciona, copia y pega el siguiente enlace directamente en tu navegador:</p>
-          <p style="font-size: 12px; color: #10b981; word-break: break-all; font-family: monospace;">${resetLink}</p>
-          <hr style="border: 0; border-top: 1px solid #e4e4e7; margin: 20px 0;">
-          <p style="font-size: 12px; color: #a1a1aa; text-align: center;">Si no solicitaste este restablecimiento, puedes ignorar este correo de forma totalmente segura.</p>
-        </div>
-      `,
-    });
+    //await mailer.sendMail({
+    // from: `"SportSpaces OS" <no-reply@sportspaces.com>`,
+    //to: email,
+    //subject: "Recuperación de contraseña - SportSpaces OS",
+    //html: `
+    //<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e4e4e7; border-radius: 8px;">
+    //<h2 style="color: #10b981; text-align: center; margin-top: 0;">🏟️ SportSpaces OS</h2>
+    //<hr style="border: 0; border-top: 1px solid #e4e4e7; margin: 20px 0;">
+    //<p>Hola, <strong>${user.full_name || user.username}</strong>,</p>
+    //<p> Hemos recibido una solicitud para restablecer tu contraseña en la plataforma de gestión de complejos deportivos <strong>SportSpaces OS</strong>.</p>
+    //<p>Para proceder con el restablecimiento de tu contraseña, por favor haz clic en el siguiente botón:</p>
+    //<div style="text-align: center; margin: 30px 0;">
+    //<a href="${resetLink}" style="background-color: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Restablecer Contraseña</a>
+    //</div>
+    //<p style="font-size: 13px; color: #ef4444; font-weight: 500; text-align: center;">Este enlace tiene una validez de 1 hora.</p>
+    //<hr style="border: 0; border-top: 1px solid #e4e4e7; margin: 20px 0;">
+    //<p style="font-size: 12px; color: #71717a;">Si el botón no funciona, copia y pega el siguiente enlace directamente en tu navegador:</p>
+    //<p style="font-size: 12px; color: #10b981; word-break: break-all; font-family: monospace;">${resetLink}</p>
+    //<hr style="border: 0; border-top: 1px solid #e4e4e7; margin: 20px 0;">
+    //<p style="font-size: 12px; color: #a1a1aa; text-align: center;">Si no solicitaste este restablecimiento, puedes ignorar este correo de forma totalmente segura.</p>
+    //</div>
+    //`,
+    //});
 
     return res.json({
       success: true,
