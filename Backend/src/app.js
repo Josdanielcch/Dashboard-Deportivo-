@@ -19,29 +19,20 @@ const { errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
 
-// Middlewares globales
-app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
-
 const cors = require('cors');
-
 app.use(cors({
-  origin: function (origin, callback) {
-    const allowedOrigins = [
-      'https://rococo-malasada-e1ce07.netlify.app',
-      'http://localhost:5173',
-      'http://localhost:5174'
-    ];
-    // Permitir peticiones sin origin (como herramientas tipo Postman) o si está en la lista
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('No permitido por CORS'));
-    }
-  },
+  origin: [
+    'https://rococo-malasada-e1ce07.netlify.app',
+    'http://localhost:5173',
+    'http://localhost:5174'
+  ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
   credentials: true
 }));
+
+// Middlewares globales
+app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 
 app.use(compression());
 app.use(morgan('combined'));
