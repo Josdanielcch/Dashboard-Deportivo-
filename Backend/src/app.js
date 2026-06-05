@@ -20,7 +20,7 @@ const { errorHandler } = require('./middleware/errorHandler');
 const app = express();
 
 // Middlewares globales
-app.use(helmet());
+app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 
 const cors = require('cors');
 
