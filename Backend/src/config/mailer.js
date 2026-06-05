@@ -2,8 +2,9 @@ const nodemailer = require("nodemailer");
 
 // Creamos el transportador utilizando variables de entorno
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || "sandbox.smtp.mailtrap.io",
-  port: parseInt(process.env.SMTP_PORT || "2525"),
+  host: process.env.SMTP_HOST || "smtp.gmail.com",
+  port: parseInt(process.env.SMTP_PORT || "465"),
+  secure: process.env.SMTP_PORT === "465" || process.env.NODE_ENV === "production",
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS
