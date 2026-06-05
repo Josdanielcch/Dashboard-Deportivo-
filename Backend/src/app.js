@@ -22,37 +22,26 @@ const app = express();
 // Middlewares globales
 app.use(helmet());
 
-// --- INICIO DEL BLOQUE CORS MANUAL DEFINITIVO ---
-app.use((req, res, next) => {
-  // Lista de dominios permitidos (Netlify y tu entorno local)
-  const allowedOrigins = [
-    'https://rococo-malasada-e1ce07.netlify.app',
-    'http://localhost:5173',
-    'http://localhost:5174'
-  ];
-  const origin = req.headers.origin;
+const cors = require('cors');
 
-  // Si la petición viene de un dominio permitido, le damos acceso
-  if (allowedOrigins.includes(origin)) {
-    res.header('Access-Control-Allow-Origin', origin);
-  } else {
-    // Por defecto forzamos Netlify por si acaso
-    res.header('Access-Control-Allow-Origin', 'https://rococo-malasada-e1ce07.netlify.app');
-  }
-
-  // Cabeceras obligatorias para el navegador
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  res.header('Access-Control-Allow-Credentials', 'true');
-
-  // Interceptar y aprobar automáticamente la petición OPTIONS (Preflight)
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  next();
-});
-// --- FIN DEL BLOQUE CORS MANUAL DEFINITIVO ---
+app.use(cors({
+  origin: function (origin, callback) {
+    const allowedOrigins = [
+      'https://rococo-malasada-e1ce07.netlify.app',
+      'http://localhost:5173',
+      'http://localhost:5174'
+    ];
+    // Permitir peticiones sin origin (como herramientas tipo Postman) o si está en la lista
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('No permitido por CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
+  credentials: true
+}));
 
 app.use(compression());
 app.use(morgan('combined'));
