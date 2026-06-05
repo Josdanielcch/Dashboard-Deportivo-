@@ -4,7 +4,7 @@ const nodemailer = require("nodemailer");
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || "smtp.gmail.com",
   port: parseInt(process.env.SMTP_PORT || "465"),
-  secure: process.env.SMTP_PORT === "465" || process.env.NODE_ENV === "production",
+  secure: true, // TLS seguro para Gmail en puerto 465
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS
