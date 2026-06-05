@@ -1,3 +1,4 @@
+import dns from 'dns'; dns.setDefaultResultOrder('ipv4first');
 // server.js (en la raíz de Backend)
 require('dotenv').config();
 const app = require('./src/app');
