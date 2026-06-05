@@ -27,28 +27,13 @@ const allowedOrigins = [
 ];
 
 app.use(cors({
-  origin: function (origin, callback) {
-    // Permitir peticiones sin origen (como Postman o llamadas directas del servidor)
-    if (!origin) return callback(null, true);
-    
-    // Permitir cualquier subdominio/puerto de localhost o 127.0.0.1 para desarrollo fluido
-    if (
-      origin.startsWith('http://localhost:') || 
-      origin.startsWith('http://127.0.0.1:') || 
-      origin.startsWith('https://localhost:') || 
-      origin.startsWith('https://127.0.0.1:')
-    ) {
-      return callback(null, true);
-    }
-    
-    if (allowedOrigins.indexOf(origin) !== -1 || origin === process.env.CORS_ORIGIN) {
-      return callback(null, true);
-    } else {
-      return callback(new Error('Bloqueado por política CORS'));
-    }
-  },
-  credentials: true
+    origin: ['https://rococo-malasada-e1ce07.netlify.app', 'http://localhost:5173'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+app.options('*', cors());
 app.use(compression());
 app.use(morgan('combined'));
 app.use(express.json());

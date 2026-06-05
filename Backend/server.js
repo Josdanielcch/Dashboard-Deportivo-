@@ -1,6 +1,6 @@
-const cors = require('cors');
+const app = require('./app'); // Importa la app configurada
+const PORT = process.env.PORT || 8080;
 
-app.use(cors({
-    origin: 'https://rococo-malasada-e1ce07.netlify.app/', // Tu URL de Netlify
-    credentials: true
-}));
+app.listen(PORT, () => {
+    console.log(`Servidor corriendo en puerto ${PORT}`);
+});
