@@ -1,5 +1,5 @@
-// Asegúrate de incluir el https://
-const API_BASE_URL = 'https://dashboard-deportivo-production.up.railway.app/api';
+// Usa la variable de entorno si existe (para local), o la de Railway por defecto
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://dashboard-deportivo-production.up.railway.app/api';
 
 async function request(path: string, options: RequestInit = {}) {
   const url = `${API_BASE_URL}${path}`;
