@@ -25,7 +25,8 @@ export default function BookingModal({
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   
   // Contacts form state (used if no currentUser is logged in)
-  const [guestName, setGuestName] = useState(currentUser?.name || '');
+  const [guestFirstName, setGuestFirstName] = useState(currentUser?.name?.split(' ')[0] || '');
+  const [guestLastName, setGuestLastName] = useState(currentUser?.name?.split(' ').slice(1).join(' ') || '');
   const [guestEmail, setGuestEmail] = useState(currentUser?.email || '');
   const [guestPhone, setGuestPhone] = useState(currentUser?.phone || '');
   const [formError, setFormError] = useState('');
@@ -93,7 +94,7 @@ export default function BookingModal({
     e.preventDefault();
     setFormError('');
 
-    const finalName = currentUser ? currentUser.name : guestName.trim();
+    const finalName = currentUser ? currentUser.name : `${guestFirstName.trim()} ${guestLastName.trim()}`;
     const finalEmail = currentUser ? currentUser.email : guestEmail.trim();
     const finalPhone = currentUser ? currentUser.phone : guestPhone.trim();
 
@@ -131,7 +132,8 @@ export default function BookingModal({
       if (!customerId) {
         // Crear cliente en el backend (registro de usuario para la reserva)
         const customerResponse = await createCustomer({
-          full_name: finalName,
+          first_name: currentUser ? currentUser.name.split(' ')[0] : guestFirstName.trim(),
+          last_name: currentUser ? currentUser.name.split(' ').slice(1).join(' ') : guestLastName.trim(),
           email: finalEmail,
           phone: finalPhone,
         });
@@ -387,15 +389,29 @@ export default function BookingModal({
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                     <div className="space-y-12">
                       <div className="flex flex-col gap-1">
-                        <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest font-mono">Nombre Completo</label>
+                        <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest font-mono">Nombres</label>
                         <input
                           type="text"
-                          placeholder="John Doe"
-                          value={guestName}
-                          onChange={(e) => setGuestName(e.target.value)}
+                          placeholder="John"
+                          value={guestFirstName}
+                          onChange={(e) => setGuestFirstName(e.target.value)}
+                          className="w-full px-3 py-2.5 rounded-xl border border-white/10 text-xs bg-zinc-950/30 text-white focus:border-[#c0ff00] outline-none font-semibold"
+                          required={!currentUser}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-12">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest font-mono">Apellidos</label>
+                        <input
+                          type="text"
+                          placeholder="Doe"
+                          value={guestLastName}
+                          onChange={(e) => setGuestLastName(e.target.value)}
                           className="w-full px-3 py-2.5 rounded-xl border border-white/10 text-xs bg-zinc-950/30 text-white focus:border-[#c0ff00] outline-none font-semibold"
                           required={!currentUser}
                         />

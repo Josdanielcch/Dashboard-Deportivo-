@@ -83,9 +83,34 @@ const updateCourtStatus = async (req, res) => {
   }
 };
 
+const updateCourt = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { court_name, status } = req.body;
+    
+    if (!court_name) {
+      return res.status(400).json({ error: 'El nombre es requerido' });
+    }
+    
+    const result = await pool.query(
+      'UPDATE courts SET court_name = $1, status = COALESCE($2, status) WHERE id = $3 RETURNING *',
+      [court_name, status, id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Cancha no encontrada' });
+    }
+    
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al actualizar cancha' });
+  }
+};
+
 module.exports = {
   getAllCourts,
   getCourtById,
   createCourt,
-  updateCourtStatus
+  updateCourtStatus,
+  updateCourt
 };

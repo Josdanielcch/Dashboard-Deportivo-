@@ -45,7 +45,8 @@ export default function BookingsPage({ user }) {
 
   // Quick Customer Registration States
   const [showQuickCustomer, setShowQuickCustomer] = useState(false);
-  const [custFullName, setCustFullName] = useState('');
+  const [custFirstName, setCustFirstName] = useState('');
+  const [custLastName, setCustLastName] = useState('');
   const [custPhone, setCustPhone] = useState('');
   const [custEmail, setCustEmail] = useState('');
   const [custIdent, setCustIdent] = useState('');
@@ -135,15 +136,16 @@ export default function BookingsPage({ user }) {
   // Quick register customer form submission
   const handleCreateCustomerQuick = async (e) => {
     e.preventDefault();
-    if (!custFullName.trim() || !custPhone.trim()) {
-      alert('Nombre completo y Teléfono son requeridos.');
+    if (!custFirstName.trim() || !custLastName.trim() || !custPhone.trim()) {
+      alert('Nombre, apellido y Teléfono son requeridos.');
       return;
     }
 
     setCustCreating(true);
     try {
       const res = await customerService.create({
-        full_name: custFullName.trim(),
+        first_name: custFirstName.trim(),
+        last_name: custLastName.trim(),
         phone: custPhone.trim(),
         email: custEmail.trim(),
         tax_id: custIdent.trim()
@@ -154,7 +156,8 @@ export default function BookingsPage({ user }) {
         setSelectedCustomerId(res.data.id);
         
         // Reset customer sub-form
-        setCustFullName('');
+        setCustFirstName('');
+        setCustLastName('');
         setCustPhone('');
         setCustEmail('');
         setCustIdent('');
@@ -428,12 +431,17 @@ export default function BookingsPage({ user }) {
                   required
                 >
                   <option value="">-- Selecciona una cancha --</option>
-                  {courts.map(court => (
+                  {courts.filter(court => court.status === 'Available').map(court => (
                     <option key={court.id} value={court.id}>
-                      {court.court_name} ({court.status === 'Available' ? 'Disponible' : 'Ocupada/Mantenimiento'})
+                      {court.court_name}
                     </option>
                   ))}
                 </select>
+                {courts.length > 0 && courts.filter(c => c.status === 'Available').length === 0 && (
+                  <p style={{ fontSize: '12px', color: '#f59e0b', margin: '6px 0 0 0' }}>
+                    ⚠ No hay canchas disponibles en este momento. Todas están ocupadas, en mantenimiento o fuera de servicio.
+                  </p>
+                )}
               </div>
 
               {/* Cliente Selector or Quick Client Sub-form */}
@@ -467,25 +475,32 @@ export default function BookingsPage({ user }) {
                   // Quick Customer Form
                   <div className="quick-customer-section">
                     <h4>Registro Rápido de Cliente</h4>
-                    <div className="form-row-2">
-                      <div className="form-group">
-                        <input 
-                          type="text" 
-                          placeholder="Nombre Completo" 
-                          value={custFullName}
-                          onChange={(e) => setCustFullName(e.target.value)}
-                          required
+                    <div className="quick-customer-form animate-fade-in">
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                        <input
+                          type="text"
+                          placeholder="Nombre *"
+                          value={custFirstName}
+                          onChange={(e) => setCustFirstName(e.target.value)}
+                          disabled={custCreating}
+                        />
+                        <input
+                          type="text"
+                          placeholder="Apellido *"
+                          value={custLastName}
+                          onChange={(e) => setCustLastName(e.target.value)}
+                          disabled={custCreating}
                         />
                       </div>
-                      <div className="form-group">
-                        <input 
-                          type="text" 
-                          placeholder="Teléfono" 
-                          value={custPhone}
-                          onChange={(e) => setCustPhone(e.target.value)}
-                          required
-                        />
-                      </div>
+                    </div>
+                    <div className="form-group">
+                      <input 
+                        type="text" 
+                        placeholder="Teléfono" 
+                        value={custPhone}
+                        onChange={(e) => setCustPhone(e.target.value)}
+                        required
+                      />
                     </div>
                     <div className="form-row-2">
                       <div className="form-group">
@@ -509,7 +524,7 @@ export default function BookingsPage({ user }) {
                       type="button" 
                       className="btn-check-availability" 
                       onClick={handleCreateCustomerQuick}
-                      disabled={custCreating || !custFullName.trim() || !custPhone.trim()}
+                      disabled={custCreating || !custFirstName.trim() || !custLastName.trim()}
                       style={{ background: 'rgba(16, 185, 129, 0.1)', borderColor: 'rgba(16, 185, 129, 0.3)', color: '#10b981' }}
                     >
                       {custCreating ? <Loader2 size={12} className="spinner" /> : "Guardar Cliente"}

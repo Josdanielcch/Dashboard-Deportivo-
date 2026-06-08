@@ -66,6 +66,16 @@ export const bookingService = {
   },
 
   /**
+   * Actualiza los datos de una reserva (cancha, fecha, horas).
+   * @param {string|number} id - ID de la reserva.
+   * @param {object} bookingData - Nuevos datos.
+   * @returns {Promise<object>}
+   */
+  update: async (id, bookingData) => {
+    return api.put(`/bookings/${id}`, bookingData);
+  },
+
+  /**
    * Obtiene el historial de reservas de un cliente en específico.
    * @param {string|number} customerId - ID del cliente.
    * @returns {Promise<object>} Respuesta con el listado en `.data`.

@@ -2,12 +2,12 @@
 -- PostgreSQL database dump
 --
 
-\restrict kmOstqLLQQgmo4rpffDwyJRfNvSeBGg7VRhnbCkNk7uOaiLd6gPssuSxIetthAm
+\restrict 4MhBeVmX8TiKVQHDT9XzegIgtV2zI1KhA0uEasi1l1AziTPGOiXin84uixYh0n7
 
--- Dumped from database version 18.2 (0f4c1a9)
+-- Dumped from database version 18.4 (72c6e7c)
 -- Dumped by pg_dump version 18.3
 
--- Started on 2026-05-17 19:02:58
+-- Started on 2026-06-06 20:25:06
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -345,7 +345,7 @@ CREATE SEQUENCE public.audit_logs_id_seq
 ALTER SEQUENCE public.audit_logs_id_seq OWNER TO neondb_owner;
 
 --
--- TOC entry 3681 (class 0 OID 0)
+-- TOC entry 3686 (class 0 OID 0)
 -- Dependencies: 241
 -- Name: audit_logs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: neondb_owner
 --
@@ -389,7 +389,7 @@ CREATE SEQUENCE public.billings_id_seq
 ALTER SEQUENCE public.billings_id_seq OWNER TO neondb_owner;
 
 --
--- TOC entry 3682 (class 0 OID 0)
+-- TOC entry 3687 (class 0 OID 0)
 -- Dependencies: 245
 -- Name: billings_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: neondb_owner
 --
@@ -436,7 +436,7 @@ CREATE SEQUENCE public.bookings_id_seq
 ALTER SEQUENCE public.bookings_id_seq OWNER TO neondb_owner;
 
 --
--- TOC entry 3683 (class 0 OID 0)
+-- TOC entry 3688 (class 0 OID 0)
 -- Dependencies: 243
 -- Name: bookings_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: neondb_owner
 --
@@ -475,7 +475,7 @@ CREATE SEQUENCE public.courts_id_seq
 ALTER SEQUENCE public.courts_id_seq OWNER TO neondb_owner;
 
 --
--- TOC entry 3684 (class 0 OID 0)
+-- TOC entry 3689 (class 0 OID 0)
 -- Dependencies: 235
 -- Name: courts_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: neondb_owner
 --
@@ -493,6 +493,8 @@ CREATE TABLE public.customers (
     full_name character varying(100) NOT NULL,
     phone character varying(20),
     email character varying(100),
+    tax_id character varying(20),
+    outstanding_balance numeric(10,2) DEFAULT 0,
     CONSTRAINT check_valid_email CHECK (((email)::text ~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}$'::text))
 );
 
@@ -516,7 +518,7 @@ CREATE SEQUENCE public.customers_id_seq
 ALTER SEQUENCE public.customers_id_seq OWNER TO neondb_owner;
 
 --
--- TOC entry 3685 (class 0 OID 0)
+-- TOC entry 3690 (class 0 OID 0)
 -- Dependencies: 233
 -- Name: customers_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: neondb_owner
 --
@@ -554,7 +556,7 @@ CREATE SEQUENCE public.payment_methods_id_seq
 ALTER SEQUENCE public.payment_methods_id_seq OWNER TO neondb_owner;
 
 --
--- TOC entry 3686 (class 0 OID 0)
+-- TOC entry 3691 (class 0 OID 0)
 -- Dependencies: 237
 -- Name: payment_methods_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: neondb_owner
 --
@@ -598,7 +600,7 @@ CREATE SEQUENCE public.pending_charges_id_seq
 ALTER SEQUENCE public.pending_charges_id_seq OWNER TO neondb_owner;
 
 --
--- TOC entry 3687 (class 0 OID 0)
+-- TOC entry 3692 (class 0 OID 0)
 -- Dependencies: 247
 -- Name: pending_charges_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: neondb_owner
 --
@@ -638,7 +640,7 @@ CREATE SEQUENCE public.products_id_seq
 ALTER SEQUENCE public.products_id_seq OWNER TO neondb_owner;
 
 --
--- TOC entry 3688 (class 0 OID 0)
+-- TOC entry 3693 (class 0 OID 0)
 -- Dependencies: 239
 -- Name: products_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: neondb_owner
 --
@@ -677,7 +679,7 @@ CREATE SEQUENCE public.roles_id_seq
 ALTER SEQUENCE public.roles_id_seq OWNER TO neondb_owner;
 
 --
--- TOC entry 3689 (class 0 OID 0)
+-- TOC entry 3694 (class 0 OID 0)
 -- Dependencies: 229
 -- Name: roles_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: neondb_owner
 --
@@ -719,7 +721,7 @@ CREATE SEQUENCE public.sale_details_id_seq
 ALTER SEQUENCE public.sale_details_id_seq OWNER TO neondb_owner;
 
 --
--- TOC entry 3690 (class 0 OID 0)
+-- TOC entry 3695 (class 0 OID 0)
 -- Dependencies: 249
 -- Name: sale_details_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: neondb_owner
 --
@@ -740,7 +742,9 @@ CREATE TABLE public.users (
     role_id integer,
     status public.user_status DEFAULT 'Activated'::public.user_status,
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    email text
+    email text NOT NULL,
+    reset_token character varying(255),
+    reset_token_expires timestamp without time zone
 );
 
 
@@ -763,7 +767,7 @@ CREATE SEQUENCE public.users_id_seq
 ALTER SEQUENCE public.users_id_seq OWNER TO neondb_owner;
 
 --
--- TOC entry 3691 (class 0 OID 0)
+-- TOC entry 3696 (class 0 OID 0)
 -- Dependencies: 231
 -- Name: users_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: neondb_owner
 --
@@ -772,7 +776,7 @@ ALTER SEQUENCE public.users_id_seq OWNED BY public.users.id;
 
 
 --
--- TOC entry 3399 (class 2604 OID 24682)
+-- TOC entry 3400 (class 2604 OID 24682)
 -- Name: audit_logs id; Type: DEFAULT; Schema: public; Owner: neondb_owner
 --
 
@@ -780,7 +784,7 @@ ALTER TABLE ONLY public.audit_logs ALTER COLUMN id SET DEFAULT nextval('public.a
 
 
 --
--- TOC entry 3405 (class 2604 OID 24702)
+-- TOC entry 3406 (class 2604 OID 24702)
 -- Name: billings id; Type: DEFAULT; Schema: public; Owner: neondb_owner
 --
 
@@ -788,7 +792,7 @@ ALTER TABLE ONLY public.billings ALTER COLUMN id SET DEFAULT nextval('public.bil
 
 
 --
--- TOC entry 3401 (class 2604 OID 24693)
+-- TOC entry 3402 (class 2604 OID 24693)
 -- Name: bookings id; Type: DEFAULT; Schema: public; Owner: neondb_owner
 --
 
@@ -796,7 +800,7 @@ ALTER TABLE ONLY public.bookings ALTER COLUMN id SET DEFAULT nextval('public.boo
 
 
 --
--- TOC entry 3394 (class 2604 OID 24652)
+-- TOC entry 3395 (class 2604 OID 24652)
 -- Name: courts id; Type: DEFAULT; Schema: public; Owner: neondb_owner
 --
 
@@ -812,7 +816,7 @@ ALTER TABLE ONLY public.customers ALTER COLUMN id SET DEFAULT nextval('public.cu
 
 
 --
--- TOC entry 3396 (class 2604 OID 24662)
+-- TOC entry 3397 (class 2604 OID 24662)
 -- Name: payment_methods id; Type: DEFAULT; Schema: public; Owner: neondb_owner
 --
 
@@ -820,7 +824,7 @@ ALTER TABLE ONLY public.payment_methods ALTER COLUMN id SET DEFAULT nextval('pub
 
 
 --
--- TOC entry 3409 (class 2604 OID 24711)
+-- TOC entry 3410 (class 2604 OID 24711)
 -- Name: pending_charges id; Type: DEFAULT; Schema: public; Owner: neondb_owner
 --
 
@@ -828,7 +832,7 @@ ALTER TABLE ONLY public.pending_charges ALTER COLUMN id SET DEFAULT nextval('pub
 
 
 --
--- TOC entry 3397 (class 2604 OID 24671)
+-- TOC entry 3398 (class 2604 OID 24671)
 -- Name: products id; Type: DEFAULT; Schema: public; Owner: neondb_owner
 --
 
@@ -844,7 +848,7 @@ ALTER TABLE ONLY public.roles ALTER COLUMN id SET DEFAULT nextval('public.roles_
 
 
 --
--- TOC entry 3412 (class 2604 OID 24721)
+-- TOC entry 3413 (class 2604 OID 24721)
 -- Name: sale_details id; Type: DEFAULT; Schema: public; Owner: neondb_owner
 --
 
@@ -860,7 +864,7 @@ ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_
 
 
 --
--- TOC entry 3647 (class 0 OID 16567)
+-- TOC entry 3652 (class 0 OID 16567)
 -- Dependencies: 222
 -- Data for Name: account; Type: TABLE DATA; Schema: neon_auth; Owner: neon_auth
 --
@@ -870,7 +874,7 @@ COPY neon_auth.account (id, "accountId", "providerId", "userId", "accessToken", 
 
 
 --
--- TOC entry 3652 (class 0 OID 16652)
+-- TOC entry 3657 (class 0 OID 16652)
 -- Dependencies: 227
 -- Data for Name: invitation; Type: TABLE DATA; Schema: neon_auth; Owner: neon_auth
 --
@@ -880,7 +884,7 @@ COPY neon_auth.invitation (id, "organizationId", email, role, status, "expiresAt
 
 
 --
--- TOC entry 3649 (class 0 OID 16603)
+-- TOC entry 3654 (class 0 OID 16603)
 -- Dependencies: 224
 -- Data for Name: jwks; Type: TABLE DATA; Schema: neon_auth; Owner: neon_auth
 --
@@ -890,7 +894,7 @@ COPY neon_auth.jwks (id, "publicKey", "privateKey", "createdAt", "expiresAt") FR
 
 
 --
--- TOC entry 3651 (class 0 OID 16629)
+-- TOC entry 3656 (class 0 OID 16629)
 -- Dependencies: 226
 -- Data for Name: member; Type: TABLE DATA; Schema: neon_auth; Owner: neon_auth
 --
@@ -900,7 +904,7 @@ COPY neon_auth.member (id, "organizationId", "userId", role, "createdAt") FROM s
 
 
 --
--- TOC entry 3650 (class 0 OID 16615)
+-- TOC entry 3655 (class 0 OID 16615)
 -- Dependencies: 225
 -- Data for Name: organization; Type: TABLE DATA; Schema: neon_auth; Owner: neon_auth
 --
@@ -910,7 +914,7 @@ COPY neon_auth.organization (id, name, slug, logo, "createdAt", metadata) FROM s
 
 
 --
--- TOC entry 3653 (class 0 OID 16678)
+-- TOC entry 3658 (class 0 OID 16678)
 -- Dependencies: 228
 -- Data for Name: project_config; Type: TABLE DATA; Schema: neon_auth; Owner: neon_auth
 --
@@ -921,7 +925,7 @@ COPY neon_auth.project_config (id, name, endpoint_id, created_at, updated_at, tr
 
 
 --
--- TOC entry 3646 (class 0 OID 16545)
+-- TOC entry 3651 (class 0 OID 16545)
 -- Dependencies: 221
 -- Data for Name: session; Type: TABLE DATA; Schema: neon_auth; Owner: neon_auth
 --
@@ -931,7 +935,7 @@ COPY neon_auth.session (id, "expiresAt", token, "createdAt", "updatedAt", "ipAdd
 
 
 --
--- TOC entry 3645 (class 0 OID 16527)
+-- TOC entry 3650 (class 0 OID 16527)
 -- Dependencies: 220
 -- Data for Name: user; Type: TABLE DATA; Schema: neon_auth; Owner: neon_auth
 --
@@ -941,7 +945,7 @@ COPY neon_auth."user" (id, name, email, "emailVerified", image, "createdAt", "up
 
 
 --
--- TOC entry 3648 (class 0 OID 16587)
+-- TOC entry 3653 (class 0 OID 16587)
 -- Dependencies: 223
 -- Data for Name: verification; Type: TABLE DATA; Schema: neon_auth; Owner: neon_auth
 --
@@ -951,7 +955,7 @@ COPY neon_auth.verification (id, identifier, value, "expiresAt", "createdAt", "u
 
 
 --
--- TOC entry 3667 (class 0 OID 24679)
+-- TOC entry 3672 (class 0 OID 24679)
 -- Dependencies: 242
 -- Data for Name: audit_logs; Type: TABLE DATA; Schema: public; Owner: neondb_owner
 --
@@ -961,7 +965,7 @@ COPY public.audit_logs (id, action_type, table_name, record_id, old_value, new_v
 
 
 --
--- TOC entry 3671 (class 0 OID 24699)
+-- TOC entry 3676 (class 0 OID 24699)
 -- Dependencies: 246
 -- Data for Name: billings; Type: TABLE DATA; Schema: public; Owner: neondb_owner
 --
@@ -973,7 +977,7 @@ COPY public.billings (id, booking_id, payment_method_id, total_amount, payment_d
 
 
 --
--- TOC entry 3669 (class 0 OID 24690)
+-- TOC entry 3674 (class 0 OID 24690)
 -- Dependencies: 244
 -- Data for Name: bookings; Type: TABLE DATA; Schema: public; Owner: neondb_owner
 --
@@ -984,41 +988,62 @@ COPY public.bookings (id, customer_id, court_id, user_id, booking_date, start_ti
 3	3	2	4	2026-04-27	20:00:00	21:00:00	Paid	2026-04-29 01:51:33.346425	2026-04-29 01:51:33.611128
 4	4	5	4	2026-04-27	17:00:00	18:30:00	Cancelled	2026-04-29 01:51:33.346425	2026-04-29 01:51:33.611128
 5	5	1	3	2026-04-28	19:00:00	20:00:00	Pending	2026-04-29 01:51:33.346425	2026-04-29 01:51:33.611128
+6	8	1	\N	2026-06-06	14:30:00	16:00:00	Pending	2026-06-04 16:36:39.064522	2026-06-04 16:36:39.064522
+7	8	3	\N	2026-06-06	14:30:00	16:00:00	Pending	2026-06-04 16:38:10.194761	2026-06-04 16:38:10.194761
+8	6	3	\N	2026-06-06	13:00:00	14:30:00	Pending	2026-06-04 16:44:00.801949	2026-06-04 16:44:00.801949
+9	9	3	\N	2026-06-07	08:30:00	10:00:00	Pending	2026-06-04 20:38:09.428942	2026-06-04 20:38:09.428942
+10	10	2	\N	2026-06-25	16:00:00	17:30:00	Pending	2026-06-05 21:29:12.006561	2026-06-05 21:29:12.006561
+11	11	6	\N	2026-06-06	19:00:00	20:30:00	Pending	2026-06-05 21:30:56.064454	2026-06-05 21:30:56.064454
+13	13	1	\N	2026-06-11	08:30:00	10:00:00	Pending	2026-06-05 21:38:29.788231	2026-06-05 21:38:29.788231
+14	14	1	\N	2026-06-10	08:30:00	10:00:00	Pending	2026-06-05 21:39:47.878569	2026-06-05 21:39:47.878569
+15	6	1	\N	2026-06-30	10:00:00	11:30:00	Pending	2026-06-05 21:58:01.245125	2026-06-05 21:58:01.245125
+16	1	7	1	2026-06-28	16:00:00	19:00:00	Pending	2026-06-06 23:57:06.64397	2026-06-06 23:57:06.64397
 \.
 
 
 --
--- TOC entry 3661 (class 0 OID 24649)
+-- TOC entry 3666 (class 0 OID 24649)
 -- Dependencies: 236
 -- Data for Name: courts; Type: TABLE DATA; Schema: public; Owner: neondb_owner
 --
 
 COPY public.courts (id, court_name, status) FROM stdin;
-1	Main Soccer Field	Available
-2	Futsal Court 1	Occupied
 3	Tennis Court A	Available
-4	Basketball Court 1	Maintenance
 5	Padel Court 1	Available
+2	Futsal Court 1	Available
+1	Main Soccer Field	Available
+6	Cancha de San pedro	Available
+4	Basketball Court 1	Available
+7	Cancha Gramalote	Maintenance
 \.
 
 
 --
--- TOC entry 3659 (class 0 OID 24640)
+-- TOC entry 3664 (class 0 OID 24640)
 -- Dependencies: 234
 -- Data for Name: customers; Type: TABLE DATA; Schema: public; Owner: neondb_owner
 --
 
-COPY public.customers (id, full_name, phone, email) FROM stdin;
-1	Juan Méndez	0414-1234567	juan@email.com
-2	Ana Colmenares	0424-7654321	ana@email.com
-3	Pedro Briceño	0412-9876543	pedro@email.com
-4	Carla Sánchez	0416-1112233	carla@email.com
-5	Roberto Mora	0426-4445566	roberto@email.com
+COPY public.customers (id, full_name, phone, email, tax_id, outstanding_balance) FROM stdin;
+7	MARLON RANGEL	3123408488	marlonandrei@gmail.com	29456123	0.00
+6	JOSEDANIEL CARVAJAL	0412-3129425	josdanielcch@gmail.com	27462797	0.00
+5	ROBERTO MORA	0426-4445566	roberto@email.com	15990468	0.00
+4	CARLA SANCHEZ	0416-1112233	carla@email.com	5660761	0.00
+3	PEDRO BRICEÑO	0412-9876543	pedro@email.com	4210184	0.00
+2	ANA COLMENARES	0424-7654321	ana@email.com	15858097	0.00
+1	JUAN MENDEZ	0414-1234567	juan@email.com	27456789	0.00
+8	Arturo Carvajal	04147116859	arturojose@gmail.com	\N	0.00
+9	Julio barragan	5147955	jcbarragan1994@gmail.com	\N	0.00
+10	Jugador Google	+52 55 9999 8888	deporte.google@courtconnect.com	\N	0.00
+11	Coreli roa	04225746730	arimarcoreli@gmail.com	\N	0.00
+12	Anderson	+584247344904	larteas0@gmail.com	\N	0.00
+13	Jugador Google	+52 55 9999 8888	deporte.google@courtconnect.com	\N	0.00
+14	Anderson	04247344904	edalcocu@gmail.com	\N	0.00
 \.
 
 
 --
--- TOC entry 3663 (class 0 OID 24659)
+-- TOC entry 3668 (class 0 OID 24659)
 -- Dependencies: 238
 -- Data for Name: payment_methods; Type: TABLE DATA; Schema: public; Owner: neondb_owner
 --
@@ -1036,7 +1061,7 @@ COPY public.payment_methods (id, method_name) FROM stdin;
 
 
 --
--- TOC entry 3673 (class 0 OID 24708)
+-- TOC entry 3678 (class 0 OID 24708)
 -- Dependencies: 248
 -- Data for Name: pending_charges; Type: TABLE DATA; Schema: public; Owner: neondb_owner
 --
@@ -1046,7 +1071,7 @@ COPY public.pending_charges (id, booking_id, customer_id, product_id, quantity, 
 
 
 --
--- TOC entry 3665 (class 0 OID 24668)
+-- TOC entry 3670 (class 0 OID 24668)
 -- Dependencies: 240
 -- Data for Name: products; Type: TABLE DATA; Schema: public; Owner: neondb_owner
 --
@@ -1061,7 +1086,7 @@ COPY public.products (id, product_name, price, stock) FROM stdin;
 
 
 --
--- TOC entry 3655 (class 0 OID 24613)
+-- TOC entry 3660 (class 0 OID 24613)
 -- Dependencies: 230
 -- Data for Name: roles; Type: TABLE DATA; Schema: public; Owner: neondb_owner
 --
@@ -1073,11 +1098,13 @@ COPY public.roles (id, role_name, description) FROM stdin;
 4	Staff	Front desk and customer service
 5	Support	System maintenance and logs
 6	Analyst	View reports and billing data
+7	Client	Website
+10	Client	Cliente Final del Sitio Web
 \.
 
 
 --
--- TOC entry 3675 (class 0 OID 24718)
+-- TOC entry 3680 (class 0 OID 24718)
 -- Dependencies: 250
 -- Data for Name: sale_details; Type: TABLE DATA; Schema: public; Owner: neondb_owner
 --
@@ -1087,23 +1114,26 @@ COPY public.sale_details (id, billing_id, products_id, quantity, price_unit, sub
 
 
 --
--- TOC entry 3657 (class 0 OID 24624)
+-- TOC entry 3662 (class 0 OID 24624)
 -- Dependencies: 232
 -- Data for Name: users; Type: TABLE DATA; Schema: public; Owner: neondb_owner
 --
 
-COPY public.users (id, username, password_hash, full_name, role_id, status, created_at, email) FROM stdin;
-2	manager_jose	hash_123	José Rodriguez	2	Activated	2026-04-26 14:39:38.109275	\N
-3	staff_maria	hash_123	María Pérez	3	Activated	2026-04-26 14:39:38.109275	\N
-4	staff_luis	hash_123	Luis García	3	Activated	2026-04-26 14:39:38.109275	\N
-1	admin_alex	$2a$12$eespS9aVeRdvpeB78RuGBudXxXO6QauTDKmybXhK0pbtyxS9xaJdS	Alex Táchira	1	Activated	2026-04-26 14:39:38.109275	\N
-5	admin_backup	$2a$12$xhgU42i4plyIZ5ZB8vrpA.LsqukezBWdvipLePbEkNGQHTmP.7EJK	Backup Admin	1	Activated	2026-04-26 14:39:38.109275	\N
-6	jose_unefa	$2a$10$GJuAKxtLOft6XwaokdBBE.N0AnuyPmrFankrVncFM4pI5pHOq1Ho.	Jose Daniel UNEFA	1	Activated	2026-05-15 19:13:50.145573	\N
+COPY public.users (id, username, password_hash, full_name, role_id, status, created_at, email, reset_token, reset_token_expires) FROM stdin;
+18	jcbarragan1994@gmail.com	$2a$10$n4bzWAdSpFvKVA9HI.qny.qo5QK4ytFSR.mgxUGy88BIzAxNLq1bO	Julio barragan	10	Activated	2026-06-04 20:36:49.450239	jcbarragan1994@gmail.com	9cff63693383d74b545941f929bb8e0fca1e3f71f22e38e2cc3120ec8802c21f	2026-06-04 17:41:02.356
+19	edalcocu@gmail.com	$2a$10$mempKOj2BDX9wo78/.Rin.By7SZnYNr0bsouOzYkQNoTL9XcdfGBC	Anderson	10	Activated	2026-06-05 21:39:32.91221	edalcocu@gmail.com	\N	\N
+4	staff_luis	hash_123	Luis García	3	Activated	2026-04-26 14:39:38.109275	luis_garcia@test.com	\N	\N
+5	admin_backup	$2a$12$xhgU42i4plyIZ5ZB8vrpA.LsqukezBWdvipLePbEkNGQHTmP.7EJK	Backup Admin	1	Activated	2026-04-26 14:39:38.109275	backup_admin@test.com	\N	\N
+6	josdanielcch@gmail.com	admin1411	Josedaniel Carvajal	1	Activated	2026-05-15 19:13:50.145573	josdanielcch@gmail.com	31d308f6119894a93e29e0c8e3f1d81dfc888d5f339977def8ec47bb106f1277	2026-06-05 19:16:44.575
+2	Coreli Roa	hash_123	Coreli Roa	1	Activated	2026-04-26 14:39:38.109275	arimarcoreli@gmail.com	c31cb78ebf47c5e3bda697d82c4ab99fb62383d55b2b56a376fb0aae0a68ff9a	2026-05-17 21:56:26.666
+1	Carlos Chacon	Admin123456	Carlos Quintana	1	Activated	2026-04-26 14:39:38.109275	chaconvargascarlosmanuel@gmail.com	77c1e87c9c078ec3155c4b82d4a9e8a9564b095cc36e4ba54e8d679dd9ae2dba	2026-05-17 22:00:10.803
+3	Marlon Rangel	hash_123	Marlon Rangel	3	Activated	2026-04-26 14:39:38.109275	rangelmarlon2001@gmail.com	62ddbf72e217fe45ec82255f01533fbeeb67ca7b1229f84b152e2ec4f2285d72	2026-05-17 23:16:53.981
+15	arturojose@gmail.com	Arturo123	Arturo Carvajal	10	Activated	2026-06-04 16:29:41.736852	arturojose@gmail.com	\N	\N
 \.
 
 
 --
--- TOC entry 3692 (class 0 OID 0)
+-- TOC entry 3697 (class 0 OID 0)
 -- Dependencies: 241
 -- Name: audit_logs_id_seq; Type: SEQUENCE SET; Schema: public; Owner: neondb_owner
 --
@@ -1112,7 +1142,7 @@ SELECT pg_catalog.setval('public.audit_logs_id_seq', 1, false);
 
 
 --
--- TOC entry 3693 (class 0 OID 0)
+-- TOC entry 3698 (class 0 OID 0)
 -- Dependencies: 245
 -- Name: billings_id_seq; Type: SEQUENCE SET; Schema: public; Owner: neondb_owner
 --
@@ -1121,34 +1151,34 @@ SELECT pg_catalog.setval('public.billings_id_seq', 2, true);
 
 
 --
--- TOC entry 3694 (class 0 OID 0)
+-- TOC entry 3699 (class 0 OID 0)
 -- Dependencies: 243
 -- Name: bookings_id_seq; Type: SEQUENCE SET; Schema: public; Owner: neondb_owner
 --
 
-SELECT pg_catalog.setval('public.bookings_id_seq', 5, true);
+SELECT pg_catalog.setval('public.bookings_id_seq', 16, true);
 
 
 --
--- TOC entry 3695 (class 0 OID 0)
+-- TOC entry 3700 (class 0 OID 0)
 -- Dependencies: 235
 -- Name: courts_id_seq; Type: SEQUENCE SET; Schema: public; Owner: neondb_owner
 --
 
-SELECT pg_catalog.setval('public.courts_id_seq', 5, true);
+SELECT pg_catalog.setval('public.courts_id_seq', 7, true);
 
 
 --
--- TOC entry 3696 (class 0 OID 0)
+-- TOC entry 3701 (class 0 OID 0)
 -- Dependencies: 233
 -- Name: customers_id_seq; Type: SEQUENCE SET; Schema: public; Owner: neondb_owner
 --
 
-SELECT pg_catalog.setval('public.customers_id_seq', 5, true);
+SELECT pg_catalog.setval('public.customers_id_seq', 14, true);
 
 
 --
--- TOC entry 3697 (class 0 OID 0)
+-- TOC entry 3702 (class 0 OID 0)
 -- Dependencies: 237
 -- Name: payment_methods_id_seq; Type: SEQUENCE SET; Schema: public; Owner: neondb_owner
 --
@@ -1157,7 +1187,7 @@ SELECT pg_catalog.setval('public.payment_methods_id_seq', 8, true);
 
 
 --
--- TOC entry 3698 (class 0 OID 0)
+-- TOC entry 3703 (class 0 OID 0)
 -- Dependencies: 247
 -- Name: pending_charges_id_seq; Type: SEQUENCE SET; Schema: public; Owner: neondb_owner
 --
@@ -1166,7 +1196,7 @@ SELECT pg_catalog.setval('public.pending_charges_id_seq', 1, false);
 
 
 --
--- TOC entry 3699 (class 0 OID 0)
+-- TOC entry 3704 (class 0 OID 0)
 -- Dependencies: 239
 -- Name: products_id_seq; Type: SEQUENCE SET; Schema: public; Owner: neondb_owner
 --
@@ -1175,16 +1205,16 @@ SELECT pg_catalog.setval('public.products_id_seq', 5, true);
 
 
 --
--- TOC entry 3700 (class 0 OID 0)
+-- TOC entry 3705 (class 0 OID 0)
 -- Dependencies: 229
 -- Name: roles_id_seq; Type: SEQUENCE SET; Schema: public; Owner: neondb_owner
 --
 
-SELECT pg_catalog.setval('public.roles_id_seq', 6, true);
+SELECT pg_catalog.setval('public.roles_id_seq', 7, true);
 
 
 --
--- TOC entry 3701 (class 0 OID 0)
+-- TOC entry 3706 (class 0 OID 0)
 -- Dependencies: 249
 -- Name: sale_details_id_seq; Type: SEQUENCE SET; Schema: public; Owner: neondb_owner
 --
@@ -1193,16 +1223,16 @@ SELECT pg_catalog.setval('public.sale_details_id_seq', 1, false);
 
 
 --
--- TOC entry 3702 (class 0 OID 0)
+-- TOC entry 3707 (class 0 OID 0)
 -- Dependencies: 231
 -- Name: users_id_seq; Type: SEQUENCE SET; Schema: public; Owner: neondb_owner
 --
 
-SELECT pg_catalog.setval('public.users_id_seq', 6, true);
+SELECT pg_catalog.setval('public.users_id_seq', 19, true);
 
 
 --
--- TOC entry 3426 (class 2606 OID 16581)
+-- TOC entry 3427 (class 2606 OID 16581)
 -- Name: account account_pkey; Type: CONSTRAINT; Schema: neon_auth; Owner: neon_auth
 --
 
@@ -1211,7 +1241,7 @@ ALTER TABLE ONLY neon_auth.account
 
 
 --
--- TOC entry 3445 (class 2606 OID 16667)
+-- TOC entry 3446 (class 2606 OID 16667)
 -- Name: invitation invitation_pkey; Type: CONSTRAINT; Schema: neon_auth; Owner: neon_auth
 --
 
@@ -1220,7 +1250,7 @@ ALTER TABLE ONLY neon_auth.invitation
 
 
 --
--- TOC entry 3432 (class 2606 OID 16614)
+-- TOC entry 3433 (class 2606 OID 16614)
 -- Name: jwks jwks_pkey; Type: CONSTRAINT; Schema: neon_auth; Owner: neon_auth
 --
 
@@ -1229,7 +1259,7 @@ ALTER TABLE ONLY neon_auth.jwks
 
 
 --
--- TOC entry 3440 (class 2606 OID 16641)
+-- TOC entry 3441 (class 2606 OID 16641)
 -- Name: member member_pkey; Type: CONSTRAINT; Schema: neon_auth; Owner: neon_auth
 --
 
@@ -1238,7 +1268,7 @@ ALTER TABLE ONLY neon_auth.member
 
 
 --
--- TOC entry 3434 (class 2606 OID 16626)
+-- TOC entry 3435 (class 2606 OID 16626)
 -- Name: organization organization_pkey; Type: CONSTRAINT; Schema: neon_auth; Owner: neon_auth
 --
 
@@ -1247,7 +1277,7 @@ ALTER TABLE ONLY neon_auth.organization
 
 
 --
--- TOC entry 3436 (class 2606 OID 16628)
+-- TOC entry 3437 (class 2606 OID 16628)
 -- Name: organization organization_slug_key; Type: CONSTRAINT; Schema: neon_auth; Owner: neon_auth
 --
 
@@ -1256,7 +1286,7 @@ ALTER TABLE ONLY neon_auth.organization
 
 
 --
--- TOC entry 3447 (class 2606 OID 16697)
+-- TOC entry 3448 (class 2606 OID 16697)
 -- Name: project_config project_config_endpoint_id_key; Type: CONSTRAINT; Schema: neon_auth; Owner: neon_auth
 --
 
@@ -1265,7 +1295,7 @@ ALTER TABLE ONLY neon_auth.project_config
 
 
 --
--- TOC entry 3449 (class 2606 OID 16695)
+-- TOC entry 3450 (class 2606 OID 16695)
 -- Name: project_config project_config_pkey; Type: CONSTRAINT; Schema: neon_auth; Owner: neon_auth
 --
 
@@ -1274,7 +1304,7 @@ ALTER TABLE ONLY neon_auth.project_config
 
 
 --
--- TOC entry 3421 (class 2606 OID 16559)
+-- TOC entry 3422 (class 2606 OID 16559)
 -- Name: session session_pkey; Type: CONSTRAINT; Schema: neon_auth; Owner: neon_auth
 --
 
@@ -1283,7 +1313,7 @@ ALTER TABLE ONLY neon_auth.session
 
 
 --
--- TOC entry 3423 (class 2606 OID 16561)
+-- TOC entry 3424 (class 2606 OID 16561)
 -- Name: session session_token_key; Type: CONSTRAINT; Schema: neon_auth; Owner: neon_auth
 --
 
@@ -1292,7 +1322,7 @@ ALTER TABLE ONLY neon_auth.session
 
 
 --
--- TOC entry 3417 (class 2606 OID 16544)
+-- TOC entry 3418 (class 2606 OID 16544)
 -- Name: user user_email_key; Type: CONSTRAINT; Schema: neon_auth; Owner: neon_auth
 --
 
@@ -1301,7 +1331,7 @@ ALTER TABLE ONLY neon_auth."user"
 
 
 --
--- TOC entry 3419 (class 2606 OID 16542)
+-- TOC entry 3420 (class 2606 OID 16542)
 -- Name: user user_pkey; Type: CONSTRAINT; Schema: neon_auth; Owner: neon_auth
 --
 
@@ -1310,7 +1340,7 @@ ALTER TABLE ONLY neon_auth."user"
 
 
 --
--- TOC entry 3430 (class 2606 OID 16602)
+-- TOC entry 3431 (class 2606 OID 16602)
 -- Name: verification verification_pkey; Type: CONSTRAINT; Schema: neon_auth; Owner: neon_auth
 --
 
@@ -1319,7 +1349,7 @@ ALTER TABLE ONLY neon_auth.verification
 
 
 --
--- TOC entry 3467 (class 2606 OID 24688)
+-- TOC entry 3472 (class 2606 OID 24688)
 -- Name: audit_logs audit_logs_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -1328,7 +1358,7 @@ ALTER TABLE ONLY public.audit_logs
 
 
 --
--- TOC entry 3476 (class 2606 OID 24706)
+-- TOC entry 3481 (class 2606 OID 24706)
 -- Name: billings billings_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -1337,7 +1367,7 @@ ALTER TABLE ONLY public.billings
 
 
 --
--- TOC entry 3469 (class 2606 OID 24697)
+-- TOC entry 3474 (class 2606 OID 24697)
 -- Name: bookings bookings_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -1346,7 +1376,7 @@ ALTER TABLE ONLY public.bookings
 
 
 --
--- TOC entry 3461 (class 2606 OID 24657)
+-- TOC entry 3466 (class 2606 OID 24657)
 -- Name: courts courts_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -1355,7 +1385,7 @@ ALTER TABLE ONLY public.courts
 
 
 --
--- TOC entry 3458 (class 2606 OID 24647)
+-- TOC entry 3461 (class 2606 OID 24647)
 -- Name: customers customers_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -1364,7 +1394,16 @@ ALTER TABLE ONLY public.customers
 
 
 --
--- TOC entry 3463 (class 2606 OID 24666)
+-- TOC entry 3463 (class 2606 OID 57345)
+-- Name: customers customers_tax_id_key; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.customers
+    ADD CONSTRAINT customers_tax_id_key UNIQUE (tax_id);
+
+
+--
+-- TOC entry 3468 (class 2606 OID 24666)
 -- Name: payment_methods payment_methods_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -1373,7 +1412,7 @@ ALTER TABLE ONLY public.payment_methods
 
 
 --
--- TOC entry 3478 (class 2606 OID 24716)
+-- TOC entry 3483 (class 2606 OID 24716)
 -- Name: pending_charges pending_charges_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -1382,7 +1421,7 @@ ALTER TABLE ONLY public.pending_charges
 
 
 --
--- TOC entry 3465 (class 2606 OID 24677)
+-- TOC entry 3470 (class 2606 OID 24677)
 -- Name: products products_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -1391,7 +1430,7 @@ ALTER TABLE ONLY public.products
 
 
 --
--- TOC entry 3451 (class 2606 OID 24622)
+-- TOC entry 3452 (class 2606 OID 24622)
 -- Name: roles roles_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -1400,7 +1439,7 @@ ALTER TABLE ONLY public.roles
 
 
 --
--- TOC entry 3480 (class 2606 OID 24727)
+-- TOC entry 3485 (class 2606 OID 24727)
 -- Name: sale_details sale_details_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -1409,7 +1448,7 @@ ALTER TABLE ONLY public.sale_details
 
 
 --
--- TOC entry 3474 (class 2606 OID 40970)
+-- TOC entry 3479 (class 2606 OID 40970)
 -- Name: bookings unique_court_time; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -1418,7 +1457,16 @@ ALTER TABLE ONLY public.bookings
 
 
 --
--- TOC entry 3454 (class 2606 OID 24636)
+-- TOC entry 3455 (class 2606 OID 49154)
+-- Name: users users_email_unique; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_email_unique UNIQUE (email);
+
+
+--
+-- TOC entry 3457 (class 2606 OID 24636)
 -- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -1427,7 +1475,7 @@ ALTER TABLE ONLY public.users
 
 
 --
--- TOC entry 3456 (class 2606 OID 24638)
+-- TOC entry 3459 (class 2606 OID 24638)
 -- Name: users users_username_key; Type: CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -1436,7 +1484,7 @@ ALTER TABLE ONLY public.users
 
 
 --
--- TOC entry 3427 (class 1259 OID 16699)
+-- TOC entry 3428 (class 1259 OID 16699)
 -- Name: account_userId_idx; Type: INDEX; Schema: neon_auth; Owner: neon_auth
 --
 
@@ -1444,7 +1492,7 @@ CREATE INDEX "account_userId_idx" ON neon_auth.account USING btree ("userId");
 
 
 --
--- TOC entry 3442 (class 1259 OID 16705)
+-- TOC entry 3443 (class 1259 OID 16705)
 -- Name: invitation_email_idx; Type: INDEX; Schema: neon_auth; Owner: neon_auth
 --
 
@@ -1452,7 +1500,7 @@ CREATE INDEX invitation_email_idx ON neon_auth.invitation USING btree (email);
 
 
 --
--- TOC entry 3443 (class 1259 OID 16704)
+-- TOC entry 3444 (class 1259 OID 16704)
 -- Name: invitation_organizationId_idx; Type: INDEX; Schema: neon_auth; Owner: neon_auth
 --
 
@@ -1460,7 +1508,7 @@ CREATE INDEX "invitation_organizationId_idx" ON neon_auth.invitation USING btree
 
 
 --
--- TOC entry 3438 (class 1259 OID 16702)
+-- TOC entry 3439 (class 1259 OID 16702)
 -- Name: member_organizationId_idx; Type: INDEX; Schema: neon_auth; Owner: neon_auth
 --
 
@@ -1468,7 +1516,7 @@ CREATE INDEX "member_organizationId_idx" ON neon_auth.member USING btree ("organ
 
 
 --
--- TOC entry 3441 (class 1259 OID 16703)
+-- TOC entry 3442 (class 1259 OID 16703)
 -- Name: member_userId_idx; Type: INDEX; Schema: neon_auth; Owner: neon_auth
 --
 
@@ -1476,7 +1524,7 @@ CREATE INDEX "member_userId_idx" ON neon_auth.member USING btree ("userId");
 
 
 --
--- TOC entry 3437 (class 1259 OID 16701)
+-- TOC entry 3438 (class 1259 OID 16701)
 -- Name: organization_slug_uidx; Type: INDEX; Schema: neon_auth; Owner: neon_auth
 --
 
@@ -1484,7 +1532,7 @@ CREATE UNIQUE INDEX organization_slug_uidx ON neon_auth.organization USING btree
 
 
 --
--- TOC entry 3424 (class 1259 OID 16698)
+-- TOC entry 3425 (class 1259 OID 16698)
 -- Name: session_userId_idx; Type: INDEX; Schema: neon_auth; Owner: neon_auth
 --
 
@@ -1492,7 +1540,7 @@ CREATE INDEX "session_userId_idx" ON neon_auth.session USING btree ("userId");
 
 
 --
--- TOC entry 3428 (class 1259 OID 16700)
+-- TOC entry 3429 (class 1259 OID 16700)
 -- Name: verification_identifier_idx; Type: INDEX; Schema: neon_auth; Owner: neon_auth
 --
 
@@ -1500,7 +1548,7 @@ CREATE INDEX verification_identifier_idx ON neon_auth.verification USING btree (
 
 
 --
--- TOC entry 3470 (class 1259 OID 40964)
+-- TOC entry 3475 (class 1259 OID 40964)
 -- Name: idx_bookings_court; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -1508,7 +1556,7 @@ CREATE INDEX idx_bookings_court ON public.bookings USING btree (court_id);
 
 
 --
--- TOC entry 3471 (class 1259 OID 40963)
+-- TOC entry 3476 (class 1259 OID 40963)
 -- Name: idx_bookings_customer; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -1516,7 +1564,7 @@ CREATE INDEX idx_bookings_customer ON public.bookings USING btree (customer_id);
 
 
 --
--- TOC entry 3472 (class 1259 OID 40965)
+-- TOC entry 3477 (class 1259 OID 40965)
 -- Name: idx_bookings_date; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -1524,7 +1572,7 @@ CREATE INDEX idx_bookings_date ON public.bookings USING btree (booking_date);
 
 
 --
--- TOC entry 3459 (class 1259 OID 40962)
+-- TOC entry 3464 (class 1259 OID 40962)
 -- Name: idx_customers_email; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -1532,7 +1580,7 @@ CREATE INDEX idx_customers_email ON public.customers USING btree (email);
 
 
 --
--- TOC entry 3452 (class 1259 OID 40966)
+-- TOC entry 3453 (class 1259 OID 40966)
 -- Name: idx_users_username; Type: INDEX; Schema: public; Owner: neondb_owner
 --
 
@@ -1540,7 +1588,7 @@ CREATE INDEX idx_users_username ON public.users USING btree (username);
 
 
 --
--- TOC entry 3482 (class 2606 OID 16582)
+-- TOC entry 3487 (class 2606 OID 16582)
 -- Name: account account_userId_fkey; Type: FK CONSTRAINT; Schema: neon_auth; Owner: neon_auth
 --
 
@@ -1549,7 +1597,7 @@ ALTER TABLE ONLY neon_auth.account
 
 
 --
--- TOC entry 3485 (class 2606 OID 16673)
+-- TOC entry 3490 (class 2606 OID 16673)
 -- Name: invitation invitation_inviterId_fkey; Type: FK CONSTRAINT; Schema: neon_auth; Owner: neon_auth
 --
 
@@ -1558,7 +1606,7 @@ ALTER TABLE ONLY neon_auth.invitation
 
 
 --
--- TOC entry 3486 (class 2606 OID 16668)
+-- TOC entry 3491 (class 2606 OID 16668)
 -- Name: invitation invitation_organizationId_fkey; Type: FK CONSTRAINT; Schema: neon_auth; Owner: neon_auth
 --
 
@@ -1567,7 +1615,7 @@ ALTER TABLE ONLY neon_auth.invitation
 
 
 --
--- TOC entry 3483 (class 2606 OID 16642)
+-- TOC entry 3488 (class 2606 OID 16642)
 -- Name: member member_organizationId_fkey; Type: FK CONSTRAINT; Schema: neon_auth; Owner: neon_auth
 --
 
@@ -1576,7 +1624,7 @@ ALTER TABLE ONLY neon_auth.member
 
 
 --
--- TOC entry 3484 (class 2606 OID 16647)
+-- TOC entry 3489 (class 2606 OID 16647)
 -- Name: member member_userId_fkey; Type: FK CONSTRAINT; Schema: neon_auth; Owner: neon_auth
 --
 
@@ -1585,7 +1633,7 @@ ALTER TABLE ONLY neon_auth.member
 
 
 --
--- TOC entry 3481 (class 2606 OID 16562)
+-- TOC entry 3486 (class 2606 OID 16562)
 -- Name: session session_userId_fkey; Type: FK CONSTRAINT; Schema: neon_auth; Owner: neon_auth
 --
 
@@ -1594,7 +1642,7 @@ ALTER TABLE ONLY neon_auth.session
 
 
 --
--- TOC entry 3488 (class 2606 OID 24778)
+-- TOC entry 3493 (class 2606 OID 24778)
 -- Name: audit_logs fk_audit_user; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -1603,7 +1651,7 @@ ALTER TABLE ONLY public.audit_logs
 
 
 --
--- TOC entry 3496 (class 2606 OID 24768)
+-- TOC entry 3501 (class 2606 OID 24768)
 -- Name: sale_details fk_billing_id; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -1612,7 +1660,7 @@ ALTER TABLE ONLY public.sale_details
 
 
 --
--- TOC entry 3493 (class 2606 OID 24753)
+-- TOC entry 3498 (class 2606 OID 24753)
 -- Name: pending_charges fk_booking_id; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -1621,7 +1669,7 @@ ALTER TABLE ONLY public.pending_charges
 
 
 --
--- TOC entry 3489 (class 2606 OID 24733)
+-- TOC entry 3494 (class 2606 OID 24733)
 -- Name: bookings fk_court_id; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -1630,7 +1678,7 @@ ALTER TABLE ONLY public.bookings
 
 
 --
--- TOC entry 3490 (class 2606 OID 24738)
+-- TOC entry 3495 (class 2606 OID 24738)
 -- Name: bookings fk_customer_id; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -1639,7 +1687,7 @@ ALTER TABLE ONLY public.bookings
 
 
 --
--- TOC entry 3494 (class 2606 OID 24758)
+-- TOC entry 3499 (class 2606 OID 24758)
 -- Name: pending_charges fk_customer_id; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -1648,7 +1696,7 @@ ALTER TABLE ONLY public.pending_charges
 
 
 --
--- TOC entry 3492 (class 2606 OID 24748)
+-- TOC entry 3497 (class 2606 OID 24748)
 -- Name: billings fk_payment_method; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -1657,7 +1705,7 @@ ALTER TABLE ONLY public.billings
 
 
 --
--- TOC entry 3495 (class 2606 OID 24763)
+-- TOC entry 3500 (class 2606 OID 24763)
 -- Name: pending_charges fk_product_id; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -1666,7 +1714,7 @@ ALTER TABLE ONLY public.pending_charges
 
 
 --
--- TOC entry 3497 (class 2606 OID 24773)
+-- TOC entry 3502 (class 2606 OID 24773)
 -- Name: sale_details fk_products_id; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -1675,7 +1723,7 @@ ALTER TABLE ONLY public.sale_details
 
 
 --
--- TOC entry 3491 (class 2606 OID 24743)
+-- TOC entry 3496 (class 2606 OID 24743)
 -- Name: bookings fk_user_id; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -1684,7 +1732,7 @@ ALTER TABLE ONLY public.bookings
 
 
 --
--- TOC entry 3487 (class 2606 OID 24728)
+-- TOC entry 3492 (class 2606 OID 24728)
 -- Name: users fk_user_role; Type: FK CONSTRAINT; Schema: public; Owner: neondb_owner
 --
 
@@ -1708,11 +1756,11 @@ ALTER DEFAULT PRIVILEGES FOR ROLE cloud_admin IN SCHEMA public GRANT ALL ON SEQU
 ALTER DEFAULT PRIVILEGES FOR ROLE cloud_admin IN SCHEMA public GRANT ALL ON TABLES TO neon_superuser WITH GRANT OPTION;
 
 
--- Completed on 2026-05-17 19:03:07
+-- Completed on 2026-06-06 20:25:15
 
 --
 -- PostgreSQL database dump complete
 --
 
-\unrestrict kmOstqLLQQgmo4rpffDwyJRfNvSeBGg7VRhnbCkNk7uOaiLd6gPssuSxIetthAm
+\unrestrict 4MhBeVmX8TiKVQHDT9XzegIgtV2zI1KhA0uEasi1l1AziTPGOiXin84uixYh0n7
 

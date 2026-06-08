@@ -5,7 +5,7 @@ const bcrypt = require('bcryptjs');
 const getAllUsers = async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT id, username, full_name, role_id, status, created_at
+      SELECT id, username, first_name, last_name, role_id, status, created_at, first_name || ' ' || last_name AS full_name
       FROM users
       ORDER BY id
     `);
@@ -21,7 +21,7 @@ const getUserById = async (req, res) => {
   try {
     const { id } = req.params;
     const result = await pool.query(`
-      SELECT id, username, full_name, role_id, status, created_at
+      SELECT id, username, first_name, last_name, role_id, status, created_at, first_name || ' ' || last_name AS full_name
       FROM users WHERE id = $1
     `, [id]);
     
@@ -38,7 +38,7 @@ const getUserById = async (req, res) => {
 // Crear usuario
 const createUser = async (req, res) => {
   try {
-    const { username, password, full_name, role_id } = req.body;
+    const { username, password, first_name, last_name, role_id } = req.body;
 
     // Verificar si el usuario ya existe
     const userExist = await pool.query('SELECT id FROM users WHERE username = $1', [username]);
@@ -52,10 +52,10 @@ const createUser = async (req, res) => {
     
     // El status por defecto es 'Activated' según la BBDD
     const result = await pool.query(`
-      INSERT INTO users (username, password_hash, full_name, role_id)
-      VALUES ($1, $2, $3, $4)
-      RETURNING id, username, full_name, role_id, status, created_at
-    `, [username, password_hash, full_name, role_id || 1]); // role_id 1 por defecto (Admin, según semilla)
+      INSERT INTO users (username, password_hash, first_name, last_name, role_id)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING id, username, first_name, last_name, role_id, status, created_at, first_name || ' ' || last_name AS full_name
+    `, [username, password_hash, first_name, last_name, role_id || 1]); // role_id 1 por defecto (Admin, según semilla)
     
     res.status(201).json({ success: true, message: 'Usuario creado exitosamente', data: result.rows[0] });
   } catch (error) {
@@ -68,16 +68,17 @@ const createUser = async (req, res) => {
 const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const { full_name, role_id, status } = req.body;
+    const { first_name, last_name, role_id, status } = req.body;
     
     const result = await pool.query(`
       UPDATE users 
-      SET full_name = COALESCE($1, full_name),
-          role_id = COALESCE($2, role_id),
-          status = COALESCE($3, status)
-      WHERE id = $4
-      RETURNING id, username, full_name, role_id, status
-    `, [full_name, role_id, status, id]);
+      SET first_name = COALESCE($1, first_name),
+          last_name = COALESCE($2, last_name),
+          role_id = COALESCE($3, role_id),
+          status = COALESCE($4, status)
+      WHERE id = $5
+      RETURNING id, username, first_name, last_name, role_id, status, first_name || ' ' || last_name AS full_name
+    `, [first_name, last_name, role_id, status, id]);
     
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Usuario no encontrado' });

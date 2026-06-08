@@ -30,7 +30,8 @@ async function request(path: string, options: RequestInit = {}) {
 }
 
 export async function createCustomer(customer: {
-  full_name: string;
+  first_name: string;
+  last_name: string;
   email: string;
   phone: string;
 }) {
@@ -71,12 +72,13 @@ export async function checkAvailability(params: {
 
 export async function registerUser(payload: {
   username?: string;
-  full_name: string;
+  first_name: string;
+  last_name: string;
   email: string;
   phone: string;
   password: string;
 }) {
-  return request('/auth/register', {
+  return request('/auth/client/register', {
     method: 'POST',
     body: JSON.stringify(payload),
   });
@@ -86,7 +88,7 @@ export async function loginUser(payload: {
   username: string;
   password: string;
 }) {
-  return request('/auth/login', {
+  return request('/auth/client/login', {
     method: 'POST',
     body: JSON.stringify(payload),
   });
@@ -104,14 +106,14 @@ export async function updateBookingStatus(bookingId: number, status: string) {
 }
 
 export async function recoverPassword(email: string) {
-  return request('/auth/recover-password', {
+  return request('/auth/client/recover-password', {
     method: 'POST',
     body: JSON.stringify({ email }),
   });
 }
 
 export async function resetPassword(payload: { token: string; password: string }) {
-  return request('/auth/reset-password', {
+  return request('/auth/client/reset-password', {
     method: 'POST',
     body: JSON.stringify(payload),
   });

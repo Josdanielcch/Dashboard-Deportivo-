@@ -6,13 +6,13 @@ const getAllBookings = async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT b.id, b.booking_date, b.start_time, b.end_time, b.status,
-             c.full_name as customer_name, c.phone, 
+             c.first_name || ' ' || c.last_name as customer_name, c.phone, 
              co.court_name,
              u.username as created_by
       FROM bookings b
       JOIN customers c ON b.customer_id = c.id
       JOIN courts co ON b.court_id = co.id
-      JOIN users u ON b.user_id = u.id
+      LEFT JOIN users u ON b.user_id = u.id
       ORDER BY b.booking_date DESC, b.start_time
     `);
     res.json({ success: true, count: result.rows.length, data: result.rows });
@@ -28,7 +28,7 @@ const getBookingsByDate = async (req, res) => {
     const { date } = req.params;
     const result = await pool.query(`
       SELECT b.id, b.start_time, b.end_time, b.status,
-             c.full_name as customer_name,
+             c.first_name || ' ' || c.last_name as customer_name,
              co.court_name
       FROM bookings b
       JOIN customers c ON b.customer_id = c.id
@@ -172,6 +172,64 @@ const updateBookingStatus = async (req, res) => {
   }
 };
 
+// Actualizar datos de reserva (fecha, hora, cancha)
+const updateBooking = async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { id } = req.params;
+    const { court_id, booking_date, start_time, end_time } = req.body;
+    
+    await client.query('BEGIN');
+    
+    // 1. Obtener la reserva actual
+    const currentRes = await client.query('SELECT status FROM bookings WHERE id = $1', [id]);
+    if (currentRes.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Reserva no encontrada' });
+    }
+    
+    // No permitir editar si ya está confirmada (facturada) o completada
+    if (['Confirmed', 'Completed'].includes(currentRes.rows[0].status)) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'No se puede editar una reserva ya cobrada/confirmada. Debe anularse y crear una nueva.' });
+    }
+    
+    // 2. Verificar conflictos
+    const conflict = await client.query(`
+      SELECT COUNT(*) FROM bookings
+      WHERE court_id = $1 
+      AND booking_date = $2 
+      AND id != $3
+      AND status NOT IN ('Cancelled', 'No_show')
+      AND (start_time, end_time) OVERLAPS ($4::time, $5::time)
+    `, [court_id, booking_date, id, start_time, end_time]);
+    
+    if (parseInt(conflict.rows[0].count, 10) > 0) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: 'Horario o cancha no disponible' });
+    }
+    
+    // 3. Actualizar reserva
+    const result = await client.query(`
+      UPDATE bookings 
+      SET court_id = $1,
+          booking_date = $2,
+          start_time = $3,
+          end_time = $4
+      WHERE id = $5
+      RETURNING *
+    `, [court_id, booking_date, start_time, end_time, id]);
+    
+    await client.query('COMMIT');
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ error: 'Error al editar la reserva' });
+  } finally {
+    client.release();
+  }
+};
+
 // Obtener reservas de un cliente
 const getCustomerBookings = async (req, res) => {
   try {
@@ -195,5 +253,6 @@ module.exports = {
   checkAvailability,
   createBooking,
   updateBookingStatus,
+  updateBooking,
   getCustomerBookings
 };
