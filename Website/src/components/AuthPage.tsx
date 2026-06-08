@@ -31,7 +31,8 @@ export default function AuthPage({ onLoginSuccess, onCancel }: AuthPageProps) {
   }, []);
 
   // Registration form states
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -46,7 +47,7 @@ export default function AuthPage({ onLoginSuccess, onCancel }: AuthPageProps) {
     e.preventDefault();
     setError('');
 
-    if (!name.trim() || !phone.trim() || !email.trim() || !password.trim()) {
+    if (!firstName.trim() || !lastName.trim() || !phone.trim() || !email.trim() || !password.trim()) {
       setError('Por favor, completa todos los campos requeridos.');
       return;
     }
@@ -59,7 +60,8 @@ export default function AuthPage({ onLoginSuccess, onCancel }: AuthPageProps) {
     try {
       const payload = {
         username: email.trim().toLowerCase(),
-        full_name: name.trim(),
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
         email: email.trim().toLowerCase(),
         phone: phone.trim(),
         password: password.trim(),
@@ -67,7 +69,7 @@ export default function AuthPage({ onLoginSuccess, onCancel }: AuthPageProps) {
       const response = await registerUser(payload);
 
       const userSession: UserType = {
-        name: response.user.full_name ?? name.trim(),
+        name: response.user.full_name ?? `${firstName.trim()} ${lastName.trim()}`,
         email: email.trim().toLowerCase(),
         phone: phone.trim(),
         membershipLevel: membership,
@@ -275,20 +277,38 @@ export default function AuthPage({ onLoginSuccess, onCancel }: AuthPageProps) {
         {activeTab === 'register' ? (
           /* REGISTRATION FORM */
           <form onSubmit={handleRegisterSubmit} className="space-y-4">
-            <div className="space-y-1">
-              <label className="text-[10px] font-extrabold text-[#c0ff00] uppercase tracking-widest font-mono">
-                Nombre Completo
-              </label>
-              <div className="relative flex items-center">
-                <User className="absolute left-3.5 text-[#c0ff00]/80 h-4 w-4" />
-                <input
-                  type="text"
-                  placeholder="John Doe"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-zinc-950/60 border border-white/10 rounded-xl text-sm focus:border-[#c0ff00] outline-none font-semibold text-white"
-                  required
-                />
+            <div className="flex gap-4">
+              <div className="space-y-1 flex-1">
+                <label className="text-[10px] font-extrabold text-[#c0ff00] uppercase tracking-widest font-mono">
+                  Nombres
+                </label>
+                <div className="relative flex items-center">
+                  <User className="absolute left-3.5 text-[#c0ff00]/80 h-4 w-4" />
+                  <input
+                    type="text"
+                    placeholder="John"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 bg-zinc-950/60 border border-white/10 rounded-xl text-sm focus:border-[#c0ff00] outline-none font-semibold text-white"
+                    required
+                  />
+                </div>
+              </div>
+              <div className="space-y-1 flex-1">
+                <label className="text-[10px] font-extrabold text-[#c0ff00] uppercase tracking-widest font-mono">
+                  Apellidos
+                </label>
+                <div className="relative flex items-center">
+                  <User className="absolute left-3.5 text-[#c0ff00]/80 h-4 w-4" />
+                  <input
+                    type="text"
+                    placeholder="Doe"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 bg-zinc-950/60 border border-white/10 rounded-xl text-sm focus:border-[#c0ff00] outline-none font-semibold text-white"
+                    required
+                  />
+                </div>
               </div>
             </div>
 

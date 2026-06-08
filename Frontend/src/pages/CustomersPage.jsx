@@ -28,7 +28,8 @@ export default function CustomersPage({ user }) {
   // Add/Edit Modal
   const [showFormModal, setShowFormModal] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState(null); // null = add new
-  const [formFullName, setFormFullName] = useState('');
+  const [formFirstName, setFormFirstName] = useState('');
+  const [formLastName, setFormLastName] = useState('');
   const [formPhone, setFormPhone] = useState('');
   const [formEmail, setFormEmail] = useState('');
   const [formTaxId, setFormTaxId] = useState('');
@@ -87,7 +88,8 @@ export default function CustomersPage({ user }) {
   // Open add modal
   const openAddModal = () => {
     setEditingCustomer(null);
-    setFormFullName('');
+    setFormFirstName('');
+    setFormLastName('');
     setFormPhone('');
     setFormEmail('');
     setFormTaxId('');
@@ -97,7 +99,8 @@ export default function CustomersPage({ user }) {
   // Open edit modal
   const openEditModal = (customer) => {
     setEditingCustomer(customer);
-    setFormFullName(customer.full_name || '');
+    setFormFirstName(customer.first_name || '');
+    setFormLastName(customer.last_name || '');
     setFormPhone(customer.phone || '');
     setFormEmail(customer.email || '');
     setFormTaxId(customer.tax_id || '');
@@ -112,12 +115,13 @@ export default function CustomersPage({ user }) {
   // Submit add/edit form
   const handleSubmitForm = async (e) => {
     e.preventDefault();
-    if (!formFullName.trim()) return;
+    if (!formFirstName.trim() || !formLastName.trim()) return;
 
     setFormLoading(true);
     try {
       const payload = {
-        full_name: formFullName.trim(),
+        first_name: formFirstName.trim(),
+        last_name: formLastName.trim(),
         phone: formPhone.trim(),
         email: formEmail.trim(),
         tax_id: formTaxId.trim()
@@ -259,7 +263,8 @@ export default function CustomersPage({ user }) {
           <table className="customers-table">
             <thead>
               <tr>
-                <th>Nombre Completo</th>
+                <th>Nombre</th>
+                <th>Apellido</th>
                 <th>Cédula</th>
                 <th>Teléfono</th>
                 <th>Correo Electrónico</th>
@@ -272,7 +277,8 @@ export default function CustomersPage({ user }) {
                 const balance = parseFloat(customer.outstanding_balance) || 0;
                 return (
                   <tr key={customer.id}>
-                    <td style={{ fontWeight: '600' }}>{customer.full_name}</td>
+                    <td style={{ fontWeight: '600' }}>{customer.first_name}</td>
+                    <td style={{ fontWeight: '600' }}>{customer.last_name}</td>
                     <td style={{ color: '#94a3b8' }}>{customer.tax_id || '—'}</td>
                     <td>{customer.phone || '—'}</td>
                     <td style={{ color: '#94a3b8' }}>{customer.email || '—'}</td>
@@ -323,20 +329,36 @@ export default function CustomersPage({ user }) {
             </div>
             <form onSubmit={handleSubmitForm} className="modal-form">
 
-              <div className="form-group">
-                <label htmlFor="cust-fullname">
-                  <User size={13} style={{ display: 'inline', marginRight: '6px' }} />
-                  Nombre Completo
-                </label>
-                <input
-                  type="text"
-                  id="cust-fullname"
-                  value={formFullName}
-                  onChange={(e) => setFormFullName(e.target.value)}
-                  placeholder="Ej: María García López"
-                  required
-                  disabled={formLoading}
-                />
+              <div className="form-group" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label htmlFor="cust-firstname">
+                    <User size={13} style={{ display: 'inline', marginRight: '6px' }} />
+                    Nombre
+                  </label>
+                  <input
+                    type="text"
+                    id="cust-firstname"
+                    value={formFirstName}
+                    onChange={(e) => setFormFirstName(e.target.value)}
+                    placeholder="Ej: María"
+                    required
+                    disabled={formLoading}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="cust-lastname">
+                    Apellido
+                  </label>
+                  <input
+                    type="text"
+                    id="cust-lastname"
+                    value={formLastName}
+                    onChange={(e) => setFormLastName(e.target.value)}
+                    placeholder="Ej: García López"
+                    required
+                    disabled={formLoading}
+                  />
+                </div>
               </div>
 
               <div className="form-group">
@@ -388,7 +410,7 @@ export default function CustomersPage({ user }) {
                 <button type="button" className="btn-cancel" onClick={closeFormModal} disabled={formLoading}>
                   Cancelar
                 </button>
-                <button type="submit" className="btn-submit" disabled={formLoading || !formFullName.trim()}>
+                <button type="submit" className="btn-submit" disabled={formLoading || !formFirstName.trim() || !formLastName.trim()}>
                   {formLoading ? (
                     <Loader2 size={16} className="spinner" />
                   ) : (

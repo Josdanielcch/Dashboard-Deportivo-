@@ -14,7 +14,7 @@ const login = async (req, res) => {
     }
 
     const query =
-      "SELECT id, username, password_hash, full_name, role_id, status FROM users WHERE username = $1";
+      "SELECT id, username, password_hash, first_name, last_name, role_id, status, first_name || ' ' || last_name AS full_name FROM users WHERE username = $1";
     const result = await pool.query(query, [username]);
 
     if (result.rows.length === 0) {
@@ -71,10 +71,10 @@ const login = async (req, res) => {
 
 const register = async (req, res) => {
   try {
-    const { full_name, email, phone, password, username } = req.body;
+    const { first_name, last_name, email, phone, password, username } = req.body;
     const userName = username?.trim() || email?.trim();
 
-    if (!full_name || !email || !phone || !password || !userName) {
+    if (!first_name || !last_name || !email || !phone || !password || !userName) {
       return res.status(400).json({ error: "Todos los campos son requeridos" });
     }
 
@@ -107,19 +107,19 @@ const register = async (req, res) => {
     );
 
     const userResult = await pool.query(
-      `INSERT INTO users (username, password_hash, full_name, role_id, email)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, username, full_name, role_id, status`,
-      [userName, password_hash, full_name, roleId, email]
+      `INSERT INTO users (username, password_hash, first_name, last_name, role_id, email)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING id, username, first_name, last_name, role_id, status, first_name || ' ' || last_name AS full_name`,
+      [userName, password_hash, first_name, last_name, roleId, email]
     );
 
     let newCustomerId = customerId;
     if (!newCustomerId) {
       const customerResult = await pool.query(
-        `INSERT INTO customers (full_name, email, phone)
-         VALUES ($1, $2, $3)
+        `INSERT INTO customers (first_name, last_name, email, phone)
+         VALUES ($1, $2, $3, $4)
          RETURNING id`,
-        [full_name, email, phone]
+        [first_name, last_name, email, phone]
       );
       newCustomerId = customerResult.rows[0].id;
     }
@@ -178,7 +178,7 @@ const recoverPassword = async (req, res) => {
     }
 
     // Buscamos al usuario por su correo electrónico en la tabla users
-    const query = "SELECT id, username, full_name FROM users WHERE email = $1";
+    const query = "SELECT id, username, first_name, last_name, first_name || ' ' || last_name AS full_name FROM users WHERE email = $1";
     const result = await pool.query(query, [email]);
 
     // Por seguridad, si el usuario no existe no lo informamos directamente
@@ -294,4 +294,187 @@ const resetPassword = async (req, res) => {
   }
 };
 
-module.exports = { login, register, getMe, recoverPassword, resetPassword };
+const clientLogin = async (req, res) => {
+  try {
+    const { username, password } = req.body; // username is actually email
+
+    if (!username || !password) {
+      return res.status(400).json({ error: "Correo y contraseña requeridos" });
+    }
+
+    const query = "SELECT * FROM customers WHERE email = $1 AND password_hash IS NOT NULL";
+    const result = await pool.query(query, [username.toLowerCase()]);
+
+    if (result.rows.length === 0) {
+      return res.status(401).json({ error: "Credenciales inválidas" });
+    }
+
+    const customer = result.rows[0];
+
+    const isHashed = typeof customer.password_hash === "string" && customer.password_hash.startsWith("$2");
+    const passwordMatch = isHashed
+      ? await bcrypt.compare(password, customer.password_hash)
+      : password === customer.password_hash;
+
+    if (!passwordMatch) {
+      return res.status(401).json({ error: "Credenciales inválidas" });
+    }
+
+    // Role 10 for Client
+    const token = jwt.sign(
+      { id: customer.id, username: customer.email, role_id: 10, is_client: true },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
+    );
+
+    return res.json({
+      success: true,
+      message: "Login exitoso",
+      token,
+      user: {
+        id: customer.id,
+        username: customer.email,
+        full_name: `${customer.first_name} ${customer.last_name}`,
+        role_id: 10,
+        customer_id: customer.id,
+        phone: customer.phone,
+        email: customer.email,
+      },
+    });
+  } catch (error) {
+    console.error("Client Login error:", error);
+    res.status(500).json({ error: "Error en el servidor" });
+  }
+};
+
+const clientRegister = async (req, res) => {
+  try {
+    const { first_name, last_name, email, phone, password } = req.body;
+
+    if (!first_name || !last_name || !email || !phone || !password) {
+      return res.status(400).json({ error: "Todos los campos son requeridos" });
+    }
+
+    // Check if customer already exists
+    const existingCustomer = await pool.query(
+      "SELECT * FROM customers WHERE email = $1 OR phone = $2",
+      [email.toLowerCase(), phone]
+    );
+
+    const salt = await bcrypt.genSalt(10);
+    const password_hash = await bcrypt.hash(password, salt);
+
+    let customerId;
+    let customerData;
+
+    if (existingCustomer.rows.length > 0) {
+      const customer = existingCustomer.rows[0];
+      // Edge Case: Receptionist created customer, no password set.
+      if (!customer.password_hash) {
+        const updateRes = await pool.query(
+          `UPDATE customers SET password_hash = $1, first_name = COALESCE(first_name, $2), last_name = COALESCE(last_name, $3) 
+           WHERE id = $4 RETURNING *`,
+          [password_hash, first_name, last_name, customer.id]
+        );
+        customerData = updateRes.rows[0];
+        customerId = customer.id;
+      } else {
+        return res.status(409).json({ error: "El usuario ya existe y tiene una cuenta activa." });
+      }
+    } else {
+      const insertRes = await pool.query(
+        `INSERT INTO customers (first_name, last_name, email, phone, password_hash)
+         VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+        [first_name, last_name, email.toLowerCase(), phone, password_hash]
+      );
+      customerData = insertRes.rows[0];
+      customerId = customerData.id;
+    }
+
+    const token = jwt.sign(
+      { id: customerId, username: email.toLowerCase(), role_id: 10, is_client: true },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
+    );
+
+    return res.status(201).json({
+      success: true,
+      message: "Registro exitoso",
+      token,
+      user: {
+        id: customerId,
+        username: email.toLowerCase(),
+        full_name: `${customerData.first_name} ${customerData.last_name}`,
+        role_id: 10,
+        customer_id: customerId,
+        phone: customerData.phone,
+        email: customerData.email,
+      },
+      customer_id: customerId,
+    });
+  } catch (error) {
+    console.error("Client Register error:", error);
+    res.status(500).json({ error: "Error en el servidor al registrar cliente" });
+  }
+};
+
+const clientRecoverPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: "El correo electrónico es requerido" });
+
+    const query = "SELECT * FROM customers WHERE email = $1";
+    const result = await pool.query(query, [email.toLowerCase()]);
+
+    if (result.rows.length === 0) {
+      return res.json({ success: true, message: "Si el correo existe, recibirás un enlace." });
+    }
+
+    const customer = result.rows[0];
+    const token = crypto.randomBytes(32).toString("hex");
+    const expires = new Date(Date.now() + 3600000);
+
+    await pool.query("UPDATE customers SET reset_token = $1, reset_token_expires = $2 WHERE id = $3", [token, expires, customer.id]);
+
+    const resetLink = `${process.env.FRONTEND_URL || "http://localhost:5173"}/reset-password?token=${token}`;
+
+    await mailer.sendMail({
+      from: `"CourtConnect" <no-reply@courtconnect.com>`,
+      to: customer.email,
+      subject: "Recuperación de contraseña - CourtConnect",
+      html: `<p>Hola ${customer.first_name},</p><p>Haz clic <a href="${resetLink}">aquí</a> para restablecer tu contraseña.</p>`,
+    });
+
+    return res.json({ success: true, message: "Si el correo existe, recibirás un enlace." });
+  } catch (error) {
+    console.error("Error en clientRecoverPassword:", error);
+    res.status(500).json({ error: "Error en el servidor" });
+  }
+};
+
+const clientResetPassword = async (req, res) => {
+  try {
+    const { token, password } = req.body;
+    if (!token || !password) return res.status(400).json({ error: "El token y la nueva contraseña son requeridos" });
+
+    const query = "SELECT id FROM customers WHERE reset_token = $1 AND reset_token_expires > NOW()";
+    const result = await pool.query(query, [token]);
+
+    if (result.rows.length === 0) return res.status(400).json({ error: "El token de recuperación es inválido o ha expirado" });
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    await pool.query("UPDATE customers SET password_hash = $1, reset_token = NULL, reset_token_expires = NULL WHERE id = $2", [hashedPassword, result.rows[0].id]);
+
+    return res.json({ success: true, message: "Tu contraseña ha sido restablecida exitosamente." });
+  } catch (error) {
+    console.error("Error en clientResetPassword:", error);
+    res.status(500).json({ error: "Error en el servidor" });
+  }
+};
+
+module.exports = { 
+  login, register, getMe, recoverPassword, resetPassword,
+  clientLogin, clientRegister, clientRecoverPassword, clientResetPassword 
+};

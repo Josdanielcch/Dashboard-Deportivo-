@@ -95,6 +95,17 @@ const createBilling = async (req, res) => {
       );
     }
     
+    // Si el método de pago es "Crédito", crear registro en cuentas por cobrar
+    const creditMethodRes = await client.query("SELECT id FROM payment_methods WHERE method_name = 'Crédito'");
+    const isCredit = creditMethodRes.rows.length > 0 && creditMethodRes.rows[0].id == payment_method_id;
+    
+    if (isCredit) {
+      await client.query(`
+        INSERT INTO accounts_receivable (customer_id, billing_id, booking_id, total_amount, balance, status)
+        VALUES ($1, $2, $3, $4, $5, 'Pendiente')
+      `, [customer_id, billingId, booking_id || null, grandTotal, grandTotal]);
+    }
+    
     await client.query('COMMIT');
     
     res.status(201).json({
@@ -122,7 +133,7 @@ const createBilling = async (req, res) => {
 const getAllBillings = async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT b.*, c.full_name as customer_name, pm.method_name,
+      SELECT b.*, c.first_name || ' ' || c.last_name as customer_name, pm.method_name,
              (SELECT COUNT(*) FROM sale_details WHERE billing_id = b.id) as product_count
       FROM billings b
       JOIN customers c ON b.customer_id = c.id
@@ -141,7 +152,7 @@ const getBillingById = async (req, res) => {
     const { id } = req.params;
     
     const billingResult = await pool.query(`
-      SELECT b.*, c.full_name, c.tax_id, pm.method_name, u.username as cashier
+      SELECT b.*, c.first_name || ' ' || c.last_name AS full_name, c.tax_id, pm.method_name, u.username as cashier
       FROM billings b
       JOIN customers c ON b.customer_id = c.id
       JOIN payment_methods pm ON b.payment_method_id = pm.id

@@ -5,11 +5,11 @@ const pool = require('../config/database');
 const getAllCustomers = async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT id, full_name, phone, email, 
-             COALESCE(outstanding_balance, 0) as outstanding_balance,
-             tax_id
-      FROM customers 
-      ORDER BY id
+      SELECT c.id, c.first_name, c.last_name, c.phone, c.email, 
+             COALESCE((SELECT SUM(balance) FROM accounts_receivable WHERE customer_id = c.id AND status != 'Pagado'), 0) as pending_debt,
+             c.tax_id, c.first_name || ' ' || c.last_name AS full_name
+      FROM customers c
+      ORDER BY c.id
     `);
     res.json({ success: true, count: result.rows.length, data: result.rows });
   } catch (error) {
@@ -23,7 +23,7 @@ const getCustomerById = async (req, res) => {
   try {
     const { id } = req.params;
     const result = await pool.query(`
-      SELECT c.*, 
+      SELECT c.*, c.first_name || ' ' || c.last_name AS full_name,
         (SELECT COUNT(*) FROM bookings WHERE customer_id = c.id) as total_bookings,
         (SELECT SUM(b.total_amount) FROM billings b 
          JOIN bookings bk ON b.booking_id = bk.id 
@@ -47,9 +47,11 @@ const searchCustomers = async (req, res) => {
     if (!q) return res.status(400).json({ error: 'Término de búsqueda requerido' });
     
     const result = await pool.query(`
-      SELECT id, full_name, phone, email, tax_id, outstanding_balance
-      FROM customers 
-      WHERE full_name ILIKE $1 OR tax_id ILIKE $1 OR phone ILIKE $1
+      SELECT c.id, c.first_name, c.last_name, c.phone, c.email, c.tax_id, 
+             COALESCE((SELECT SUM(balance) FROM accounts_receivable WHERE customer_id = c.id AND status != 'Pagado'), 0) as pending_debt,
+             c.first_name || ' ' || c.last_name AS full_name
+      FROM customers c
+      WHERE c.first_name ILIKE $1 OR c.last_name ILIKE $1 OR c.tax_id ILIKE $1 OR c.phone ILIKE $1
       LIMIT 10
     `, [`%${q}%`]);
     
@@ -62,17 +64,17 @@ const searchCustomers = async (req, res) => {
 // Crear cliente
 const createCustomer = async (req, res) => {
   try {
-    const { full_name, phone, email, tax_id } = req.body;
+    const { first_name, last_name, phone, email, tax_id } = req.body;
     
-    if (!full_name) {
-      return res.status(400).json({ error: 'Nombre completo requerido' });
+    if (!first_name || !last_name) {
+      return res.status(400).json({ error: 'Nombre y apellido requeridos' });
     }
     
     const result = await pool.query(`
-      INSERT INTO customers (full_name, phone, email, tax_id, outstanding_balance)
-      VALUES ($1, $2, $3, $4, 0)
-      RETURNING *
-    `, [full_name, phone, email, tax_id]);
+      INSERT INTO customers (first_name, last_name, phone, email, tax_id, outstanding_balance)
+      VALUES ($1, $2, $3, $4, $5, 0)
+      RETURNING *, first_name || ' ' || last_name AS full_name
+    `, [first_name, last_name, phone, email, tax_id]);
     
     res.status(201).json({ success: true, data: result.rows[0] });
   } catch (error) {
@@ -87,17 +89,18 @@ const createCustomer = async (req, res) => {
 const updateCustomer = async (req, res) => {
   try {
     const { id } = req.params;
-    const { full_name, phone, email, tax_id } = req.body;
+    const { first_name, last_name, phone, email, tax_id } = req.body;
     
     const result = await pool.query(`
       UPDATE customers 
-      SET full_name = COALESCE($1, full_name),
-          phone = COALESCE($2, phone),
-          email = COALESCE($3, email),
-          tax_id = COALESCE($4, tax_id)
-      WHERE id = $5
-      RETURNING *
-    `, [full_name, phone, email, tax_id, id]);
+      SET first_name = COALESCE($1, first_name),
+          last_name = COALESCE($2, last_name),
+          phone = COALESCE($3, phone),
+          email = COALESCE($4, email),
+          tax_id = COALESCE($5, tax_id)
+      WHERE id = $6
+      RETURNING *, first_name || ' ' || last_name AS full_name
+    `, [first_name, last_name, phone, email, tax_id, id]);
     
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Cliente no encontrado' });
@@ -122,7 +125,7 @@ const recordPayment = async (req, res) => {
       UPDATE customers 
       SET outstanding_balance = GREATEST(outstanding_balance - $1, 0)
       WHERE id = $2
-      RETURNING id, full_name, outstanding_balance
+      RETURNING id, first_name, last_name, outstanding_balance, first_name || ' ' || last_name AS full_name
     `, [amount, id]);
     
     if (result.rows.length === 0) {
