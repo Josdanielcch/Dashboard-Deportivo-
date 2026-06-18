@@ -39,5 +39,13 @@ export const courtService = {
    */
   updateStatus: async (id, status) => {
     return api.put(`/courts/${id}/status`, { status });
+  },
+  /**
+   * Elimina una cancha.
+   * @param {string|number} id - ID de la cancha a eliminar.
+   * @returns {Promise<object>} Respuesta con confirmación.
+   */
+  delete: async (id) => {
+    return api.delete(`/courts/${id}`);
   }
 };
