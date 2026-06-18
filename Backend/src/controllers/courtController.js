@@ -107,10 +107,38 @@ const updateCourt = async (req, res) => {
   }
 };
 
+const deleteCourt = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Validar si tiene reservas
+    const bookingsCheck = await pool.query('SELECT COUNT(*) FROM bookings WHERE court_id = $1', [id]);
+    const bookingsCount = parseInt(bookingsCheck.rows[0].count, 10);
+    
+    if (bookingsCount > 0) {
+      return res.status(400).json({ 
+        error: 'No se puede eliminar la cancha porque tiene reservas históricas o futuras asociadas. Para no corromper el historial, recomendamos editarla y cambiar su estado a "Fuera de Servicio".' 
+      });
+    }
+    
+    const result = await pool.query('DELETE FROM courts WHERE id = $1 RETURNING *', [id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Cancha no encontrada' });
+    }
+    
+    res.json({ success: true, message: 'Cancha eliminada exitosamente' });
+  } catch (error) {
+    console.error('Error in deleteCourt:', error);
+    res.status(500).json({ error: 'Error al eliminar cancha', detail: error.message });
+  }
+};
+
 module.exports = {
   getAllCourts,
   getCourtById,
   createCourt,
   updateCourtStatus,
-  updateCourt
+  updateCourt,
+  deleteCourt
 };
