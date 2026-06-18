@@ -22,7 +22,8 @@ export default function BookingModal({
   onOpenAuth,
 }: BookingModalProps) {
   const [bookingDate, setBookingDate] = useState(selectedDate);
-  const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+  const [startTime, setStartTime] = useState<string>('08:00');
+  const [duration, setDuration] = useState<string>('1');
   
   // Contacts form state (used if no currentUser is logged in)
   const [guestFirstName, setGuestFirstName] = useState(currentUser?.name?.split(' ')[0] || '');
@@ -37,9 +38,8 @@ export default function BookingModal({
   const [isSuccess, setIsSuccess] = useState(false);
   const [createdBooking, setCreatedBooking] = useState<Booking | null>(null);
 
-  // Time slot hours are 1.5 hours
   const hourlyRate = court.pricePerHour;
-  const durationMultiplier = 1.5;
+  const durationMultiplier = parseFloat(duration);
   const baseCost = Math.round(hourlyRate * durationMultiplier);
   
   const isPro = currentUser?.membershipLevel === 'pro';
@@ -47,13 +47,16 @@ export default function BookingModal({
   const discountAmount = Math.round(baseCost * discountRate);
   const totalCost = baseCost - discountAmount;
 
-  const parseSlotTimes = (slotTime: string) => {
-    const [start_time, end_time] = slotTime.split(' - ').map((value) => value.trim());
-    return { start_time, end_time };
+  const getEndTime = () => {
+    const [h, m] = startTime.split(':').map(Number);
+    const durationHours = parseFloat(duration);
+    const totalMinutes = h * 60 + m + durationHours * 60;
+    const endH = Math.floor(totalMinutes / 60);
+    const endM = totalMinutes % 60;
+    return `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}:00`;
   };
 
-  const handleSlotSelect = async (slotTime: string) => {
-    setSelectedSlot(slotTime);
+  const checkCurrentAvailability = async () => {
     setSlotAvailability(null);
     if (!court.backendId) {
       setSlotAvailability({ available: false, message: 'ID de cancha no disponible para la reserva.' });
@@ -62,11 +65,11 @@ export default function BookingModal({
 
     setIsCheckingAvailability(true);
     try {
-      const { start_time, end_time } = parseSlotTimes(slotTime);
+      const end_time = getEndTime();
       const availability = await checkAvailability({
         court_id: court.backendId,
         booking_date: bookingDate,
-        start_time,
+        start_time: startTime + ':00',
         end_time,
       });
       setSlotAvailability({
@@ -84,11 +87,9 @@ export default function BookingModal({
   };
 
   React.useEffect(() => {
-    if (selectedSlot) {
-      handleSlotSelect(selectedSlot);
-    }
+    checkCurrentAvailability();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bookingDate]);
+  }, [bookingDate, startTime, duration]);
 
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,7 +99,7 @@ export default function BookingModal({
     const finalEmail = currentUser ? currentUser.email : guestEmail.trim();
     const finalPhone = currentUser ? currentUser.phone : guestPhone.trim();
 
-    if (!selectedSlot) {
+    if (!startTime || !duration) {
       setFormError('Por favor, selecciona un horario disponible.');
       return;
     }
@@ -126,7 +127,8 @@ export default function BookingModal({
     setIsSubmitting(true);
 
     try {
-      const { start_time, end_time } = parseSlotTimes(selectedSlot);
+      const start_time = startTime + ':00';
+      const end_time = getEndTime();
       let customerId = currentUser?.customerId;
 
       if (!customerId) {
@@ -160,7 +162,7 @@ export default function BookingModal({
         courtImage: court.imageUrl,
         sport: court.sport,
         date: bookingDate,
-        timeSlot: `${start_time} - ${end_time}`,
+        timeSlot: `${start_time.slice(0, 5)} - ${end_time.slice(0, 5)}`,
         price: bookingData.total_amount ?? totalCost,
         status: bookingData.status === 'Pending' ? 'confirmed' : bookingData.status.toLowerCase(),
         userName: finalName,
@@ -188,6 +190,22 @@ export default function BookingModal({
       default: return sport;
     }
   };
+
+  const formatAMPM = (timeStr: string) => {
+    const [hStr, mStr] = timeStr.split(':');
+    let h = parseInt(hStr, 10);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12;
+    h = h ? h : 12;
+    return `${h.toString().padStart(2, '0')}:${mStr} ${ampm}`;
+  };
+
+  const timeSlots = Array.from({ length: 33 }, (_, i) => {
+    const totalMins = 8 * 60 + i * 30;
+    const h = (Math.floor(totalMins / 60) % 24).toString().padStart(2, '0');
+    const m = (totalMins % 60).toString().padStart(2, '0');
+    return `${h}:${m}`;
+  });
 
   return (
     <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto">
@@ -247,7 +265,7 @@ export default function BookingModal({
 
               <div className="flex justify-between text-xs">
                 <span className="text-zinc-500 font-semibold">Horario:</span>
-                <span className="font-bold text-[#c0ff00] text-right">{createdBooking.timeSlot} <span className="text-[10px] text-zinc-500">(1.5 hr)</span></span>
+                <span className="font-bold text-[#c0ff00] text-right">{createdBooking.timeSlot} <span className="text-[10px] text-zinc-500">({duration} hr)</span></span>
               </div>
 
               <div className="flex justify-between text-xs border-t border-white/10 pt-3">
@@ -307,46 +325,53 @@ export default function BookingModal({
               <div className="flex items-center justify-between mb-3">
                 <h4 className="text-[10px] uppercase tracking-widest font-extrabold text-[#c0ff00] flex items-center gap-1 font-mono">
                   <Clock className="h-4 w-4 text-[#c0ff00]" />
-                  Seleccionar Turno (1.5 horas)
+                  Horario de Reserva
                 </h4>
-                <span className="text-[10px] text-zinc-500 font-semibold">Duración fija por turno</span>
               </div>
               
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                {MOCK_TIME_SLOTS.map((slot) => {
-                  const isSelected = selectedSlot === slot.time;
-                  return (
-                    <button
-                      key={slot.id}
-                      type="button"
-                      onClick={() => handleSlotSelect(slot.time)}
-                      className={`py-2.5 px-3 rounded-xl border text-center transition-all cursor-pointer ${
-                        isSelected
-                          ? 'border-[#c0ff00] bg-[#c0ff00]/10 text-[#c0ff00] font-black ring-1 ring-[#c0ff00] shadow-sm shadow-[#c0ff00]/5'
-                          : 'border-white/10 bg-zinc-950/20 text-zinc-300 hover:border-[#c0ff00] hover:text-white'
-                      }`}
-                    >
-                      <div className="text-xs font-black font-mono">{slot.time}</div>
-                      <div className="text-[9px] uppercase tracking-wide opacity-75 mt-0.5 font-semibold text-zinc-400">
-                        {slot.period}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-              {selectedSlot && (
-                <div className="mt-3 text-xs font-semibold">
-                  {isCheckingAvailability ? (
-                    <span className="text-[#c0ff00]">Verificando disponibilidad...</span>
-                  ) : slotAvailability ? (
-                    <span className={slotAvailability.available ? 'text-emerald-400' : 'text-red-400'}>
-                      {slotAvailability.message}
-                    </span>
-                  ) : (
-                    <span className="text-zinc-400">Selecciona el turno para verificar disponibilidad en el backend.</span>
-                  )}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] uppercase tracking-widest font-extrabold text-zinc-400 mb-2 block font-mono">
+                    Hora de Inicio
+                  </label>
+                  <select 
+                    value={startTime}
+                    onChange={(e) => setStartTime(e.target.value)}
+                    className="w-full px-3 py-3 rounded-xl border border-white/10 text-xs font-bold text-white bg-zinc-950/30 outline-none focus:border-[#c0ff00] transition-all cursor-pointer"
+                  >
+                    {timeSlots.map(time => (
+                      <option key={time} value={time} className="bg-zinc-900">{formatAMPM(time)}</option>
+                    ))}
+                  </select>
                 </div>
-              )}
+                <div>
+                  <label className="text-[10px] uppercase tracking-widest font-extrabold text-zinc-400 mb-2 block font-mono">
+                    Duración
+                  </label>
+                  <select 
+                    value={duration}
+                    onChange={(e) => setDuration(e.target.value)}
+                    className="w-full px-3 py-3 rounded-xl border border-white/10 text-xs font-bold text-white bg-zinc-950/30 outline-none focus:border-[#c0ff00] transition-all cursor-pointer"
+                  >
+                    <option value="0.5" className="bg-zinc-900">30 Minutos</option>
+                    <option value="1" className="bg-zinc-900">1 Hora</option>
+                    <option value="1.5" className="bg-zinc-900">1.5 Horas</option>
+                    <option value="2" className="bg-zinc-900">2 Horas</option>
+                    <option value="2.5" className="bg-zinc-900">2.5 Horas</option>
+                    <option value="3" className="bg-zinc-900">3 Horas</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div className="mt-3 text-xs font-semibold">
+                {isCheckingAvailability ? (
+                  <span className="text-[#c0ff00]">Verificando disponibilidad...</span>
+                ) : slotAvailability ? (
+                  <span className={slotAvailability.available ? 'text-emerald-400' : 'text-red-400'}>
+                    {slotAvailability.message}
+                  </span>
+                ) : null}
+              </div>
             </div>
 
             {/* User Contact Info */}
@@ -463,7 +488,7 @@ export default function BookingModal({
                 </h4>
                 
                 <div className="flex justify-between text-xs">
-                  <span className="text-zinc-400">Turno de cancha (1.5 horas)</span>
+                  <span className="text-zinc-400">Turno de cancha ({duration} hrs)</span>
                   <span className="font-semibold text-zinc-200">${baseCost} USD</span>
                 </div>
 
