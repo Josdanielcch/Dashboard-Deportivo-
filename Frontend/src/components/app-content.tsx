@@ -23,28 +23,23 @@ export default function AppContent() {
     setMounted(true)
   }, [])
 
+  const navigateTo = (module: string) => {
+    setActiveModule(module)
+    setIsMobileMenuOpen(false)
+  }
+
   const renderView = () => {
     switch (activeModule) {
-      case 'dashboard':
-        return <DashboardView />
-      case 'canchas':
-        return <CanchasView />
-      case 'reservas':
-        return <ReservasView />
-      case 'clientes':
-        return <ClientesView />
-      case 'productos':
-        return <ProductosView />
-      case 'ventas':
-        return <VentasView />
-      case 'cxc':
-        return <CxcView />
-      case 'usuarios':
-        return <UsuariosView />
-      case 'auditoria':
-        return <AuditoriaView />
-      default:
-        return <DashboardView />
+      case 'dashboard': return <DashboardView onNavigate={navigateTo} />
+      case 'canchas': return <CanchasView />
+      case 'reservas': return <ReservasView />
+      case 'clientes': return <ClientesView />
+      case 'productos': return <ProductosView />
+      case 'ventas': return <VentasView />
+      case 'cxc': return <CxcView />
+      case 'usuarios': return <UsuariosView />
+      case 'auditoria': return <AuditoriaView />
+      default: return <DashboardView />
     }
   }
 
@@ -57,34 +52,40 @@ export default function AppContent() {
   }
 
   return (
-    <div className="flex min-h-screen bg-background text-foreground">
-      <Sidebar 
-        activeModule={activeModule} 
+    <div className="flex min-h-screen bg-[#060a1a] text-white">
+      <Sidebar
+        activeModule={activeModule}
         setActiveModule={(m) => {
           setActiveModule(m)
           setIsMobileMenuOpen(false)
-        }} 
+        }}
         isMobileMenuOpen={isMobileMenuOpen}
         setIsMobileMenuOpen={setIsMobileMenuOpen}
       />
-      <main className="flex-1 flex flex-col min-w-0">
+      <main className="flex-1 flex flex-col min-w-0 relative">
+        {/* Background gradient */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute -top-40 -right-40 w-[400px] h-[400px] rounded-full bg-[#ccff00]/3 blur-[100px]" />
+          <div className="absolute -bottom-40 -left-40 w-[300px] h-[300px] rounded-full bg-[#6366f1]/3 blur-[80px]" />
+        </div>
+
         {/* Mobile Header */}
-        <div className="md:hidden flex items-center justify-between p-4 border-b border-border bg-sidebar">
+        <div className="md:hidden flex items-center justify-between p-4 border-b border-white/[0.06] bg-[#060a1a]/80 backdrop-blur-md sticky top-0 z-30">
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-xs">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#ccff00] to-[#a6e000] text-[#060a1a] font-bold text-xs shadow-lg shadow-[#ccff00]/20">
               CC
             </div>
-            <span className="font-bold text-foreground">CourtManager</span>
+            <span className="font-bold text-white text-sm">CourtManager</span>
           </div>
-          <button 
+          <button
             onClick={() => setIsMobileMenuOpen(true)}
-            className="p-2 -mr-2 text-foreground"
+            className="p-2 -mr-2 text-zinc-400 hover:text-white transition-colors rounded-lg hover:bg-white/[0.05]"
           >
-            <Menu size={24} />
+            <Menu size={22} />
           </button>
         </div>
-        
-        <div className="flex-1 w-full max-w-screen-2xl mx-auto overflow-x-hidden">
+
+        <div className="flex-1 w-full max-w-[1600px] mx-auto overflow-x-hidden relative z-10">
           {renderView()}
         </div>
       </main>
