@@ -168,7 +168,7 @@ const updateBookingStatus = async (req, res) => {
     await client.query('BEGIN');
     
     const result = await client.query(
-      'UPDATE bookings SET status = $1 WHERE id = $2 RETURNING *, (SELECT court_id FROM bookings WHERE id = $2) as court_id',
+      'UPDATE bookings SET status = $1 WHERE id = $2 RETURNING *',
       [status, id]
     );
     
@@ -190,7 +190,8 @@ const updateBookingStatus = async (req, res) => {
     res.json({ success: true, data: result.rows[0] });
   } catch (error) {
     await client.query('ROLLBACK');
-    res.status(500).json({ error: 'Error al actualizar estado' });
+    console.error('Error in updateBookingStatus:', error);
+    res.status(500).json({ error: 'Error al actualizar estado', detail: error.message });
   } finally {
     client.release();
   }
