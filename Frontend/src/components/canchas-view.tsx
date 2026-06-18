@@ -17,15 +17,12 @@ export default function CanchasView() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
 
-  // Delete Modal State
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [canchaToDelete, setCanchaToDelete] = useState<any>(null)
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
   const [deleteConfirmCheck, setDeleteConfirmCheck] = useState(false)
 
-  useEffect(() => {
-    fetchCanchas()
-  }, [])
+  useEffect(() => { fetchCanchas() }, [])
 
   const fetchCanchas = async () => {
     try {
@@ -38,8 +35,16 @@ export default function CanchasView() {
         { id: 2, court_name: 'Pádel - Cancha 3', status: 'Occupied' },
         { id: 3, court_name: 'Tenis - Cancha 2', status: 'Maintenance' }
       ])
-    } finally {
-      setLoading(false)
+    } finally { setLoading(false) }
+  }
+
+  const getStatusInfo = (status: string) => {
+    switch (status) {
+      case 'Available': return { label: 'Disponible', color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20' }
+      case 'Occupied': return { label: 'Ocupada', color: 'bg-amber-500/15 text-amber-400 border-amber-500/20' }
+      case 'Maintenance': return { label: 'Mantenimiento', color: 'bg-red-500/15 text-red-400 border-red-500/20' }
+      case 'Out_of_service': return { label: 'Fuera de Servicio', color: 'bg-zinc-500/15 text-zinc-400 border-zinc-500/20' }
+      default: return { label: status, color: 'bg-zinc-500/15 text-zinc-400 border-zinc-500/20' }
     }
   }
 
@@ -59,9 +64,7 @@ export default function CanchasView() {
       }
     } catch (error: any) {
       setSubmitError(error.message || 'Error al guardar la cancha')
-    } finally {
-      setIsSubmitting(false)
-    }
+    } finally { setIsSubmitting(false) }
   }
 
   const openEditModal = (cancha: any) => {
@@ -89,7 +92,6 @@ export default function CanchasView() {
   const handleDelete = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!canchaToDelete) return
-    
     setIsSubmitting(true)
     setSubmitError('')
     try {
@@ -100,14 +102,10 @@ export default function CanchasView() {
         fetchCanchas()
       }
     } catch (error: any) {
-      console.error('Error eliminando cancha:', error)
-      setSubmitError(error.message || 'Hubo un error al eliminar la cancha')
-    } finally {
-      setIsSubmitting(false)
-    }
+      setSubmitError(error.message || 'Error al eliminar la cancha')
+    } finally { setIsSubmitting(false) }
   }
 
-  // Filtrado
   const filteredCanchas = canchas.filter((cancha) => {
     const matchesSearch = cancha.court_name?.toLowerCase().includes(searchTerm.toLowerCase())
     const estadoLabel = getStatusInfo(cancha.status).label
@@ -123,8 +121,7 @@ export default function CanchasView() {
           <p className="text-zinc-400 text-sm font-medium">Administra todas tus canchas deportivas</p>
         </div>
         <button onClick={openCreateModal}
-          className="flex items-center justify-center gap-2 bg-[#ccff00] text-[#0a0e27] px-6 py-3 rounded-xl hover:bg-[#b8e600] transition-all font-bold text-sm shadow-lg shadow-[#ccff00]/20 w-full md:w-auto"
-        >
+          className="flex items-center justify-center gap-2 bg-[#ccff00] text-[#0a0e27] px-6 py-3 rounded-xl hover:bg-[#b8e600] transition-all font-bold text-sm shadow-lg shadow-[#ccff00]/20 w-full md:w-auto">
           <Plus size={20} />
           Nueva Cancha
         </button>
@@ -173,8 +170,6 @@ export default function CanchasView() {
                     </div>
                   </div>
                 </div>
-
-<<<<<<< HEAD
                 <div className="flex items-center justify-between mt-6 pt-4 border-t border-[#1a1f3a]">
                   <span className={`px-3 py-1.5 rounded-lg text-xs font-bold border ${statusInfo.color}`}>
                     {statusInfo.label}
@@ -184,26 +179,11 @@ export default function CanchasView() {
                       className="p-2 rounded-lg bg-[#1a1f3a] hover:bg-[#ccff00]/10 text-zinc-400 hover:text-[#ccff00] transition-all">
                       <Edit2 size={15} />
                     </button>
-                    <button className="p-2 rounded-lg bg-[#1a1f3a] hover:bg-red-500/10 text-zinc-400 hover:text-red-400 transition-all">
+                    <button onClick={() => openDeleteModal(cancha)}
+                      className="p-2 rounded-lg bg-[#1a1f3a] hover:bg-red-500/10 text-zinc-400 hover:text-red-400 transition-all">
                       <Trash2 size={15} />
                     </button>
                   </div>
-=======
-                <div className="flex gap-2 mt-6 pt-4 border-t border-border">
-                  <button 
-                    onClick={() => openEditModal(cancha)}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-secondary hover:bg-secondary/80 text-foreground rounded transition-colors text-sm"
-                  >
-                    <Edit2 size={16} />
-                    Editar
-                  </button>
-                  <button 
-                    onClick={() => openDeleteModal(cancha)}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-300 rounded transition-colors text-sm">
-                    <Trash2 size={16} />
-                    Eliminar
-                  </button>
->>>>>>> 929a16f3699f509794d7400dbf3909478bd4b918
                 </div>
               </div>
             )
@@ -253,68 +233,50 @@ export default function CanchasView() {
         </form>
       </Modal>
 
-      {/* Modal Alta Seguridad Eliminar Cancha */}
-      <Modal
-        isOpen={isDeleteModalOpen}
-        onClose={() => setIsDeleteModalOpen(false)}
-        title="Eliminar Cancha"
-      >
+      <Modal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} title="Eliminar Cancha">
         <form onSubmit={handleDelete} className="flex flex-col gap-4">
-          <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-lg flex gap-3 text-red-400">
-            <Trash2 className="shrink-0" />
+          <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl flex gap-3 text-red-400">
+            <Trash2 className="shrink-0 mt-0.5" size={20} />
             <div className="text-sm">
-              <p className="font-semibold mb-1">¡Esta acción es completamente irreversible!</p>
-              <p>Estás a punto de eliminar la cancha <strong>{canchaToDelete?.court_name}</strong>. Si esta cancha tiene reservas registradas, el sistema bloqueará la eliminación por seguridad.</p>
+              <p className="font-bold mb-1">¡Esta acción es irreversible!</p>
+              <p className="text-zinc-400">Estás a punto de eliminar <strong className="text-red-400">{canchaToDelete?.court_name}</strong>. Si tiene reservas asociadas, el sistema bloqueará la eliminación.</p>
             </div>
           </div>
 
           {submitError && (
-            <div className="px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/50 text-red-400 text-sm font-medium flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0"></div>
-              {submitError}
+            <div className="px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-medium flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" /> {submitError}
             </div>
           )}
 
           <div className="flex items-start gap-3 mt-2">
-            <input
-              type="checkbox"
-              id="confirmCheck"
-              checked={deleteConfirmCheck}
+            <input type="checkbox" id="confirmCheck" checked={deleteConfirmCheck}
               onChange={(e) => setDeleteConfirmCheck(e.target.checked)}
-              className="mt-1 shrink-0 accent-red-500 w-4 h-4 cursor-pointer"
-            />
-            <label htmlFor="confirmCheck" className="text-sm text-foreground cursor-pointer select-none leading-tight">
+              className="mt-1 shrink-0 accent-red-500 w-4 h-4 cursor-pointer" />
+            <label htmlFor="confirmCheck" className="text-sm text-zinc-300 cursor-pointer select-none leading-tight">
               Entiendo que estoy a punto de eliminar esta cancha y que esta acción no se puede deshacer.
             </label>
           </div>
 
-          <div className="mt-2">
-            <label className="block text-sm text-muted-foreground mb-1">
-              Para continuar, escribe <strong>{canchaToDelete?.court_name}</strong> a continuación:
+          <div>
+            <label className="block text-sm text-zinc-400 mb-1">
+              Escribe <strong className="text-white">{canchaToDelete?.court_name}</strong> para confirmar:
             </label>
-            <input
-              type="text"
-              value={deleteConfirmText}
+            <input type="text" value={deleteConfirmText}
               onChange={(e) => setDeleteConfirmText(e.target.value)}
               placeholder={canchaToDelete?.court_name}
-              className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground focus:outline-none focus:border-red-500 transition-colors"
-              onPaste={(e) => e.preventDefault()}
-            />
+              className="w-full bg-[#0a0e27] border border-[#1a1f3a] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500/50 transition-all text-sm"
+              onPaste={(e) => e.preventDefault()} />
           </div>
 
-          <div className="flex justify-end gap-3 mt-6">
-            <button
-              type="button"
-              onClick={() => setIsDeleteModalOpen(false)}
-              className="px-4 py-2 bg-secondary text-foreground rounded-lg hover:bg-secondary/80 transition-colors"
-            >
+          <div className="flex justify-end gap-3 mt-4">
+            <button type="button" onClick={() => setIsDeleteModalOpen(false)}
+              className="px-5 py-2.5 bg-[#1a1f3a] text-zinc-300 rounded-xl hover:bg-[#253050] transition-all text-sm font-medium">
               Cancelar
             </button>
-            <button
-              type="submit"
+            <button type="submit"
               disabled={isSubmitting || !deleteConfirmCheck || deleteConfirmText !== canchaToDelete?.court_name}
-              className="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            >
+              className="px-5 py-2.5 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
               {isSubmitting ? 'Eliminando...' : 'Eliminar Cancha'}
             </button>
           </div>
