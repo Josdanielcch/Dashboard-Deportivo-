@@ -33,6 +33,8 @@ export default function ReservasView() {
   })
   const [editingId, setEditingId] = useState<number | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState('')
+  const [actionError, setActionError] = useState('')
 
   useEffect(() => {
     fetchData()
@@ -60,6 +62,7 @@ export default function ReservasView() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
+    setSubmitError('')
     try {
       // Calcular end_time
       const [h, m] = formData.start_time.split(':').map(Number)
@@ -93,15 +96,29 @@ export default function ReservasView() {
       }
     } catch (error: any) {
       console.error('Error guardando reserva:', error)
-      alert(error.message || 'Hubo un error al guardar la reserva. Verifica disponibilidad o si ya fue cobrada.')
+      setSubmitError(error.message || 'Hubo un error al guardar la reserva. Verifica disponibilidad o si ya fue cobrada.')
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  const handleStatusChange = async (id: number, newStatus: string) => {
+    setActionError('')
+    try {
+      const res = await bookingService.updateStatus(id, newStatus)
+      if (res.success) {
+        fetchData()
+      }
+    } catch (error: any) {
+      console.error('Error changing status:', error)
+      setActionError(error.message || 'Error al cambiar el estado de la reserva')
     }
   }
 
   const openCreateModal = () => {
     setEditingId(null)
     setFormData({ customer_id: '', court_id: '', booking_date: '', start_time: '08:00', duration: '1' })
+    setSubmitError('')
     setIsModalOpen(true)
   }
 
@@ -126,6 +143,7 @@ export default function ReservasView() {
       start_time: reserva.start_time?.slice(0, 5) || '08:00',
       duration: diffHours.toString()
     })
+    setSubmitError('')
     setIsModalOpen(true)
   }
 
@@ -218,6 +236,16 @@ export default function ReservasView() {
           Próximas Reservas (Por Confirmar)
         </h2>
         
+        {actionError && (
+          <div className="mb-4 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-medium flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
+              {actionError}
+            </div>
+            <button onClick={() => setActionError('')} className="text-red-400 hover:text-red-300 text-lg leading-none">&times;</button>
+          </div>
+        )}
+        
         {loading ? (
           <div className="flex justify-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -255,6 +283,10 @@ export default function ReservasView() {
                     <div className="flex items-center gap-2 text-foreground font-medium mt-2 pt-2 border-t border-border/50">
                       <MapPin size={14} className="text-primary" />
                       {reserva.court_name}
+                    </div>
+                    <div className="flex gap-2 mt-3 pt-3 border-t border-border/50">
+                      <button onClick={() => handleStatusChange(reserva.id, 'Confirmed')} className="flex-1 bg-green-500/20 text-green-300 py-1.5 rounded text-xs font-bold hover:bg-green-500/30 transition-colors">Aprobar</button>
+                      <button onClick={() => handleStatusChange(reserva.id, 'Cancelled')} className="flex-1 bg-red-500/20 text-red-300 py-1.5 rounded text-xs font-bold hover:bg-red-500/30 transition-colors">Rechazar</button>
                     </div>
                   </div>
                 </div>
@@ -389,12 +421,25 @@ export default function ReservasView() {
                           </span>
                         </td>
                         <td className="py-4 px-6">
-                          <button 
-                            onClick={() => openEditModal(reserva)}
-                            className="text-accent hover:text-accent/80 transition-colors text-xs flex items-center gap-1 font-semibold"
-                          >
-                            <Edit2 size={14} /> Editar
-                          </button>
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                            <button 
+                              onClick={() => openEditModal(reserva)}
+                              className="text-accent hover:text-accent/80 transition-colors text-xs flex items-center gap-1 font-semibold shrink-0"
+                            >
+                              <Edit2 size={14} /> Editar
+                            </button>
+                            <select 
+                              value={reserva.status}
+                              onChange={(e) => handleStatusChange(reserva.id, e.target.value)}
+                              className="bg-secondary text-xs text-foreground border border-border rounded px-2 py-1 focus:outline-none cursor-pointer"
+                            >
+                              <option value="Pending">Pendiente</option>
+                              <option value="Confirmed">Confirmar</option>
+                              <option value="Completed">Completar</option>
+                              <option value="Cancelled">Cancelar</option>
+                              <option value="No_show">No Asistió</option>
+                            </select>
+                          </div>
                         </td>
                       </tr>
                     )
@@ -413,6 +458,12 @@ export default function ReservasView() {
         title={editingId ? "Editar Reserva" : "Registrar Nueva Reserva"}
       >
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          {submitError && (
+            <div className="px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-medium flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
+              {submitError}
+            </div>
+          )}
           <div>
             <label className="block text-sm font-medium text-muted-foreground mb-1">
               Cliente *

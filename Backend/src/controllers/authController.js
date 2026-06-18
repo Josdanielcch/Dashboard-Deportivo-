@@ -14,7 +14,7 @@ const login = async (req, res) => {
     }
 
     const query =
-      "SELECT id, username, password_hash, first_name, last_name, role_id, status, first_name || ' ' || last_name AS full_name FROM users WHERE username = $1";
+      "SELECT id, username, password_hash, first_name, last_name, role_id, status, first_name || ' ' || last_name AS full_name FROM users WHERE username = $1 OR email = $1";
     const result = await pool.query(query, [username]);
 
     if (result.rows.length === 0) {

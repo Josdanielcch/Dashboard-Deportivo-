@@ -16,6 +16,7 @@ export default function CanchasView() {
   const [formData, setFormData] = useState({ court_name: '', status: 'Available' })
   const [editingId, setEditingId] = useState<number | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState('')
 
   useEffect(() => {
     fetchCanchas()
@@ -44,12 +45,13 @@ export default function CanchasView() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
+    setSubmitError('')
     try {
       let res;
       if (editingId) {
-        res = await courtService.update(editingId, formData)
+        res = await courtService.updateStatus(editingId, formData.status)
       } else {
-        res = await courtService.create(formData)
+        res = await courtService.create(formData.court_name, formData.status)
       }
       if (res.success) {
         setIsModalOpen(false)
@@ -57,9 +59,9 @@ export default function CanchasView() {
         setEditingId(null)
         fetchCanchas() // Recargar tabla
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error guardando cancha:', error)
-      alert('Hubo un error al guardar la cancha')
+      setSubmitError(error.message || 'Hubo un error al guardar la cancha')
     } finally {
       setIsSubmitting(false)
     }
@@ -71,12 +73,14 @@ export default function CanchasView() {
       court_name: cancha.court_name,
       status: cancha.status
     })
+    setSubmitError('')
     setIsModalOpen(true)
   }
 
   const openCreateModal = () => {
     setEditingId(null)
     setFormData({ court_name: '', status: 'Available' })
+    setSubmitError('')
     setIsModalOpen(true)
   }
 
@@ -205,6 +209,12 @@ export default function CanchasView() {
         title={editingId ? "Editar Cancha" : "Registrar Nueva Cancha"}
       >
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          {submitError && (
+            <div className="px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-medium flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
+              {submitError}
+            </div>
+          )}
           <div>
             <label className="block text-sm font-medium text-muted-foreground mb-1">
               Nombre de la Cancha

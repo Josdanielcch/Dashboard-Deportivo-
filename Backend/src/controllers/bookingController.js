@@ -50,6 +50,16 @@ const checkAvailability = async (req, res) => {
     if (!court_id || !booking_date || !start_time || !end_time) {
       return res.status(400).json({ error: 'Faltan parámetros' });
     }
+
+    const bookingDateTime = new Date(`${booking_date}T${start_time}`);
+    if (bookingDateTime < new Date()) {
+      return res.json({ success: true, available: false, message: 'La fecha y hora deben ser posteriores al momento actual' });
+    }
+
+    const courtStatus = await pool.query('SELECT status FROM courts WHERE id = $1', [court_id]);
+    if (courtStatus.rows.length === 0 || ['Maintenance', 'Out_of_service'].includes(courtStatus.rows[0].status)) {
+      return res.json({ success: true, available: false, message: 'Cancha inhabilitada por mantenimiento o fuera de servicio' });
+    }
     
     const result = await pool.query(`
       SELECT COUNT(*) as conflict_count
@@ -84,6 +94,20 @@ const createBooking = async (req, res) => {
     // Validaciones
     if (!customer_id || !court_id || !booking_date || !start_time || !end_time) {
       return res.status(400).json({ error: 'Todos los campos son requeridos' });
+    }
+    
+    // Validar fecha y hora pasada
+    const bookingDateTime = new Date(`${booking_date}T${start_time}`);
+    if (bookingDateTime < new Date()) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'No se permiten reservas en fechas u horas pasadas' });
+    }
+
+    // Validar estado de la cancha
+    const courtStatus = await client.query('SELECT status FROM courts WHERE id = $1', [court_id]);
+    if (courtStatus.rows.length === 0 || ['Maintenance', 'Out_of_service'].includes(courtStatus.rows[0].status)) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'La cancha seleccionada se encuentra en mantenimiento o fuera de servicio' });
     }
     
     // Verificar disponibilidad
@@ -194,6 +218,20 @@ const updateBooking = async (req, res) => {
       return res.status(400).json({ error: 'No se puede editar una reserva ya cobrada/confirmada. Debe anularse y crear una nueva.' });
     }
     
+    // Validar fecha y hora pasada
+    const bookingDateTime = new Date(`${booking_date}T${start_time}`);
+    if (bookingDateTime < new Date()) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'No se permiten reservas en fechas u horas pasadas' });
+    }
+
+    // Validar estado de la cancha
+    const courtStatus = await client.query('SELECT status FROM courts WHERE id = $1', [court_id]);
+    if (courtStatus.rows.length === 0 || ['Maintenance', 'Out_of_service'].includes(courtStatus.rows[0].status)) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'La cancha seleccionada se encuentra en mantenimiento o fuera de servicio' });
+    }
+
     // 2. Verificar conflictos
     const conflict = await client.query(`
       SELECT COUNT(*) FROM bookings
