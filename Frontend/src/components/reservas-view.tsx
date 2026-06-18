@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Plus, Clock, User, Search, Filter, CalendarDays, MapPin, ChevronDown, ChevronUp, Edit2 } from 'lucide-react'
+import { Plus, Clock, User, Search, Filter, CalendarDays, MapPin, ChevronDown, ChevronUp, Edit2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { bookingService } from '@/services/bookingService'
 import { customerService } from '@/services/customerService'
 import { courtService } from '@/services/courtService'
@@ -35,6 +35,13 @@ export default function ReservasView() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
   const [actionError, setActionError] = useState('')
+
+  // Buscador de Clientes
+  const [customerSearchTerm, setCustomerSearchTerm] = useState('')
+  const [isCustomerDropdownOpen, setIsCustomerDropdownOpen] = useState(false)
+
+  // Estado para la Agenda Diaria
+  const [scheduleDate, setScheduleDate] = useState<Date>(new Date())
 
   useEffect(() => {
     fetchData()
@@ -119,6 +126,7 @@ export default function ReservasView() {
     setEditingId(null)
     setFormData({ customer_id: '', court_id: '', booking_date: '', start_time: '08:00', duration: '1' })
     setSubmitError('')
+    setCustomerSearchTerm('')
     setIsModalOpen(true)
   }
 
@@ -135,15 +143,19 @@ export default function ReservasView() {
     const dd = String(d.getDate()).padStart(2, '0')
     const formattedDate = `${yyyy}-${mm}-${dd}`
 
+    const customerIdStr = reserva.customer_id ? reserva.customer_id.toString() : ''
+    const customerObj = clientes.find(c => c.id.toString() === customerIdStr)
+
     setEditingId(reserva.id)
     setFormData({
-      customer_id: reserva.customer_id ? reserva.customer_id.toString() : '',
+      customer_id: customerIdStr,
       court_id: reserva.court_id ? reserva.court_id.toString() : '',
       booking_date: formattedDate,
       start_time: reserva.start_time?.slice(0, 5) || '08:00',
       duration: diffHours.toString()
     })
     setSubmitError('')
+    setCustomerSearchTerm(customerObj ? `${customerObj.full_name} (${customerObj.identification_number || customerObj.email || 'Sin doc'})` : '')
     setIsModalOpen(true)
   }
 
@@ -162,13 +174,118 @@ export default function ReservasView() {
     return new Date(dateObj.getTime() + Math.abs(dateObj.getTimezoneOffset() * 60000)).toLocaleDateString()
   }
 
-  // Generar bloques de tiempo (06:00 a 23:00)
-  const timeSlots = Array.from({ length: 35 }, (_, i) => {
-    const totalMins = 6 * 60 + i * 30
-    const h = Math.floor(totalMins / 60).toString().padStart(2, '0')
+  const formatAMPM = (timeStr?: string) => {
+    if (!timeStr) return ''
+    const [hStr, mStr] = timeStr.split(':')
+    let h = parseInt(hStr, 10)
+    const m = parseInt(mStr, 10)
+    const ampm = h >= 12 ? 'PM' : 'AM'
+    h = h % 12
+    h = h ? h : 12 // la hora 0 debe ser 12
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')} ${ampm}`
+  }
+
+  // Generar bloques de tiempo (08:00 a 00:00)
+  const timeSlots = Array.from({ length: 33 }, (_, i) => {
+    const totalMins = 8 * 60 + i * 30
+    const h = (Math.floor(totalMins / 60) % 24).toString().padStart(2, '0')
     const m = (totalMins % 60).toString().padStart(2, '0')
     return `${h}:${m}`
   })
+
+  // ==========================================
+  // LÓGICA DE AGENDA DIARIA (GRID)
+  // ==========================================
+  const prevDay = () => {
+    const d = new Date(scheduleDate)
+    d.setDate(d.getDate() - 1)
+    setScheduleDate(d)
+  }
+  const nextDay = () => {
+    const d = new Date(scheduleDate)
+    d.setDate(d.getDate() + 1)
+    setScheduleDate(d)
+  }
+  const goToToday = () => setScheduleDate(new Date())
+
+  const formatDateForSchedule = (d: Date) => {
+    const options: Intl.DateTimeFormatOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }
+    return d.toLocaleDateString('es-ES', options).replace(/^\w/, (c) => c.toUpperCase())
+  }
+
+  const handleCellClick = (timeSlot: string, courtId: string) => {
+    const yyyy = scheduleDate.getFullYear()
+    const mm = String(scheduleDate.getMonth() + 1).padStart(2, '0')
+    const dd = String(scheduleDate.getDate()).padStart(2, '0')
+    const formattedDate = `${yyyy}-${mm}-${dd}`
+
+    setEditingId(null)
+    setFormData({
+      customer_id: '',
+      court_id: courtId,
+      booking_date: formattedDate,
+      start_time: timeSlot,
+      duration: '1'
+    })
+    setSubmitError('')
+    setCustomerSearchTerm('')
+    setIsModalOpen(true)
+  }
+
+  const scheduleReservas = reservas.filter(r => {
+    if (!r.booking_date) return false
+    
+    // Extraer YYYY-MM-DD de scheduleDate (la fecha que el usuario seleccionó en la UI)
+    const yyyy = scheduleDate.getFullYear()
+    const mm = String(scheduleDate.getMonth() + 1).padStart(2, '0')
+    const dd = String(scheduleDate.getDate()).padStart(2, '0')
+    const targetDateStr = `${yyyy}-${mm}-${dd}`
+    
+    // Extraer YYYY-MM-DD de la base de datos de forma directa (ignorar T00:00:00.000Z)
+    const rDateStr = typeof r.booking_date === 'string' ? r.booking_date.split('T')[0] : new Date(r.booking_date).toISOString().split('T')[0]
+    
+    return rDateStr === targetDateStr
+  })
+
+  const buildGrid = () => {
+    const grid: Record<string, Record<string, any>> = {}
+    timeSlots.forEach(time => {
+      grid[time] = {}
+      canchas.forEach(c => {
+        grid[time][c.id] = { type: 'empty' }
+      })
+    })
+
+    scheduleReservas.forEach(r => {
+      const start = r.start_time?.slice(0, 5)
+      const end = r.end_time?.slice(0, 5)
+      if (!start || !end) return
+      
+      // Fallback robusto por si el backend no envía el court_id pero sí el court_name
+      let courtId = r.court_id
+      if (!courtId && r.court_name) {
+        const found = canchas.find(c => c.court_name === r.court_name)
+        if (found) courtId = found.id
+      }
+      if (!courtId) return
+
+      const startIndex = timeSlots.indexOf(start)
+      const endIndex = timeSlots.indexOf(end)
+      const span = (endIndex !== -1 ? endIndex : timeSlots.length) - startIndex
+
+      if (startIndex !== -1 && grid[start]) {
+        grid[start][courtId] = { type: 'booking', reserva: r, rowSpan: span > 0 ? span : 1 }
+        for (let i = 1; i < span; i++) {
+          const skipTime = timeSlots[startIndex + i]
+          if (skipTime && grid[skipTime]) {
+            grid[skipTime][courtId] = { type: 'skip' }
+          }
+        }
+      }
+    })
+    return grid
+  }
+  const scheduleGrid = buildGrid()
 
   // ==========================================
   // LÓGICA DE PRÓXIMAS RESERVAS (TOP SECTION)
@@ -278,7 +395,7 @@ export default function ReservasView() {
                     </div>
                     <div className="flex items-center gap-2">
                       <Clock size={14} />
-                      {reserva.start_time?.slice(0, 5)} - {reserva.end_time?.slice(0, 5)} ({getDuracion(reserva.start_time, reserva.end_time)})
+                      {formatAMPM(reserva.start_time)} - {formatAMPM(reserva.end_time)} ({getDuracion(reserva.start_time, reserva.end_time)})
                     </div>
                     <div className="flex items-center gap-2 text-foreground font-medium mt-2 pt-2 border-t border-border/50">
                       <MapPin size={14} className="text-primary" />
@@ -313,7 +430,113 @@ export default function ReservasView() {
 
       <hr className="border-border my-8" />
 
-      {/* SECCIÓN 2: HISTORIAL Y BÚSQUEDA */}
+      {/* SECCIÓN 2: AGENDA DIARIA (HORARIO) */}
+      <div className="mb-12">
+        <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+          <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+            <CalendarDays className="text-primary" />
+            Agenda Diaria <span className="text-sm font-normal text-muted-foreground ml-2">({scheduleReservas.length} reservas)</span>
+          </h2>
+
+          <div className="flex items-center bg-card border border-border rounded-lg p-1 shadow-sm">
+            <button onClick={prevDay} className="p-2 hover:bg-secondary rounded-md transition-colors text-muted-foreground hover:text-foreground">
+              <ChevronLeft size={20} />
+            </button>
+            <div 
+              onClick={goToToday}
+              className="text-sm font-bold min-w-[200px] text-center text-foreground cursor-pointer hover:text-primary transition-colors select-none"
+            >
+              {formatDateForSchedule(scheduleDate)}
+            </div>
+            <button onClick={nextDay} className="p-2 hover:bg-secondary rounded-md transition-colors text-muted-foreground hover:text-foreground">
+              <ChevronRight size={20} />
+            </button>
+          </div>
+        </div>
+
+        <div className="bg-card border border-border rounded-lg overflow-hidden overflow-x-auto shadow-sm">
+          <table className="w-full text-sm border-collapse min-w-[800px]">
+            <thead>
+              <tr>
+                <th className="border-b border-r border-border bg-secondary/80 p-3 w-28 text-center text-muted-foreground font-bold sticky left-0 z-20">Hora</th>
+                {canchas.map(c => (
+                  <th key={c.id} className="border-b border-r border-border bg-secondary/80 p-3 text-center text-foreground font-bold min-w-[160px] max-w-[200px]">
+                    <div className="truncate">{c.court_name}</div>
+                    <div className="text-[10px] text-muted-foreground font-normal mt-0.5">{c.sport || 'Cancha'} {c.status !== 'Available' ? '(Inactiva)' : ''}</div>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {timeSlots.map((time) => (
+                <tr key={time}>
+                  <td className="border-b border-r border-border bg-secondary/30 p-2 text-center text-muted-foreground font-semibold sticky left-0 z-10">
+                    {formatAMPM(time)}
+                  </td>
+                  {canchas.map(c => {
+                    const cell = scheduleGrid[time]?.[c.id]
+                    if (!cell || cell.type === 'skip') return null;
+
+                    if (cell.type === 'empty') {
+                      return (
+                        <td 
+                          key={`${time}-${c.id}`} 
+                          className={`border-b border-r border-border p-2 transition-colors cursor-pointer group ${c.status !== 'Available' ? 'bg-secondary/10' : 'hover:bg-secondary/40'}`}
+                          onClick={() => c.status === 'Available' && handleCellClick(time, c.id.toString())}
+                        >
+                          {c.status === 'Available' && (
+                            <div className="h-full w-full min-h-[36px] flex items-center justify-center opacity-0 group-hover:opacity-100 text-primary transition-opacity">
+                              <Plus size={18} />
+                            </div>
+                          )}
+                        </td>
+                      )
+                    }
+
+                    if (cell.type === 'booking') {
+                      const { reserva, rowSpan } = cell
+                      let bgColor = 'bg-yellow-500/10 border-yellow-500/30 text-yellow-500 hover:bg-yellow-500/20'
+                      if (reserva.status === 'Confirmed') bgColor = 'bg-green-500/10 border-green-500/30 text-green-500 hover:bg-green-500/20'
+                      if (reserva.status === 'Completed') bgColor = 'bg-blue-500/10 border-blue-500/30 text-blue-500 hover:bg-blue-500/20'
+                      if (reserva.status === 'Cancelled' || reserva.status === 'No_show') bgColor = 'bg-gray-500/10 border-gray-500/30 text-gray-500 hover:bg-gray-500/20 opacity-70'
+
+                      return (
+                        <td 
+                          key={`${time}-${c.id}`} 
+                          rowSpan={rowSpan}
+                          className="border-b border-r border-border p-1.5 align-top"
+                        >
+                          <div 
+                            onClick={() => openEditModal(reserva)}
+                            className={`h-full w-full rounded-md border-l-4 border-y border-r p-2 cursor-pointer transition-all flex flex-col justify-start relative overflow-hidden ${bgColor}`}
+                            style={{ minHeight: `${(rowSpan * 53) - 12}px` }}
+                          >
+                            <div className="font-bold text-xs truncate pr-4">{reserva.customer_name}</div>
+                            {rowSpan > 1 && (
+                              <div className="text-[11px] opacity-80 mt-1 flex items-center gap-1">
+                                <Clock size={10} />
+                                {formatAMPM(reserva.start_time)} - {formatAMPM(reserva.end_time)}
+                              </div>
+                            )}
+                            <div className="absolute top-2 right-2 opacity-50">
+                              <User size={12} />
+                            </div>
+                          </div>
+                        </td>
+                      )
+                    }
+                    return null
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <hr className="border-border my-8" />
+
+      {/* SECCIÓN 3: HISTORIAL Y BÚSQUEDA */}
       <div>
         <h2 className="text-xl font-bold text-foreground mb-4">Historial de Reservas</h2>
         
@@ -408,7 +631,7 @@ export default function ReservasView() {
                         </td>
                         <td className="py-4 px-6 text-foreground">{reserva.court_name}</td>
                         <td className="py-4 px-6 text-foreground">{formatDate(reserva.booking_date)}</td>
-                        <td className="py-4 px-6 text-foreground">{reserva.start_time?.slice(0, 5)} - {reserva.end_time?.slice(0, 5)}</td>
+                        <td className="py-4 px-6 text-sm text-foreground">{formatAMPM(reserva.start_time)} - {formatAMPM(reserva.end_time)}</td>
                         <td className="py-4 px-6 text-foreground">
                           <div className="flex items-center gap-2 text-muted-foreground">
                             <Clock size={14} />
@@ -464,21 +687,61 @@ export default function ReservasView() {
               {submitError}
             </div>
           )}
-          <div>
+          <div className="relative">
             <label className="block text-sm font-medium text-muted-foreground mb-1">
               Cliente *
             </label>
-            <select 
-              required
-              value={formData.customer_id}
-              onChange={(e) => setFormData({...formData, customer_id: e.target.value})}
-              className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground focus:outline-none focus:border-primary cursor-pointer"
-            >
-              <option value="" disabled>Selecciona un cliente</option>
-              {clientes.map(c => (
-                <option key={c.id} value={c.id}>{c.full_name} ({c.identification_number || c.email || 'Sin doc'})</option>
-              ))}
-            </select>
+            <input 
+              type="text"
+              required={!formData.customer_id}
+              value={customerSearchTerm}
+              onFocus={() => setIsCustomerDropdownOpen(true)}
+              onChange={(e) => {
+                setCustomerSearchTerm(e.target.value)
+                setFormData({...formData, customer_id: ''})
+                setIsCustomerDropdownOpen(true)
+              }}
+              onBlur={() => setIsCustomerDropdownOpen(false)}
+              placeholder="Buscar por nombre, correo o documento..."
+              className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground focus:outline-none focus:border-primary transition-colors"
+            />
+            {isCustomerDropdownOpen && (
+              <ul className="absolute z-50 w-full mt-1 max-h-48 overflow-y-auto bg-card border border-border rounded-lg shadow-xl">
+                {clientes
+                  .filter(c => {
+                    const term = customerSearchTerm.toLowerCase()
+                    return c.full_name?.toLowerCase().includes(term) || 
+                           c.email?.toLowerCase().includes(term) || 
+                           c.identification_number?.toLowerCase().includes(term)
+                  })
+                  .slice(0, 50)
+                  .map(c => (
+                    <li 
+                      key={c.id} 
+                      onMouseDown={(e) => {
+                        e.preventDefault()
+                        setFormData({...formData, customer_id: c.id.toString()})
+                        setCustomerSearchTerm(`${c.full_name} (${c.identification_number || c.email || 'Sin doc'})`)
+                        setIsCustomerDropdownOpen(false)
+                      }}
+                      className="px-4 py-2 hover:bg-secondary cursor-pointer text-sm text-foreground transition-colors border-b border-border/50 last:border-0"
+                    >
+                      <div className="font-semibold">{c.full_name}</div>
+                      <div className="text-xs text-muted-foreground flex gap-1 mt-0.5">
+                        {c.email} {c.identification_number ? `• Doc: ${c.identification_number}` : ''}
+                      </div>
+                    </li>
+                ))}
+                {clientes.filter(c => {
+                    const term = customerSearchTerm.toLowerCase()
+                    return c.full_name?.toLowerCase().includes(term) || 
+                           c.email?.toLowerCase().includes(term) || 
+                           c.identification_number?.toLowerCase().includes(term)
+                  }).length === 0 && (
+                  <li className="px-4 py-3 text-sm text-muted-foreground text-center">No se encontraron clientes</li>
+                )}
+              </ul>
+            )}
           </div>
 
           <div>
@@ -492,8 +755,12 @@ export default function ReservasView() {
               className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground focus:outline-none focus:border-primary cursor-pointer"
             >
               <option value="" disabled>Selecciona una cancha</option>
-              {canchas.map(c => (
-                <option key={c.id} value={c.id}>{c.court_name}</option>
+              {canchas
+                .filter(c => c.status === 'Available' || c.id.toString() === formData.court_id)
+                .map(c => (
+                <option key={c.id} value={c.id}>
+                  {c.court_name} {c.status !== 'Available' ? '(Inhabilitada)' : ''}
+                </option>
               ))}
             </select>
           </div>
@@ -523,7 +790,7 @@ export default function ReservasView() {
                 className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground focus:outline-none focus:border-primary cursor-pointer"
               >
                 {timeSlots.map(time => (
-                  <option key={time} value={time}>{time}</option>
+                  <option key={time} value={time}>{formatAMPM(time)}</option>
                 ))}
               </select>
             </div>
