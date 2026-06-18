@@ -14,7 +14,7 @@ const login = async (req, res) => {
     }
 
     const query =
-      "SELECT id, username, password_hash, first_name, last_name, role_id, status, first_name || ' ' || last_name AS full_name FROM users WHERE username = $1 OR email = $1";
+      "SELECT id, username, email, password_hash, first_name, last_name, role_id, status, first_name || ' ' || last_name AS full_name FROM users WHERE username = $1 OR email = $1";
     const result = await pool.query(query, [username]);
 
     if (result.rows.length === 0) {
@@ -45,7 +45,7 @@ const login = async (req, res) => {
     );
 
     const customerQuery = "SELECT id, phone, email FROM customers WHERE email = $1";
-    const customerResult = await pool.query(customerQuery, [user.username]);
+    const customerResult = await pool.query(customerQuery, [user.email || user.username]);
     const customer = customerResult.rows[0];
 
     return res.json({
@@ -148,18 +148,23 @@ const register = async (req, res) => {
 
 const getMe = async (req, res) => {
   try {
+    const userQuery = "SELECT id, username, email, first_name || ' ' || last_name AS full_name, role_id, status FROM users WHERE id = $1";
+    const userResult = await pool.query(userQuery, [req.user.id]);
+    const user = userResult.rows[0] || req.user;
     const customerQuery = "SELECT id, phone, email FROM customers WHERE email = $1";
-    const customerResult = await pool.query(customerQuery, [req.user.username]);
+    const customerResult = await pool.query(customerQuery, [user.email || req.user.username]);
     const customer = customerResult.rows[0];
     res.json({
       success: true,
       user: {
-        id: req.user.id,
-        username: req.user.username,
-        role_id: req.user.role_id,
+        id: user.id,
+        username: user.username,
+        full_name: user.full_name,
+        role_id: user.role_id,
+        status: user.status,
         customer_id: customer ? customer.id : null,
         phone: customer ? customer.phone : null,
-        email: customer ? customer.email : null,
+        email: customer ? customer.email : user.email,
       }
     });
   } catch (error) {
@@ -208,27 +213,39 @@ const recoverPassword = async (req, res) => {
     // Construimos el enlace para restablecer la contraseña
     const resetLink = `${process.env.FRONTEND_URL || "http://localhost:5173"}/reset-password?token=${token}`;
 
+    // Mostrar enlace en consola para desarrollo (útil sin SMTP)
+    console.log("\n═══════════════════════════════════════════");
+    console.log("🔗 ENLACE DE RECUPERACIÓN (desarrollo):");
+    console.log(`  ${resetLink}`);
+    console.log("═══════════════════════════════════════════\n");
+
     // Enviamos el correo usando Nodemailer
     await mailer.sendMail({
-      from: `"SportSpaces OS" <no-reply@sportspaces.com>`,
+      from: `"CourtManager" <no-reply@courtmanager.com>`,
       to: email,
-      subject: "Recuperación de contraseña - SportSpaces OS",
+      subject: "Recuperación de contraseña - CourtManager",
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e4e4e7; border-radius: 8px;">
-          <h2 style="color: #10b981; text-align: center; margin-top: 0;">🏟️ SportSpaces OS</h2>
-          <hr style="border: 0; border-top: 1px solid #e4e4e7; margin: 20px 0;">
-          <p>Hola, <strong>${user.full_name || user.username}</strong>,</p>
-          <p> Hemos recibido una solicitud para restablecer tu contraseña en la plataforma de gestión de complejos deportivos <strong>SportSpaces OS</strong>.</p>
-          <p>Para proceder con el restablecimiento de tu contraseña, por favor haz clic en el siguiente botón:</p>
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${resetLink}" style="background-color: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Restablecer Contraseña</a>
+        <div style="font-family: 'Inter', Arial, sans-serif; max-width: 580px; margin: 0 auto; background: #0a0e27; padding: 40px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.06);">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <div style="display: inline-block; width: 56px; height: 56px; background: linear-gradient(135deg, #ccff00, #a6e000); border-radius: 14px; line-height: 56px; margin-bottom: 12px;">
+              <span style="font-size: 24px;">🏟️</span>
+            </div>
+            <h1 style="color: #ffffff; font-size: 22px; font-weight: 900; margin: 0; letter-spacing: -0.5px;">CourtManager</h1>
+            <p style="color: #ccff00; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 3px; margin: 4px 0 0 0;">Sistema de Gestión Integral</p>
           </div>
-          <p style="font-size: 13px; color: #ef4444; font-weight: 500; text-align: center;">Este enlace tiene una validez de 1 hora.</p>
-          <hr style="border: 0; border-top: 1px solid #e4e4e7; margin: 20px 0;">
-          <p style="font-size: 12px; color: #71717a;">Si el botón no funciona, copia y pega el siguiente enlace directamente en tu navegador:</p>
-          <p style="font-size: 12px; color: #10b981; word-break: break-all; font-family: monospace;">${resetLink}</p>
-          <hr style="border: 0; border-top: 1px solid #e4e4e7; margin: 20px 0;">
-          <p style="font-size: 12px; color: #a1a1aa; text-align: center;">Si no solicitaste este restablecimiento, puedes ignorar este correo de forma totalmente segura.</p>
+          <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.06); margin: 24px 0;">
+          <p style="color: #a0a0b0; font-size: 14px; line-height: 1.6;">Hola, <strong style="color: #ffffff;">${user.full_name || user.username}</strong>,</p>
+          <p style="color: #a0a0b0; font-size: 14px; line-height: 1.6;">Recibimos una solicitud para restablecer tu contraseña en <strong style="color: #ffffff;">CourtManager</strong>.</p>
+          <p style="color: #a0a0b0; font-size: 14px; line-height: 1.6;">Haz clic en el botón para continuar:</p>
+          <div style="text-align: center; margin: 32px 0;">
+            <a href="${resetLink}" style="background: linear-gradient(135deg, #ccff00, #a6e000); color: #0a0e27; padding: 14px 32px; text-decoration: none; border-radius: 12px; font-weight: 900; font-size: 14px; display: inline-block; letter-spacing: 0.5px; box-shadow: 0 0 30px rgba(204,255,0,0.15);">Restablecer Contraseña</a>
+          </div>
+          <p style="font-size: 12px; color: #ef4444; font-weight: 600; text-align: center;">Este enlace expira en 1 hora</p>
+          <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.06); margin: 24px 0;">
+          <p style="font-size: 12px; color: #555566;">Si el botón no funciona, copia este enlace en tu navegador:</p>
+          <p style="font-size: 12px; color: #ccff00; word-break: break-all; font-family: monospace; background: rgba(255,255,255,0.03); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);">${resetLink}</p>
+          <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.06); margin: 24px 0;">
+          <p style="font-size: 12px; color: #555566; text-align: center;">Si no solicitaste esto, ignora este correo.</p>
         </div>
       `,
     });
