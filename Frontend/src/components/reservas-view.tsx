@@ -97,7 +97,12 @@ export default function ReservasView() {
       
       if (res.success) {
         setIsModalOpen(false)
-        setFormData({ customer_id: '', court_id: '', booking_date: '', start_time: '08:00', duration: '1' })
+        const today = new Date()
+        const yyyy = today.getFullYear()
+        const mm = String(today.getMonth() + 1).padStart(2, '0')
+        const dd = String(today.getDate()).padStart(2, '0')
+        
+        setFormData({ customer_id: '', court_id: '', booking_date: `${yyyy}-${mm}-${dd}`, start_time: '08:00', duration: '1' })
         setEditingId(null)
         fetchData()
       }
@@ -123,8 +128,13 @@ export default function ReservasView() {
   }
 
   const openCreateModal = () => {
+    const today = new Date()
+    const yyyy = today.getFullYear()
+    const mm = String(today.getMonth() + 1).padStart(2, '0')
+    const dd = String(today.getDate()).padStart(2, '0')
+
     setEditingId(null)
-    setFormData({ customer_id: '', court_id: '', booking_date: '', start_time: '08:00', duration: '1' })
+    setFormData({ customer_id: '', court_id: '', booking_date: `${yyyy}-${mm}-${dd}`, start_time: '08:00', duration: '1' })
     setSubmitError('')
     setCustomerSearchTerm('')
     setIsModalOpen(true)

@@ -33,7 +33,10 @@ export default function BookingsPage({ user }) {
   const [showModal, setShowModal] = useState(false);
   const [selectedCourtId, setSelectedCourtId] = useState('');
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
-  const [bookingDate, setBookingDate] = useState('');
+  const [bookingDate, setBookingDate] = useState(() => {
+    const today = new Date();
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  });
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [createLoading, setCreateLoading] = useState(false);
@@ -201,7 +204,8 @@ export default function BookingsPage({ user }) {
         // Reset states
         setSelectedCourtId('');
         setSelectedCustomerId('');
-        setBookingDate('');
+        const today = new Date();
+        setBookingDate(`${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`);
         setStartTime('');
         setEndTime('');
         setAvailabilityStatus('idle');

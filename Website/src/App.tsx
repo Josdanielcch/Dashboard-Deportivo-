@@ -27,7 +27,13 @@ export default function App() {
 
   // Filtering States in Explorar view
   const [selectedSports, setSelectedSports] = useState<SportType[]>([]);
-  const [selectedDate, setSelectedDate] = useState<string>('2026-05-28');
+  const [selectedDate, setSelectedDate] = useState<string>(() => {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  });
   const [selectedPeriods, setSelectedPeriods] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
   
