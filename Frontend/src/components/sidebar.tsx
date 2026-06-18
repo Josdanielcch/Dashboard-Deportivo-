@@ -13,10 +13,12 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
-  Sparkles
+  Sparkles,
+  Settings
 } from 'lucide-react'
 import { useAuthSafe } from './auth-context'
 import { useState } from 'react'
+import ProfileSettingsModal from './profile-settings-modal'
 
 interface SidebarProps {
   activeModule: string
@@ -26,8 +28,10 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ activeModule, setActiveModule, isMobileMenuOpen, setIsMobileMenuOpen }: SidebarProps) {
-  const { userName, logout, user } = useAuthSafe()
+  const { logout, user } = useAuthSafe()
+  const userName = user?.full_name || user?.username || ''
   const [collapsed, setCollapsed] = useState(false)
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
   const modules = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -67,7 +71,12 @@ export default function Sidebar({ activeModule, setActiveModule, isMobileMenuOpe
         />
       )}
 
-      <aside className={`fixed inset-y-0 left-0 z-50 bg-[#060a1a] border-r border-white/[0.06] p-3 flex flex-col h-screen transform transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] md:relative md:translate-x-0 ${isMobileMenuOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'} ${collapsed ? 'w-[72px]' : 'w-64'}`}>
+      <ProfileSettingsModal 
+        isOpen={isSettingsOpen} 
+        onClose={() => setIsSettingsOpen(false)} 
+      />
+
+      <aside className={`fixed inset-y-0 left-0 z-40 bg-[#060a1a] border-r border-white/[0.06] p-3 flex flex-col h-screen transform transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] md:relative md:translate-x-0 ${isMobileMenuOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'} ${collapsed ? 'w-[72px]' : 'w-64'}`}>
 
         {/* Logo Header */}
         <div className={`flex items-center mb-6 ${collapsed ? 'flex-col gap-2 pt-2' : 'justify-between px-1'}`}>
@@ -158,14 +167,25 @@ export default function Sidebar({ activeModule, setActiveModule, isMobileMenuOpe
             )}
           </div>
 
-          {/* Logout */}
-          <button
-            onClick={logout}
-            className={`w-full flex items-center ${collapsed ? 'justify-center' : 'justify-center gap-2'} px-3 py-2.5 rounded-xl bg-red-500/8 text-red-400 hover:bg-red-500/15 hover:text-red-300 transition-all border border-red-500/10 hover:border-red-500/20 font-semibold text-sm group`}
-          >
-            <LogOut size={18} className="group-hover:translate-x-0.5 transition-transform" />
-            {!collapsed && <span>Cerrar Sesión</span>}
-          </button>
+          {/* Actions: Settings & Logout */}
+          <div className={`flex ${collapsed ? 'flex-col' : 'flex-row'} gap-2 w-full`}>
+            <button
+              onClick={() => setIsSettingsOpen(true)}
+              className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-white/[0.03] text-zinc-300 hover:bg-white/[0.08] hover:text-white transition-all border border-white/[0.05] hover:border-white/[0.1] font-semibold text-sm group`}
+              title="Configuración de Perfil"
+            >
+              <Settings size={18} className="group-hover:rotate-45 transition-transform duration-300" />
+              {!collapsed && <span>Perfil</span>}
+            </button>
+            <button
+              onClick={logout}
+              className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-red-500/8 text-red-400 hover:bg-red-500/15 hover:text-red-300 transition-all border border-red-500/10 hover:border-red-500/20 font-semibold text-sm group`}
+              title="Cerrar Sesión"
+            >
+              <LogOut size={18} className="group-hover:translate-x-0.5 transition-transform" />
+              {!collapsed && <span>Salir</span>}
+            </button>
+          </div>
 
           {!collapsed && (
             <p className="text-[10px] text-zinc-600 text-center pt-1 font-medium">

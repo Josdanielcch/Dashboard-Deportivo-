@@ -1,5 +1,11 @@
 // Usa la variable de entorno si existe (para local), o la de Railway por defecto
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://dashboard-deportivo-production.up.railway.app/api';
+// ======= CONFIGURACIÓN DE ENTORNO =======
+// Para correr de manera LOCAL: Descomenta la siguiente línea y comenta la de producción
+const API_BASE_URL = 'http://localhost:3000/api';
+
+// Para correr en PRODUCCIÓN: Descomenta la siguiente línea y comenta la local
+//const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://dashboard-deportivo-production.up.railway.app/api';
+// ========================================
 
 async function request(path: string, options: RequestInit = {}) {
   const url = `${API_BASE_URL}${path}`;

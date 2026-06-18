@@ -14,13 +14,18 @@ import UsuariosView from '@/components/usuarios-view'
 import AuditoriaView from '@/components/auditoria-view'
 
 export default function AppContent() {
-  const { isAuthenticated, login } = useAuth()
+  const { isAuthenticated, login, user } = useAuth()
   const [activeModule, setActiveModule] = useState('dashboard')
   const [mounted, setMounted] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [currentTime, setCurrentTime] = useState(new Date())
 
   useEffect(() => {
     setMounted(true)
+    const timer = setInterval(() => {
+      setCurrentTime(new Date())
+    }, 1000)
+    return () => clearInterval(timer)
   }, [])
 
   const navigateTo = (module: string) => {
@@ -83,6 +88,24 @@ export default function AppContent() {
           >
             <Menu size={22} />
           </button>
+        </div>
+
+        {/* Desktop/Tablet Header Info Bar */}
+        <div className="hidden md:flex items-center justify-between px-8 py-5 border-b border-white/[0.06] bg-[#060a1a]/40 backdrop-blur-sm sticky top-0 z-30">
+          <div className="flex flex-col">
+            <span className="text-lg font-bold text-white capitalize">¡Hola, {user?.full_name || user?.username || 'Administrador'}!</span>
+            <span className="text-xs text-zinc-400">Panel de Administración</span>
+          </div>
+          <div className="flex items-center gap-4 bg-white/[0.03] px-4 py-2.5 rounded-xl border border-white/[0.05] shadow-sm">
+            <div className="text-right">
+              <div className="text-sm font-semibold text-[#ccff00] capitalize">
+                {currentTime.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+              </div>
+              <div className="text-xs text-zinc-300 font-mono mt-0.5">
+                {currentTime.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="flex-1 w-full max-w-[1600px] mx-auto overflow-x-hidden relative z-10">

@@ -62,5 +62,13 @@ export const userService = {
    */
   delete: async (id) => {
     return api.delete(`/users/${id}`);
+  },
+
+  /**
+   * Actualiza los datos del usuario logueado actualmente.
+   * @param {object} userData - Datos a actualizar (first_name, last_name, password).
+   */
+  updateMyProfile: async (userData) => {
+    return api.put('/users/profile', userData);
   }
 };

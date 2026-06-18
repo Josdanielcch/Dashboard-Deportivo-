@@ -142,11 +142,67 @@ const updateUserStatus = async (req, res) => {
   }
 };
 
+// Actualizar el propio perfil (sin requerir permisos de admin)
+const updateMyProfile = async (req, res) => {
+  try {
+    const id = req.user.id;
+    const { first_name, last_name, new_password, current_password } = req.body;
+    
+    let result;
+    if (new_password && new_password.trim() !== '') {
+      if (!current_password) {
+        return res.status(400).json({ error: 'Debes proporcionar tu contraseña actual para cambiarla' });
+      }
+
+      // Obtener el hash actual de la DB
+      const userRes = await pool.query('SELECT password_hash FROM users WHERE id = $1', [id]);
+      if (userRes.rows.length === 0) {
+        return res.status(404).json({ error: 'Usuario no encontrado' });
+      }
+
+      // Verificar contraseña actual
+      const isMatch = await bcrypt.compare(current_password, userRes.rows[0].password_hash);
+      if (!isMatch) {
+        return res.status(400).json({ error: 'La contraseña actual es incorrecta' });
+      }
+
+      const salt = await bcrypt.genSalt(10);
+      const password_hash = await bcrypt.hash(new_password, salt);
+      
+      result = await pool.query(`
+        UPDATE users 
+        SET first_name = COALESCE($1, first_name),
+            last_name = COALESCE($2, last_name),
+            password_hash = $3
+        WHERE id = $4
+        RETURNING id, username, first_name, last_name, role_id, status, first_name || ' ' || last_name AS full_name
+      `, [first_name, last_name, password_hash, id]);
+    } else {
+      result = await pool.query(`
+        UPDATE users 
+        SET first_name = COALESCE($1, first_name),
+            last_name = COALESCE($2, last_name)
+        WHERE id = $3
+        RETURNING id, username, first_name, last_name, role_id, status, first_name || ' ' || last_name AS full_name
+      `, [first_name, last_name, id]);
+    }
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+    res.json({ success: true, message: 'Perfil actualizado exitosamente', data: result.rows[0] });
+  } catch (error) {
+    console.error('Error al actualizar perfil:', error);
+    res.status(500).json({ error: 'Error al actualizar el perfil' });
+  }
+};
+
 module.exports = {
   getAllUsers,
   getUserById,
   createUser,
   updateUser,
   deleteUser,
-  updateUserStatus
+  updateUserStatus,
+  updateMyProfile
 };

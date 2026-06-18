@@ -34,9 +34,13 @@ const updateUserStatusSchema = z.object({
   })
 });
 
-// Rutas protegidas (solo administradores pueden gestionar usuarios)
-// Asumimos que el nivel 10 es Admin, basándonos en tu authController
+// Rutas protegidas
 router.use(protect);
+
+// Ruta para que el usuario actualice su propio perfil (no requiere authorize admin)
+router.put('/profile', userController.updateMyProfile);
+
+// Las siguientes rutas son solo para administradores
 router.use(authorize(1));
 
 router.get('/', userController.getAllUsers);

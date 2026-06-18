@@ -16,6 +16,7 @@ interface AuthContextType {
   user: User | null
   login: (token: string, user: User) => void
   logout: () => void
+  updateContextUser: (updatedData: Partial<User>) => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -50,6 +51,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('user', JSON.stringify(newUser))
   }
 
+  const updateContextUser = (updatedData: Partial<User>) => {
+    if (user) {
+      const newUser = { ...user, ...updatedData };
+      setUser(newUser);
+      localStorage.setItem('user', JSON.stringify(newUser));
+    }
+  }
+
   const logout = () => {
     setToken(null)
     setUser(null)
@@ -63,7 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, token, user, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, token, user, login, logout, updateContextUser }}>
       {children}
     </AuthContext.Provider>
   )
@@ -78,6 +87,7 @@ export function useAuth() {
       user: null,
       login: () => {},
       logout: () => {},
+      updateContextUser: () => {},
     }
   }
   return context
@@ -91,6 +101,7 @@ export function useAuthSafe() {
     user: null,
     login: () => {},
     logout: () => {},
+    updateContextUser: () => {},
   }
 }
 
