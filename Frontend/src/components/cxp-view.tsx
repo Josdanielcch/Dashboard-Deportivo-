@@ -102,7 +102,7 @@ export default function CxpView() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">Cuentas por Pagar (CxP)</h1>
+          <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">Cuentas por Pagar</h1>
           <p className="text-zinc-400">Gestiona tus deudas con proveedores</p>
         </div>
       </div>
@@ -171,6 +171,7 @@ export default function CxpView() {
                 <th className="text-left py-4 px-6 text-zinc-400 font-semibold uppercase tracking-wider text-xs">ID</th>
                 <th className="text-left py-4 px-6 text-zinc-400 font-semibold uppercase tracking-wider text-xs">Proveedor</th>
                 <th className="text-left py-4 px-6 text-zinc-400 font-semibold uppercase tracking-wider text-xs">Factura</th>
+                <th className="text-left py-4 px-6 text-zinc-400 font-semibold uppercase tracking-wider text-xs">Fecha</th>
                 <th className="text-left py-4 px-6 text-zinc-400 font-semibold uppercase tracking-wider text-xs">Monto Original</th>
                 <th className="text-left py-4 px-6 text-zinc-400 font-semibold uppercase tracking-wider text-xs">Balance Pendiente</th>
                 <th className="text-left py-4 px-6 text-zinc-400 font-semibold uppercase tracking-wider text-xs">Estado</th>
@@ -180,7 +181,7 @@ export default function CxpView() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="py-16 text-center">
+                  <td colSpan={8} className="py-16 text-center">
                     <div className="flex justify-center">
                       <div className="animate-spin rounded-full h-8 w-8 border-2 border-[#1a1f3a] border-t-[#ccff00]"></div>
                     </div>
@@ -189,7 +190,7 @@ export default function CxpView() {
                 </tr>
               ) : filteredCxp.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-16 text-center">
+                  <td colSpan={8} className="py-16 text-center">
                     <div className="flex flex-col items-center gap-2">
                       <Search className="text-zinc-500" size={24} />
                       <p className="text-zinc-400">No se encontraron cuentas que coincidan con los filtros.</p>
@@ -210,6 +211,7 @@ export default function CxpView() {
                         </div>
                       </td>
                       <td className="py-4 px-6 text-zinc-400">{cxp.invoice_number || '-'}</td>
+                      <td className="py-4 px-6 text-zinc-400">{formatDate(cxp.purchase_date || cxp.created_at)}</td>
                       <td className="py-4 px-6 text-white font-semibold">${Number(cxp.total_amount || 0).toFixed(2)}</td>
                       <td className="py-4 px-6 text-rose-400 font-bold">${Number(cxp.balance || 0).toFixed(2)}</td>
                       <td className="py-4 px-6">
@@ -244,7 +246,7 @@ export default function CxpView() {
                     </tr>
                     {cxp.payments && cxp.payments.length > 0 && (
                       <tr className="bg-[#0a0e27]/30">
-                        <td colSpan={7} className="py-3 px-8">
+                        <td colSpan={8} className="py-3 px-8">
                           <div className="pl-4 border-l-2 border-[#ccff00]/30">
                             <p className="text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-wider">Historial de Abonos</p>
                             <div className="flex flex-col gap-2">

@@ -20,6 +20,7 @@ const dashboardRoutes = require('./routes/dashboardRoutes');
 const supplierRoutes = require('./routes/supplierRoutes');
 const purchaseRoutes = require('./routes/purchaseRoutes');
 const cxpRoutes = require('./routes/cxpRoutes');
+const settingsRoutes = require('./routes/settingsRoutes');
 
 // Middleware de error
 const { errorHandler } = require('./middleware/errorHandler');
@@ -74,6 +75,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/suppliers', supplierRoutes);
 app.use('/api/purchases', purchaseRoutes);
 app.use('/api/cxp', cxpRoutes);
+app.use('/api/settings', settingsRoutes);
 
 // Ruta 404
 app.use((req, res) => {

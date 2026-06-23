@@ -3,7 +3,20 @@ const pool = require('../config/database');
 const getAllCxp = async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT cxp.*, s.name as supplier_name, p.invoice_number
+      SELECT cxp.*, s.name as supplier_name, p.invoice_number, p.purchase_date,
+             (
+                SELECT COALESCE(json_agg(
+                    json_build_object(
+                        'id', pp.id, 
+                        'amount', pp.amount, 
+                        'payment_date', pp.payment_date, 
+                        'method_name', pm.method_name
+                    )
+                ), '[]'::json)
+                FROM payable_payments pp
+                LEFT JOIN payment_methods pm ON pp.payment_method_id = pm.id
+                WHERE pp.account_payable_id = cxp.id
+             ) as payments
       FROM accounts_payable cxp
       JOIN suppliers s ON cxp.supplier_id = s.id
       LEFT JOIN purchases p ON cxp.purchase_id = p.id

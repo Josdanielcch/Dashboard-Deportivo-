@@ -1,12 +1,14 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { DollarSign, TrendingUp, Search, Filter, Plus, Trash2, X, ShoppingCart, Eye, ChevronRight, Calendar } from 'lucide-react'
+import { DollarSign, TrendingUp, Search, Filter, Plus, Trash2, X, ShoppingCart, Eye, ChevronRight, Calendar, Printer } from 'lucide-react'
 import { billingService } from '@/services/billingService'
 import { customerService } from '@/services/customerService'
 import { productService } from '@/services/productService'
 import { bookingService } from '@/services/bookingService'
 import { Modal } from '@/components/ui/modal'
+import { SearchableSelect } from '@/components/ui/searchable-select'
+import { printInvoice } from '@/utils/printUtils'
 
 export default function VentasView() {
   const [ventas, setVentas] = useState<any[]>([])
@@ -153,6 +155,37 @@ export default function VentasView() {
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  const handlePrintVenta = (format: 'a4' | 'ticket') => {
+    if (!selectedInvoice) return;
+    
+    // Si hay una reserva asociada, la agregamos como un detalle más
+    const details = selectedInvoice.details.map((d: any) => ({
+      name: d.product_name,
+      quantity: d.quantity,
+      price: Number(d.price_unit),
+      subtotal: Number(d.subtotal)
+    }));
+
+    if (selectedInvoice.billing.booking_id) {
+      details.unshift({
+        name: `Reserva de Cancha (#${selectedInvoice.billing.booking_id})`,
+        quantity: 1,
+        price: Number(selectedInvoice.billing.total_amount) - details.reduce((acc: number, item: any) => acc + item.subtotal, 0),
+        subtotal: Number(selectedInvoice.billing.total_amount) - details.reduce((acc: number, item: any) => acc + item.subtotal, 0)
+      });
+    }
+
+    printInvoice({
+      type: 'venta',
+      id: selectedInvoice.billing.id,
+      date: selectedInvoice.billing.payment_date,
+      entityName: selectedInvoice.billing.full_name,
+      methodName: selectedInvoice.billing.method_name,
+      total: Number(selectedInvoice.billing.total_amount),
+      details: details
+    }, format);
   }
 
   const handleViewInvoice = async (id: number) => {
@@ -468,20 +501,22 @@ export default function VentasView() {
             <label className="block text-sm font-medium text-zinc-400 mb-1.5">
               Cliente *
             </label>
-            <select 
+            <SearchableSelect
               required
               value={formData.customer_id}
-              onChange={(e) => {
-                setFormData({...formData, customer_id: e.target.value})
+              onChange={(val) => {
+                setFormData({...formData, customer_id: val.toString()})
                 setBookingId('')
               }}
-              className="w-full bg-[#0a0e27] border border-[#1a1f3a] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[#ccff00]/50 transition-colors cursor-pointer"
-            >
-              <option value="" disabled className="bg-[#0a0e27]">Selecciona un cliente</option>
-              {clientes.map(c => (
-                <option key={c.id} value={c.id} className="bg-[#0a0e27]">{c.full_name}</option>
-              ))}
-            </select>
+              placeholder="Selecciona un cliente"
+              className="w-full bg-[#0a0e27] border border-[#1a1f3a] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[#ccff00]/50 transition-colors cursor-pointer flex justify-between items-center text-left"
+              options={clientes.map(c => ({
+                value: c.id,
+                label: c.full_name,
+                sublabel: `${c.email} ${c.identification_number ? `• Doc: ${c.identification_number}` : ''}`,
+                searchString: `${c.full_name} ${c.email} ${c.identification_number}`
+              }))}
+            />
           </div>
 
           {formData.customer_id && pendingBookingsCustomer.length > 0 && (
@@ -513,16 +548,18 @@ export default function VentasView() {
             <div className="flex gap-2 items-end">
               <div className="flex-1">
                 <label className="block text-xs text-zinc-500 mb-1">Producto</label>
-                <select 
+                <SearchableSelect
                   value={currentProduct}
-                  onChange={(e) => setCurrentProduct(e.target.value)}
-                  className="w-full bg-[#0a0e27] border border-[#1a1f3a] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#ccff00]/50 transition-colors cursor-pointer"
-                >
-                  <option value="" disabled className="bg-[#0a0e27]">Selecciona producto</option>
-                  {productos.map(p => (
-                    <option key={p.id} value={p.id} className="bg-[#0a0e27]">{p.product_name} - ${Number(p.price).toFixed(2)}</option>
-                  ))}
-                </select>
+                  onChange={(val) => setCurrentProduct(val.toString())}
+                  placeholder="Selecciona producto"
+                  className="w-full bg-[#0a0e27] border border-[#1a1f3a] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#ccff00]/50 transition-colors cursor-pointer flex justify-between items-center text-left"
+                  options={productos.map(p => ({
+                    value: p.id,
+                    label: `${p.product_name} - $${Number(p.price).toFixed(2)}`,
+                    sublabel: `Stock: ${p.stock}`,
+                    searchString: `${p.product_name}`
+                  }))}
+                />
               </div>
               <div className="w-24">
                 <label className="block text-xs text-zinc-500 mb-1">Cant.</label>
@@ -696,11 +733,27 @@ export default function VentasView() {
               </div>
             </div>
             
-            <div className="flex justify-end gap-3">
+            <div className="flex justify-end gap-3 mt-4">
+              <button 
+                type="button" 
+                onClick={() => handlePrintVenta('ticket')}
+                className="px-4 py-2 bg-[#0f1533] border border-[#1a1f3a] text-zinc-300 rounded-xl hover:bg-[#1a1f3a] hover:text-white transition-all font-medium flex items-center gap-2 text-sm"
+              >
+                <Printer size={16} />
+                Ticket
+              </button>
+              <button 
+                type="button" 
+                onClick={() => handlePrintVenta('a4')}
+                className="px-4 py-2 bg-[#0f1533] border border-[#1a1f3a] text-zinc-300 rounded-xl hover:bg-[#1a1f3a] hover:text-white transition-all font-medium flex items-center gap-2 text-sm"
+              >
+                <Printer size={16} />
+                A4
+              </button>
               <button 
                 type="button" 
                 onClick={() => setIsInvoiceModalOpen(false)}
-                className="px-5 py-2.5 bg-[#0a0e27] border border-[#1a1f3a] text-zinc-400 rounded-xl hover:bg-[#1a1f3a] hover:text-white transition-all font-medium"
+                className="px-5 py-2.5 bg-[#0a0e27] border border-[#1a1f3a] text-zinc-400 rounded-xl hover:bg-[#1a1f3a] hover:text-white transition-all font-medium ml-2"
               >
                 Cerrar
               </button>

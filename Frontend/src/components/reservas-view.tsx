@@ -6,6 +6,7 @@ import { bookingService } from '@/services/bookingService'
 import { customerService } from '@/services/customerService'
 import { courtService } from '@/services/courtService'
 import { Modal } from '@/components/ui/modal'
+import { SearchableSelect } from '@/components/ui/searchable-select'
 
 export default function ReservasView() {
   const [reservas, setReservas] = useState<any[]>([])
@@ -35,10 +36,6 @@ export default function ReservasView() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
   const [actionError, setActionError] = useState('')
-
-  // Buscador de Clientes
-  const [customerSearchTerm, setCustomerSearchTerm] = useState('')
-  const [isCustomerDropdownOpen, setIsCustomerDropdownOpen] = useState(false)
 
   // Estado para la Agenda Diaria
   const [scheduleDate, setScheduleDate] = useState<Date>(new Date())
@@ -136,7 +133,6 @@ export default function ReservasView() {
     setEditingId(null)
     setFormData({ customer_id: '', court_id: '', booking_date: `${yyyy}-${mm}-${dd}`, start_time: '08:00', duration: '1' })
     setSubmitError('')
-    setCustomerSearchTerm('')
     setIsModalOpen(true)
   }
 
@@ -154,7 +150,6 @@ export default function ReservasView() {
     const formattedDate = `${yyyy}-${mm}-${dd}`
 
     const customerIdStr = reserva.customer_id ? reserva.customer_id.toString() : ''
-    const customerObj = clientes.find(c => c.id.toString() === customerIdStr)
 
     setEditingId(reserva.id)
     setFormData({
@@ -165,7 +160,6 @@ export default function ReservasView() {
       duration: diffHours.toString()
     })
     setSubmitError('')
-    setCustomerSearchTerm(customerObj ? `${customerObj.full_name} (${customerObj.identification_number || customerObj.email || 'Sin doc'})` : '')
     setIsModalOpen(true)
   }
 
@@ -238,7 +232,6 @@ export default function ReservasView() {
       duration: '1'
     })
     setSubmitError('')
-    setCustomerSearchTerm('')
     setIsModalOpen(true)
   }
 
@@ -697,61 +690,22 @@ export default function ReservasView() {
               {submitError}
             </div>
           )}
-          <div className="relative">
+          <div>
             <label className="block text-sm font-medium text-muted-foreground mb-1">
               Cliente *
             </label>
-            <input 
-              type="text"
-              required={!formData.customer_id}
-              value={customerSearchTerm}
-              onFocus={() => setIsCustomerDropdownOpen(true)}
-              onChange={(e) => {
-                setCustomerSearchTerm(e.target.value)
-                setFormData({...formData, customer_id: ''})
-                setIsCustomerDropdownOpen(true)
-              }}
-              onBlur={() => setIsCustomerDropdownOpen(false)}
+            <SearchableSelect
+              required
+              value={formData.customer_id}
+              onChange={(val) => setFormData({...formData, customer_id: val.toString()})}
               placeholder="Buscar por nombre, correo o documento..."
-              className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground focus:outline-none focus:border-primary transition-colors"
+              options={clientes.map(c => ({
+                value: c.id,
+                label: c.full_name,
+                sublabel: `${c.email} ${c.identification_number ? `• Doc: ${c.identification_number}` : ''}`,
+                searchString: `${c.full_name} ${c.email} ${c.identification_number}`
+              }))}
             />
-            {isCustomerDropdownOpen && (
-              <ul className="absolute z-50 w-full mt-1 max-h-48 overflow-y-auto bg-card border border-border rounded-lg shadow-xl">
-                {clientes
-                  .filter(c => {
-                    const term = customerSearchTerm.toLowerCase()
-                    return c.full_name?.toLowerCase().includes(term) || 
-                           c.email?.toLowerCase().includes(term) || 
-                           c.identification_number?.toLowerCase().includes(term)
-                  })
-                  .slice(0, 50)
-                  .map(c => (
-                    <li 
-                      key={c.id} 
-                      onMouseDown={(e) => {
-                        e.preventDefault()
-                        setFormData({...formData, customer_id: c.id.toString()})
-                        setCustomerSearchTerm(`${c.full_name} (${c.identification_number || c.email || 'Sin doc'})`)
-                        setIsCustomerDropdownOpen(false)
-                      }}
-                      className="px-4 py-2 hover:bg-secondary cursor-pointer text-sm text-foreground transition-colors border-b border-border/50 last:border-0"
-                    >
-                      <div className="font-semibold">{c.full_name}</div>
-                      <div className="text-xs text-muted-foreground flex gap-1 mt-0.5">
-                        {c.email} {c.identification_number ? `• Doc: ${c.identification_number}` : ''}
-                      </div>
-                    </li>
-                ))}
-                {clientes.filter(c => {
-                    const term = customerSearchTerm.toLowerCase()
-                    return c.full_name?.toLowerCase().includes(term) || 
-                           c.email?.toLowerCase().includes(term) || 
-                           c.identification_number?.toLowerCase().includes(term)
-                  }).length === 0 && (
-                  <li className="px-4 py-3 text-sm text-muted-foreground text-center">No se encontraron clientes</li>
-                )}
-              </ul>
-            )}
           </div>
 
           <div>

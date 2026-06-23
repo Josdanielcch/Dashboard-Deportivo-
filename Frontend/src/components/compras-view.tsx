@@ -1,11 +1,13 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { DollarSign, TrendingDown, Search, Filter, Plus, Trash2, X, ShoppingCart, Eye, ChevronRight, Package } from 'lucide-react'
+import { DollarSign, TrendingDown, Search, Filter, Plus, Trash2, X, ShoppingCart, Eye, ChevronRight, Package, Printer } from 'lucide-react'
 import { purchaseService } from '@/services/purchaseService'
 import { supplierService } from '@/services/supplierService'
 import { productService } from '@/services/productService'
+import { SearchableSelect } from '@/components/ui/searchable-select'
 import { Modal } from '@/components/ui/modal'
+import { printInvoice } from '@/utils/printUtils'
 
 export default function ComprasView() {
   const [purchases, setPurchases] = useState<any[]>([])
@@ -135,6 +137,27 @@ export default function ComprasView() {
     } finally {
       setLoadingInvoice(false)
     }
+  }
+
+  const handlePrintCompra = (format: 'a4' | 'ticket') => {
+    if (!selectedInvoice) return;
+    
+    const details = selectedInvoice.details.map((d: any) => ({
+      name: d.product_name || d.description,
+      quantity: d.quantity,
+      price: Number(d.unit_cost),
+      subtotal: Number(d.subtotal)
+    }));
+
+    printInvoice({
+      type: 'compra',
+      id: selectedInvoice.purchase.id,
+      date: selectedInvoice.purchase.purchase_date,
+      entityName: selectedInvoice.purchase.supplier_name,
+      methodName: selectedInvoice.purchase.method_name || 'Crédito',
+      total: Number(selectedInvoice.purchase.total_amount),
+      details: details
+    }, format);
   }
 
   const filteredPurchases = purchases.filter((purchase) => {
@@ -302,7 +325,7 @@ export default function ComprasView() {
                         className="flex items-center gap-1.5 text-[#ccff00] hover:text-white transition-colors text-xs font-semibold bg-[#ccff00]/10 hover:bg-[#ccff00]/20 px-3 py-1.5 rounded-lg"
                       >
                         <Eye size={14} />
-                        Detalle
+                        Ver Factura
                       </button>
                     </td>
                   </tr>
@@ -325,17 +348,19 @@ export default function ComprasView() {
               <label className="block text-sm font-medium text-zinc-400 mb-1.5">
                 Proveedor *
               </label>
-              <select 
+              <SearchableSelect
                 required
                 value={formData.supplier_id}
-                onChange={(e) => setFormData({...formData, supplier_id: e.target.value})}
-                className="w-full bg-[#0a0e27] border border-[#1a1f3a] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[#ccff00]/50 transition-colors cursor-pointer"
-              >
-                <option value="" disabled className="bg-[#0a0e27]">Selecciona un proveedor</option>
-                {suppliers.map(s => (
-                  <option key={s.id} value={s.id} className="bg-[#0a0e27]">{s.name}</option>
-                ))}
-              </select>
+                onChange={(val) => setFormData({...formData, supplier_id: val.toString()})}
+                placeholder="Selecciona un proveedor"
+                className="w-full bg-[#0a0e27] border border-[#1a1f3a] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[#ccff00]/50 transition-colors cursor-pointer flex justify-between items-center text-left"
+                options={suppliers.map(s => ({
+                  value: s.id,
+                  label: s.name,
+                  sublabel: s.contact_email,
+                  searchString: `${s.name} ${s.contact_email} ${s.tax_id}`
+                }))}
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-zinc-400 mb-1.5">
@@ -359,16 +384,24 @@ export default function ComprasView() {
             <div className="grid grid-cols-12 gap-2 items-end">
               <div className="col-span-4">
                 <label className="block text-xs text-zinc-500 mb-1">Producto (Inventario)</label>
-                <select 
+                <SearchableSelect
                   value={currentProductId}
-                  onChange={(e) => {setCurrentProductId(e.target.value); setCurrentDesc('')}}
-                  className="w-full bg-[#0a0e27] border border-[#1a1f3a] rounded-lg px-2 py-2 text-sm text-white focus:outline-none focus:border-[#ccff00]/50 transition-colors cursor-pointer"
-                >
-                  <option value="" className="bg-[#0a0e27]">Gasto General (Sin inv.)</option>
-                  {products.map(p => (
-                    <option key={p.id} value={p.id} className="bg-[#0a0e27]">{p.product_name}</option>
-                  ))}
-                </select>
+                  onChange={(val) => {
+                    setCurrentProductId(val.toString())
+                    setCurrentDesc('')
+                  }}
+                  placeholder="Gasto General (Sin inv.)"
+                  className="w-full bg-[#0a0e27] border border-[#1a1f3a] rounded-lg px-2 py-2 text-sm text-white focus:outline-none focus:border-[#ccff00]/50 transition-colors cursor-pointer flex justify-between items-center text-left"
+                  options={[
+                    { value: '', label: 'Gasto General (Sin inv.)', searchString: 'gasto general sin inv' },
+                    ...products.map(p => ({
+                      value: p.id,
+                      label: p.product_name,
+                      sublabel: `Stock: ${p.stock}`,
+                      searchString: `${p.product_name}`
+                    }))
+                  ]}
+                />
               </div>
               <div className="col-span-3">
                 <label className="block text-xs text-zinc-500 mb-1">Descripción</label>
@@ -557,11 +590,27 @@ export default function ComprasView() {
               </div>
             </div>
             
-            <div className="flex justify-end gap-3">
+            <div className="flex justify-end gap-3 mt-4">
+              <button 
+                type="button" 
+                onClick={() => handlePrintCompra('ticket')}
+                className="px-4 py-2 bg-[#0f1533] border border-[#1a1f3a] text-zinc-300 rounded-xl hover:bg-[#1a1f3a] hover:text-white transition-all font-medium flex items-center gap-2 text-sm"
+              >
+                <Printer size={16} />
+                Ticket
+              </button>
+              <button 
+                type="button" 
+                onClick={() => handlePrintCompra('a4')}
+                className="px-4 py-2 bg-[#0f1533] border border-[#1a1f3a] text-zinc-300 rounded-xl hover:bg-[#1a1f3a] hover:text-white transition-all font-medium flex items-center gap-2 text-sm"
+              >
+                <Printer size={16} />
+                A4
+              </button>
               <button 
                 type="button" 
                 onClick={() => setIsInvoiceModalOpen(false)}
-                className="px-5 py-2.5 bg-[#0a0e27] border border-[#1a1f3a] text-zinc-400 rounded-xl hover:bg-[#1a1f3a] hover:text-white transition-all font-medium"
+                className="px-5 py-2.5 bg-[#0a0e27] border border-[#1a1f3a] text-zinc-400 rounded-xl hover:bg-[#1a1f3a] hover:text-white transition-all font-medium ml-2"
               >
                 Cerrar
               </button>

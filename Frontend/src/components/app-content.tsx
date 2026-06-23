@@ -15,6 +15,7 @@ import CxpView from '@/components/cxp-view'
 import UsuariosView from '@/components/usuarios-view'
 import AuditoriaView from '@/components/auditoria-view'
 import ProveedoresView from '@/components/proveedores-view'
+import ConfiguracionView from '@/components/configuracion-view'
 
 export default function AppContent() {
   const { isAuthenticated, login, user } = useAuth()
@@ -50,7 +51,8 @@ export default function AppContent() {
       case 'cxp': return <CxpView />
       case 'usuarios': return <UsuariosView />
       case 'auditoria': return <AuditoriaView />
-      default: return <DashboardView />
+      case 'configuracion': return <ConfiguracionView />
+      default: return <DashboardView onNavigate={navigateTo} />
     }
   }
 
