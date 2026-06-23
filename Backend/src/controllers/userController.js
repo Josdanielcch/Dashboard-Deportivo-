@@ -5,7 +5,7 @@ const bcrypt = require('bcryptjs');
 const getAllUsers = async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT id, username, first_name, last_name, role_id, status, created_at, first_name || ' ' || last_name AS full_name
+      SELECT id, username, first_name, last_name, role_id, status, avatar_url, created_at, first_name || ' ' || last_name AS full_name
       FROM users
       ORDER BY id
     `);
@@ -21,7 +21,7 @@ const getUserById = async (req, res) => {
   try {
     const { id } = req.params;
     const result = await pool.query(`
-      SELECT id, username, first_name, last_name, role_id, status, created_at, first_name || ' ' || last_name AS full_name
+      SELECT id, username, first_name, last_name, role_id, status, avatar_url, created_at, first_name || ' ' || last_name AS full_name
       FROM users WHERE id = $1
     `, [id]);
     
@@ -77,7 +77,7 @@ const updateUser = async (req, res) => {
           role_id = COALESCE($3, role_id),
           status = COALESCE($4, status)
       WHERE id = $5
-      RETURNING id, username, first_name, last_name, role_id, status, first_name || ' ' || last_name AS full_name
+      RETURNING id, username, first_name, last_name, role_id, status, avatar_url, first_name || ' ' || last_name AS full_name
     `, [first_name, last_name, role_id, status, id]);
     
     if (result.rows.length === 0) {
@@ -197,6 +197,34 @@ const updateMyProfile = async (req, res) => {
   }
 };
 
+const uploadAvatar = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    if (!req.file) {
+      return res.status(400).json({ error: 'No se subió ningún archivo' });
+    }
+
+    const avatar_url = `/uploads/avatars/${req.file.filename}`;
+
+    const result = await pool.query(`
+      UPDATE users 
+      SET avatar_url = $1
+      WHERE id = $2
+      RETURNING id, username, avatar_url
+    `, [avatar_url, id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    res.json({ success: true, message: 'Avatar actualizado exitosamente', data: result.rows[0] });
+  } catch (error) {
+    console.error('Error al subir avatar:', error);
+    res.status(500).json({ error: 'Error al subir avatar' });
+  }
+};
+
 module.exports = {
   getAllUsers,
   getUserById,
@@ -204,5 +232,6 @@ module.exports = {
   updateUser,
   deleteUser,
   updateUserStatus,
-  updateMyProfile
+  updateMyProfile,
+  uploadAvatar
 };

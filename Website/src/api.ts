@@ -100,6 +100,13 @@ export async function loginUser(payload: {
   });
 }
 
+export async function googleLoginUser(payload: { access_token: string }) {
+  return request('/auth/client/google', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function getCustomerBookings(customerId: number) {
   return request(`/bookings/customer/${customerId}`);
 }
@@ -123,4 +130,8 @@ export async function resetPassword(payload: { token: string; password: string }
     method: 'POST',
     body: JSON.stringify(payload),
   });
+}
+
+export async function getCourts() {
+  return request('/courts');
 }

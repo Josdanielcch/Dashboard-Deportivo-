@@ -8,6 +8,7 @@ interface User {
   full_name?: string
   email?: string
   role_id?: number
+  avatar_url?: string
 }
 
 interface AuthContextType {

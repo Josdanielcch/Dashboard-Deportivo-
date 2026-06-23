@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import {
-  X,
   ShieldOff,
   AlertCircle,
   Loader2,
@@ -40,7 +39,7 @@ export default function AuditPage({ user }) {
     if (isAdmin) fetchLogs();
   }, []);
 
-  const fetchLogs = async (tableFilter = '') => {
+  async function fetchLogs(tableFilter = '') {
     setLoading(true);
     setError('');
     try {

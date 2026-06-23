@@ -42,13 +42,13 @@ export default function CustomersPage({ user }) {
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
 
-  const isAdmin = user && user.role_id === 1;
+
 
   useEffect(() => {
     fetchCustomers();
   }, []);
 
-  const fetchCustomers = async () => {
+  async function fetchCustomers() {
     setLoading(true);
     setError('');
     try {

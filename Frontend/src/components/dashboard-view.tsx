@@ -2,6 +2,7 @@
 
 import { TrendingUp, Users, Calendar, DollarSign, ArrowUpRight, ArrowDownRight, Clock, CheckCircle, XCircle, Activity, BarChart3, Sparkles, ArrowRight } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
+import { dashboardService } from '@/services/dashboardService'
 
 interface DashboardViewProps {
   onNavigate?: (module: string) => void
@@ -12,6 +13,11 @@ function AnimatedCounter({ value, suffix = '' }: { value: number; suffix?: strin
 
   useEffect(() => {
     let current = 0
+    // Evitar dividir por 0
+    if (value === 0) {
+      setCount(0);
+      return;
+    }
     const increment = value / 60
     const timer = setInterval(() => {
       current += increment
@@ -52,41 +58,77 @@ function MiniBar({ height, active = false }: { height: number; active?: boolean 
 
 export default function DashboardView({ onNavigate }: DashboardViewProps) {
   const [mounted, setMounted] = useState(false)
-  useEffect(() => { setMounted(true) }, [])
+  const [loading, setLoading] = useState(true)
+
+  const [statsData, setStatsData] = useState({
+    reservasHoy: 0,
+    ingresos: 0,
+    clientesActivos: 0,
+    ocupacion: 0,
+    gastosTotales: 0,
+    cxcPendiente: 0,
+    cxpPendiente: 0,
+    proveedoresActivos: 0
+  });
+
+  const [sportsData, setSportsData] = useState<{name: string, value: number, color: string, shadow: string}[]>([]);
+  const [weekDays, setWeekDays] = useState<{day: string, amount: number, height: number}[]>([]);
+  const [recentBookings, setRecentBookings] = useState<{cliente: string, cancha: string, hora: string, estado: string}[]>([]);
+  const [totalIncome, setTotalIncome] = useState(0);
+
+  useEffect(() => {
+    setMounted(true)
+    fetchDashboardData()
+  }, [])
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      const res = await dashboardService.getStats();
+      if (res.success && res.data) {
+        const d = res.data;
+        setStatsData({
+          reservasHoy: d.reservasHoy || 0,
+          ingresos: d.ingresos || 0,
+          clientesActivos: d.clientesActivos || 0,
+          ocupacion: d.ocupacion || 0,
+          gastosTotales: d.gastosTotales || 0,
+          cxcPendiente: d.cxcPendiente || 0,
+          cxpPendiente: d.cxpPendiente || 0,
+          proveedoresActivos: d.proveedoresActivos || 0
+        });
+        setSportsData(d.sportsDistribution || []);
+        setWeekDays(d.weekIncome || []);
+        setRecentBookings(d.recentBookings || []);
+        
+        const total = (d.weekIncome || []).reduce((acc: number, curr: any) => acc + curr.amount, 0);
+        setTotalIncome(total);
+      }
+    } catch (error) {
+      console.error('Error loading dashboard stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   const stats = [
-    { label: 'Reservas Hoy', value: 24, icon: Calendar, change: '+12%', positive: true, gradient: 'from-blue-500/10 to-blue-600/5', iconColor: 'text-blue-400', bgIcon: 'bg-blue-500/10 border-blue-500/20' },
-    { label: 'Ingresos', value: 8450, icon: DollarSign, change: '+8.5%', positive: true, prefix: '$', gradient: 'from-emerald-500/10 to-emerald-600/5', iconColor: 'text-emerald-400', bgIcon: 'bg-emerald-500/10 border-emerald-500/20' },
-    { label: 'Clientes Activos', value: 157, icon: Users, change: '+3.2%', positive: true, gradient: 'from-purple-500/10 to-purple-600/5', iconColor: 'text-purple-400', bgIcon: 'bg-purple-500/10 border-purple-500/20' },
-    { label: 'Ocupación', value: 87, icon: TrendingUp, change: '-2.1%', positive: false, suffix: '%', gradient: 'from-amber-500/10 to-amber-600/5', iconColor: 'text-amber-400', bgIcon: 'bg-amber-500/10 border-amber-500/20' },
+    { label: 'Reservas Hoy', value: statsData.reservasHoy, icon: Calendar, change: '', positive: true, gradient: 'from-blue-500/10 to-blue-600/5', iconColor: 'text-blue-400', bgIcon: 'bg-blue-500/10 border-blue-500/20' },
+    { label: 'Ingresos (Ventas)', value: statsData.ingresos, icon: DollarSign, change: '', positive: true, prefix: '$', gradient: 'from-emerald-500/10 to-emerald-600/5', iconColor: 'text-emerald-400', bgIcon: 'bg-emerald-500/10 border-emerald-500/20' },
+    { label: 'Gastos (Compras)', value: statsData.gastosTotales, icon: DollarSign, change: '', positive: false, prefix: '$', gradient: 'from-rose-500/10 to-rose-600/5', iconColor: 'text-rose-400', bgIcon: 'bg-rose-500/10 border-rose-500/20' },
+    { label: 'Por Cobrar (CxC)', value: statsData.cxcPendiente, icon: TrendingUp, change: '', positive: true, prefix: '$', gradient: 'from-amber-500/10 to-amber-600/5', iconColor: 'text-amber-400', bgIcon: 'bg-amber-500/10 border-amber-500/20' },
+    { label: 'Por Pagar (CxP)', value: statsData.cxpPendiente, icon: TrendingUp, change: '', positive: false, prefix: '$', gradient: 'from-orange-500/10 to-orange-600/5', iconColor: 'text-orange-400', bgIcon: 'bg-orange-500/10 border-orange-500/20' },
+    { label: 'Clientes Activos', value: statsData.clientesActivos, icon: Users, change: '', positive: true, gradient: 'from-purple-500/10 to-purple-600/5', iconColor: 'text-purple-400', bgIcon: 'bg-purple-500/10 border-purple-500/20' },
+    { label: 'Proveedores', value: statsData.proveedoresActivos, icon: Users, change: '', positive: true, gradient: 'from-indigo-500/10 to-indigo-600/5', iconColor: 'text-indigo-400', bgIcon: 'bg-indigo-500/10 border-indigo-500/20' },
+    { label: 'Ocupación Hoy', value: statsData.ocupacion, icon: Activity, change: '', positive: true, suffix: '%', gradient: 'from-[#ccff00]/10 to-[#ccff00]/5', iconColor: 'text-[#ccff00]', bgIcon: 'bg-[#ccff00]/10 border-[#ccff00]/20' },
   ]
 
-  const sportsData = [
-    { name: 'Fútbol', value: 45, color: 'bg-[#ccff00]', shadow: 'shadow-[#ccff00]/20' },
-    { name: 'Pádel', value: 32, color: 'bg-blue-400', shadow: 'shadow-blue-400/20' },
-    { name: 'Tenis', value: 18, color: 'bg-purple-400', shadow: 'shadow-purple-400/20' },
-    { name: 'Basketball', value: 5, color: 'bg-orange-400', shadow: 'shadow-orange-400/20' },
-  ]
-
-  const weekDays = [
-    { day: 'Lun', amount: 1200, height: 42 },
-    { day: 'Mar', amount: 1450, height: 52 },
-    { day: 'Mié', amount: 1100, height: 38 },
-    { day: 'Jue', amount: 1600, height: 58 },
-    { day: 'Vie', amount: 2100, height: 78 },
-    { day: 'Sáb', amount: 2600, height: 100 },
-    { day: 'Dom', amount: 1400, height: 50 },
-  ]
-
-  const recentBookings = [
-    { cliente: 'Juan García', cancha: 'Fútbol 5 - Cancha 1', hora: '15:00', estado: 'Confirmada' },
-    { cliente: 'María López', cancha: 'Pádel - Cancha 3', hora: '17:30', estado: 'Pendiente' },
-    { cliente: 'Carlos Rodríguez', cancha: 'Tenis - Cancha 2', hora: '10:00', estado: 'Confirmada' },
-    { cliente: 'Ana Martínez', cancha: 'Basketball - Cancha 4', hora: '19:00', estado: 'Confirmada' },
-    { cliente: 'Pedro Sánchez', cancha: 'Fútbol 7 - Cancha 5', hora: '20:30', estado: 'Cancelada' },
-  ]
-
-  const totalIncome = weekDays.reduce((acc, d) => acc + d.amount, 0)
+  if (loading) {
+    return (
+      <div className="p-6 md:p-8 flex items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#ccff00]"></div>
+      </div>
+    );
+  }
 
   return (
     <div className={`p-6 md:p-8 transition-all duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
@@ -138,12 +180,14 @@ export default function DashboardView({ onNavigate }: DashboardViewProps) {
                   <span className="text-2xl md:text-3xl font-black text-white group-hover:scale-105 origin-left transition-transform">
                     {stat.prefix}<AnimatedCounter value={stat.value} suffix={stat.suffix} />
                   </span>
-                  <div className={`flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-lg shrink-0 ${
-                    stat.positive ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'
-                  }`}>
-                    {stat.positive ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}
-                    {stat.change}
-                  </div>
+                  {stat.change && (
+                    <div className={`flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-lg shrink-0 ${
+                      stat.positive ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'
+                    }`}>
+                      {stat.positive ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}
+                      {stat.change}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -161,29 +205,33 @@ export default function DashboardView({ onNavigate }: DashboardViewProps) {
                 <BarChart3 size={17} className="text-[#ccff00]" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-white leading-tight">Reservas por Deporte</h3>
-                <p className="text-[11px] text-zinc-500 font-medium">Distribución semanal</p>
+                <h3 className="text-base font-bold text-white leading-tight">Reservas por Cancha</h3>
+                <p className="text-[11px] text-zinc-500 font-medium">Distribución histórica</p>
               </div>
             </div>
-            <span className="text-[11px] text-zinc-500 bg-white/[0.03] px-3 py-1.5 rounded-lg border border-white/[0.06] font-medium hidden sm:block">Esta semana</span>
+            <span className="text-[11px] text-zinc-500 bg-white/[0.03] px-3 py-1.5 rounded-lg border border-white/[0.06] font-medium hidden sm:block">Actividad Real</span>
           </div>
           <div className="space-y-5">
-            {sportsData.map((item, i) => (
-              <div key={item.name} className="group/progress">
-                <div className="flex justify-between mb-2">
-                  <span className="text-sm text-zinc-300 font-semibold group-hover/progress:text-white transition-colors">{item.name}</span>
-                  <span className="text-sm font-black text-white">{item.value}%</span>
-                </div>
-                <div className="w-full bg-white/[0.03] rounded-full h-3 overflow-hidden border border-white/[0.06] relative">
-                  <div
-                    className={`h-full rounded-full transition-all duration-1000 relative ${item.color}`}
-                    style={{ width: mounted ? `${item.value}%` : '0%' }}
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent" />
+            {sportsData.length === 0 ? (
+              <p className="text-zinc-500 text-sm py-4">No hay datos de distribución disponibles.</p>
+            ) : (
+              sportsData.map((item, i) => (
+                <div key={item.name} className="group/progress">
+                  <div className="flex justify-between mb-2">
+                    <span className="text-sm text-zinc-300 font-semibold group-hover/progress:text-white transition-colors">{item.name}</span>
+                    <span className="text-sm font-black text-white">{item.value}%</span>
+                  </div>
+                  <div className="w-full bg-white/[0.03] rounded-full h-3 overflow-hidden border border-white/[0.06] relative">
+                    <div
+                      className={`h-full rounded-full transition-all duration-1000 relative ${item.color}`}
+                      style={{ width: mounted ? `${item.value}%` : '0%' }}
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent" />
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 
@@ -200,22 +248,26 @@ export default function DashboardView({ onNavigate }: DashboardViewProps) {
               </div>
             </div>
             <div className="text-right">
-              <p className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider">Total</p>
+              <p className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider">Total Semana</p>
               <span className="text-xl md:text-2xl font-black text-[#ccff00]">${totalIncome.toLocaleString()}</span>
             </div>
           </div>
           <div className="flex items-end h-44 gap-1.5 md:gap-2 pt-4">
-            {weekDays.map((item, i) => (
-              <div key={item.day} className="flex-1 flex flex-col items-center gap-2 group/bar">
-                <div className="w-full flex justify-center relative" style={{ height: '100%' }}>
-                  <div className="absolute -top-7 text-[10px] text-zinc-500 font-medium opacity-0 group-hover/bar:opacity-100 transition-all duration-300 whitespace-nowrap bg-white/[0.05] px-2 py-1 rounded-md border border-white/[0.06] backdrop-blur-sm shadow-lg">
-                    ${item.amount.toLocaleString()}
+            {weekDays.length === 0 ? (
+              <p className="text-zinc-500 text-sm py-4 w-full text-center">No hay ingresos registrados en los últimos 7 días.</p>
+            ) : (
+              weekDays.map((item, i) => (
+                <div key={i} className="flex-1 flex flex-col items-center gap-2 group/bar">
+                  <div className="w-full flex justify-center relative" style={{ height: '100%' }}>
+                    <div className="absolute -top-7 text-[10px] text-zinc-500 font-medium opacity-0 group-hover/bar:opacity-100 transition-all duration-300 whitespace-nowrap bg-white/[0.05] px-2 py-1 rounded-md border border-white/[0.06] backdrop-blur-sm shadow-lg z-10">
+                      ${item.amount.toLocaleString()}
+                    </div>
+                    <MiniBar height={item.height} active={i === weekDays.length - 1} />
                   </div>
-                  <MiniBar height={item.height} active={i === 5} />
+                  <span className={`text-[11px] font-semibold transition-colors ${i === weekDays.length - 1 ? 'text-[#ccff00]' : 'text-zinc-500'}`}>{item.day}</span>
                 </div>
-                <span className={`text-[11px] font-semibold transition-colors ${i === 5 ? 'text-[#ccff00]' : 'text-zinc-500'}`}>{item.day}</span>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </div>
@@ -250,37 +302,43 @@ export default function DashboardView({ onNavigate }: DashboardViewProps) {
               </tr>
             </thead>
             <tbody>
-              {recentBookings.map((row, idx) => (
-                <tr key={idx} className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-all duration-200">
-                  <td className="py-3.5 px-4 md:px-6 first:pl-5 md:first:pl-6">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#ccff00]/20 to-[#ccff00]/5 text-[#ccff00] text-xs font-bold border border-[#ccff00]/20 shrink-0">
-                        {row.cliente.split(' ').map(w => w[0]).join('').slice(0, 2)}
-                      </div>
-                      <span className="text-white font-semibold text-sm">{row.cliente}</span>
-                    </div>
-                  </td>
-                  <td className="py-3.5 px-4 md:px-6 text-zinc-300 text-sm">{row.cancha}</td>
-                  <td className="py-3.5 px-4 md:px-6">
-                    <div className="flex items-center gap-2 text-zinc-400 text-sm">
-                      <Clock size={13} className="text-zinc-500 shrink-0" />
-                      {row.hora}
-                    </div>
-                  </td>
-                  <td className="py-3.5 px-4 md:px-6 last:pr-5 md:last:pr-6">
-                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold border ${
-                      row.estado === 'Confirmada'
-                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                        : row.estado === 'Pendiente'
-                        ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                        : 'bg-red-500/10 text-red-400 border-red-500/20'
-                    }`}>
-                      {row.estado === 'Confirmada' ? <CheckCircle size={11} /> : row.estado === 'Cancelada' ? <XCircle size={11} /> : <Clock size={11} />}
-                      {row.estado}
-                    </span>
-                  </td>
+              {recentBookings.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="py-6 text-center text-zinc-500 text-sm">No hay reservas recientes.</td>
                 </tr>
-              ))}
+              ) : (
+                recentBookings.map((row, idx) => (
+                  <tr key={idx} className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-all duration-200">
+                    <td className="py-3.5 px-4 md:px-6 first:pl-5 md:first:pl-6">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#ccff00]/20 to-[#ccff00]/5 text-[#ccff00] text-xs font-bold border border-[#ccff00]/20 shrink-0 uppercase">
+                          {row.cliente.split(' ').map((w: string) => w[0]).join('').slice(0, 2) || 'CL'}
+                        </div>
+                        <span className="text-white font-semibold text-sm">{row.cliente}</span>
+                      </div>
+                    </td>
+                    <td className="py-3.5 px-4 md:px-6 text-zinc-300 text-sm">{row.cancha}</td>
+                    <td className="py-3.5 px-4 md:px-6">
+                      <div className="flex items-center gap-2 text-zinc-400 text-sm">
+                        <Clock size={13} className="text-zinc-500 shrink-0" />
+                        {row.hora}
+                      </div>
+                    </td>
+                    <td className="py-3.5 px-4 md:px-6 last:pr-5 md:last:pr-6">
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold border ${
+                        row.estado === 'Confirmada' || row.estado === 'Completada'
+                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                          : row.estado === 'Pendiente'
+                          ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                          : 'bg-red-500/10 text-red-400 border-red-500/20'
+                      }`}>
+                        {row.estado === 'Confirmada' || row.estado === 'Completada' ? <CheckCircle size={11} /> : row.estado === 'Cancelada' || row.estado === 'No asiste' ? <XCircle size={11} /> : <Clock size={11} />}
+                        {row.estado}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

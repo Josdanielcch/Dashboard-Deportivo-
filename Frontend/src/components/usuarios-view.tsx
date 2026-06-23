@@ -4,8 +4,10 @@ import { useState, useEffect } from 'react'
 import { Plus, Key, Search, Filter, UserPlus, Shield } from 'lucide-react'
 import { userService } from '@/services/userService'
 import { Modal } from '@/components/ui/modal'
+import { useAuthSafe } from './auth-context'
 
 export default function UsuariosView() {
+  const { user, updateContextUser } = useAuthSafe()
   const [usuarios, setUsuarios] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -22,11 +24,52 @@ export default function UsuariosView() {
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  useEffect(() => {
-    fetchUsuarios()
-  }, [])
+  // Edit User State
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [editingUser, setEditingUser] = useState<any>(null)
+  const [editFormData, setEditFormData] = useState({
+    first_name: '',
+    last_name: '',
+    role_id: '1',
+    status: 'Activated'
+  })
 
-  const fetchUsuarios = async () => {
+  // Avatar Upload Handler
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>, userId: number) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:3000/api/users/${userId}/avatar`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setUsuarios(prev => prev.map(u => u.id === userId ? { ...u, avatar_url: data.data.avatar_url } : u));
+        if (editingUser && editingUser.id === userId) {
+          setEditingUser({ ...editingUser, avatar_url: data.data.avatar_url });
+        }
+        if (user && user.id === userId) {
+          updateContextUser({ avatar_url: data.data.avatar_url });
+        }
+      } else {
+        alert(data.error || 'Error al subir la imagen');
+      }
+    } catch (err) {
+      alert('Error de conexión al subir la imagen');
+    }
+  };
+
+  async function fetchUsuarios() {
     try {
       setLoading(true)
       const res = await userService.getAll()
@@ -43,6 +86,10 @@ export default function UsuariosView() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    fetchUsuarios()
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -71,6 +118,40 @@ export default function UsuariosView() {
     if (roleId === 2) return 'Recepcionista'
     if (roleId === 3) return 'Cajero'
     return `Rol ${roleId}`
+  }
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsSubmitting(true)
+    try {
+      const payload = {
+        ...editFormData,
+        role_id: parseInt(editFormData.role_id)
+      }
+      const res = await userService.update(editingUser.id, payload)
+      if (res.success) {
+        setIsEditModalOpen(false)
+        fetchUsuarios()
+      } else {
+        alert('Hubo un error al actualizar el usuario')
+      }
+    } catch (error: any) {
+      console.error('Error actualizando usuario:', error)
+      alert(error.message || 'Hubo un error al guardar los cambios')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const openEditModal = (usuario: any) => {
+    setEditingUser(usuario)
+    setEditFormData({
+      first_name: usuario.first_name || '',
+      last_name: usuario.last_name || '',
+      role_id: usuario.role_id.toString(),
+      status: usuario.status
+    })
+    setIsEditModalOpen(true)
   }
 
   const getStatusName = (status: string) => {
@@ -182,8 +263,12 @@ export default function UsuariosView() {
                     >
                       <td className="py-4 px-6 text-white font-medium">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#ccff00]/20 to-[#ccff00]/5 flex items-center justify-center text-[#ccff00] text-xs font-bold">
-                            {usuario.full_name?.charAt(0)?.toUpperCase() || '?'}
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#ccff00]/20 to-[#ccff00]/5 flex items-center justify-center text-[#ccff00] text-xs font-bold overflow-hidden">
+                            {usuario.avatar_url ? (
+                              <img src={`http://localhost:3000${usuario.avatar_url}`} alt={usuario.username} className="w-full h-full object-cover" />
+                            ) : (
+                              usuario.full_name?.charAt(0)?.toUpperCase() || '?'
+                            )}
                           </div>
                           {usuario.full_name}
                         </div>
@@ -209,9 +294,12 @@ export default function UsuariosView() {
                       </td>
                       <td className="py-4 px-6 text-zinc-400">{formatDate(usuario.created_at)}</td>
                       <td className="py-4 px-6">
-                        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[#ccff00] hover:bg-[#ccff00]/10 transition-all border border-transparent hover:border-[#ccff00]/20">
+                        <button 
+                          onClick={() => openEditModal(usuario)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[#ccff00] hover:bg-[#ccff00]/10 transition-all border border-transparent hover:border-[#ccff00]/20"
+                        >
                           <Key size={14} />
-                          Permisos
+                          Editar
                         </button>
                       </td>
                     </tr>
@@ -331,6 +419,123 @@ export default function UsuariosView() {
           </div>
         </form>
       </Modal>
+
+      {/* Edit Modal */}
+      {editingUser && (
+        <Modal 
+          isOpen={isEditModalOpen} 
+          onClose={() => setIsEditModalOpen(false)} 
+          title="Editar Usuario"
+        >
+          <div className="flex flex-col gap-6">
+            <div className="flex justify-between items-center bg-[#0a0e27] p-4 rounded-xl border border-[#1a1f3a]">
+              <div>
+                <p className="text-sm text-zinc-400">Usuario</p>
+                <p className="font-semibold text-white">@{editingUser.username}</p>
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <div className="w-12 h-12 rounded-full overflow-hidden bg-[#1a1f3a] border-2 border-[#ccff00]/30 flex items-center justify-center text-white">
+                  {editingUser.avatar_url ? (
+                    <img src={`http://localhost:3000${editingUser.avatar_url}`} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="font-bold">{editingUser.full_name?.charAt(0)?.toUpperCase() || '?'}</span>
+                  )}
+                </div>
+                <input 
+                  type="file" 
+                  id="avatar-upload-edit" 
+                  style={{ display: 'none' }} 
+                  accept="image/png, image/jpeg" 
+                  onChange={(e) => handleAvatarUpload(e, editingUser.id)} 
+                />
+                <button 
+                  type="button" 
+                  onClick={() => document.getElementById('avatar-upload-edit')?.click()}
+                  className="text-[10px] px-2 py-1 rounded bg-[#ccff00]/10 text-[#ccff00] border border-[#ccff00]/20 hover:bg-[#ccff00]/20 transition-all"
+                >
+                  Cambiar Foto
+                </button>
+              </div>
+            </div>
+
+            <form onSubmit={handleEditSubmit} className="flex flex-col gap-5">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-zinc-400 mb-1.5">
+                    Nombre *
+                  </label>
+                  <input 
+                    type="text" 
+                    required
+                    value={editFormData.first_name}
+                    onChange={(e) => setEditFormData({...editFormData, first_name: e.target.value})}
+                    className="w-full bg-[#0a0e27] border border-[#1a1f3a] rounded-xl px-4 py-2.5 text-white placeholder-zinc-500 focus:outline-none focus:border-[#ccff00] focus:ring-1 focus:ring-[#ccff00]/30 transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-zinc-400 mb-1.5">
+                    Apellido *
+                  </label>
+                  <input 
+                    type="text" 
+                    required
+                    value={editFormData.last_name}
+                    onChange={(e) => setEditFormData({...editFormData, last_name: e.target.value})}
+                    className="w-full bg-[#0a0e27] border border-[#1a1f3a] rounded-xl px-4 py-2.5 text-white placeholder-zinc-500 focus:outline-none focus:border-[#ccff00] focus:ring-1 focus:ring-[#ccff00]/30 transition-all"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-zinc-400 mb-1.5">
+                    Rol
+                  </label>
+                  <select 
+                    value={editFormData.role_id}
+                    onChange={(e) => setEditFormData({...editFormData, role_id: e.target.value})}
+                    className="w-full bg-[#0a0e27] border border-[#1a1f3a] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[#ccff00] focus:ring-1 focus:ring-[#ccff00]/30 transition-all cursor-pointer"
+                  >
+                    <option value="1" className="bg-[#0a0e27]">Administrador</option>
+                    <option value="2" className="bg-[#0a0e27]">Recepcionista</option>
+                    <option value="3" className="bg-[#0a0e27]">Cajero</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-zinc-400 mb-1.5">
+                    Estado
+                  </label>
+                  <select 
+                    value={editFormData.status}
+                    onChange={(e) => setEditFormData({...editFormData, status: e.target.value})}
+                    className="w-full bg-[#0a0e27] border border-[#1a1f3a] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[#ccff00] focus:ring-1 focus:ring-[#ccff00]/30 transition-all cursor-pointer"
+                  >
+                    <option value="Activated" className="bg-[#0a0e27]">Activo</option>
+                    <option value="Disabled" className="bg-[#0a0e27]">Inactivo</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div className="flex justify-end gap-3 pt-2">
+                <button 
+                  type="button" 
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="px-5 py-2.5 bg-transparent border border-[#1a1f3a] text-white rounded-xl hover:bg-[#0a0e27] transition-all font-medium"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={isSubmitting}
+                  className="px-6 py-2.5 bg-[#ccff00] text-[#0a0e27] font-semibold rounded-xl hover:brightness-110 transition-all disabled:opacity-50 shadow-lg shadow-[#ccff00]/10"
+                >
+                  {isSubmitting ? 'Guardando...' : 'Guardar Cambios'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </Modal>
+      )}
     </div>
   )
 }

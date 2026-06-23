@@ -7,7 +7,7 @@ interface HeaderProps {
   setCurrentTab: (tab: string) => void;
   currentUser: User | null;
   onLogout: () => void;
-  onOpenAuth: () => void;
+  onOpenAuth: (mode: 'login' | 'register') => void;
 }
 
 export default function Header({
@@ -142,14 +142,14 @@ export default function Header({
         ) : (
           <div className="flex items-center gap-2 md:gap-4">
             <button
-              onClick={onOpenAuth}
+              onClick={() => onOpenAuth('login')}
               className="text-xs md:text-sm font-bold text-zinc-400 hover:text-[#c0ff00] px-2.5 md:px-4 py-2 hover:bg-white/5 rounded-lg transition-all"
               id="login-btn"
             >
-              Verificar
+              Iniciar Sesión
             </button>
             <button
-              onClick={onOpenAuth}
+              onClick={() => onOpenAuth('register')}
               className="bg-[#c0ff00] text-black px-4 md:px-6 py-2 rounded-xl text-xs md:text-sm font-black hover:scale-105 transition-all duration-200 active:scale-95 shadow-lg shadow-[#c0ff00]/10 hover:shadow-[#c0ff00]/25 shrink-0 uppercase tracking-widest"
               id="register-btn"
             >

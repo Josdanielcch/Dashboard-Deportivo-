@@ -3,13 +3,9 @@ import {
   Plus, 
   X, 
   Calendar, 
-  User, 
-  MapPin, 
   Check, 
   AlertCircle, 
   Loader2, 
-  Search, 
-  Trash2, 
   CheckCircle,
   Clock
 } from 'lucide-react';
@@ -63,7 +59,7 @@ export default function BookingsPage({ user }) {
     fetchInitialData();
   }, []);
 
-  const fetchInitialData = async () => {
+  async function fetchInitialData() {
     setLoading(true);
     setError('');
     try {
@@ -250,7 +246,12 @@ export default function BookingsPage({ user }) {
     if (!timeStr) return '';
     const parts = timeStr.split(':');
     if (parts.length >= 2) {
-      return `${parts[0]}:${parts[1]}`;
+      let h = parseInt(parts[0], 10);
+      const m = parts[1];
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      h = h % 12;
+      h = h ? h : 12;
+      return `${h.toString().padStart(2, '0')}:${m} ${ampm}`;
     }
     return timeStr;
   };

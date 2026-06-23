@@ -5,7 +5,6 @@ import {
   Receipt,
   AlertCircle,
   Loader2,
-  DollarSign,
   Eye,
   CreditCard,
   ShoppingCart,
@@ -50,7 +49,7 @@ export default function BillingPage({ user }) {
     fetchInitialData();
   }, []);
 
-  const fetchInitialData = async () => {
+  async function fetchInitialData() {
     setLoading(true);
     setError('');
     try {

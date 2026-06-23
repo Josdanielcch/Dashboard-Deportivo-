@@ -78,7 +78,7 @@ export default function AboutUs() {
         {/* Visual Team representation */}
         <div className="relative rounded-2xl overflow-hidden h-64 md:h-80 shadow-2xl border border-white/10">
           <img
-            src="https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?q=80&w=1200&auto=format&fit=crop"
+            src="/images/court-3.jpg"
             alt="Main clay court during high-precision match"
             className="w-full h-full object-cover"
             referrerPolicy="no-referrer"

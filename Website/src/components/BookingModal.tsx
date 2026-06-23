@@ -56,6 +56,15 @@ export default function BookingModal({
     return `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}:00`;
   };
 
+  const formatAMPM = (timeStr: string) => {
+    const [hStr, mStr] = timeStr.split(':');
+    let h = parseInt(hStr, 10);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12;
+    h = h ? h : 12;
+    return `${h.toString().padStart(2, '0')}:${mStr} ${ampm}`;
+  };
+
   const checkCurrentAvailability = async () => {
     setSlotAvailability(null);
     if (!court.backendId) {
@@ -162,9 +171,9 @@ export default function BookingModal({
         courtImage: court.imageUrl,
         sport: court.sport,
         date: bookingDate,
-        timeSlot: `${start_time.slice(0, 5)} - ${end_time.slice(0, 5)}`,
+        timeSlot: `${formatAMPM(start_time.slice(0, 5))} - ${formatAMPM(end_time.slice(0, 5))}`,
         price: bookingData.total_amount ?? totalCost,
-        status: bookingData.status === 'Pending' ? 'confirmed' : bookingData.status.toLowerCase(),
+        status: (bookingData.status || 'pending').toLowerCase() as any,
         userName: finalName,
         userEmail: finalEmail,
         userPhone: finalPhone,
@@ -189,15 +198,6 @@ export default function BookingModal({
       case 'basquet': return 'Básquet';
       default: return sport;
     }
-  };
-
-  const formatAMPM = (timeStr: string) => {
-    const [hStr, mStr] = timeStr.split(':');
-    let h = parseInt(hStr, 10);
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    h = h % 12;
-    h = h ? h : 12;
-    return `${h.toString().padStart(2, '0')}:${mStr} ${ampm}`;
   };
 
   const timeSlots = Array.from({ length: 33 }, (_, i) => {

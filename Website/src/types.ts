@@ -25,7 +25,7 @@ export interface Booking {
   date: string;
   timeSlot: string;
   price: number;
-  status: 'confirmed' | 'cancelled';
+  status: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'no_show';
   userName: string;
   userEmail: string;
   userPhone: string;
