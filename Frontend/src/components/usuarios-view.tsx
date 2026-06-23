@@ -116,7 +116,7 @@ export default function UsuariosView() {
   const getRoleName = (roleId: number) => {
     if (roleId === 1) return 'Administrador'
     if (roleId === 2) return 'Recepcionista'
-    if (roleId === 3) return 'Cajero'
+    if (roleId === 3) return 'Soporte'
     return `Rol ${roleId}`
   }
 
@@ -157,6 +157,7 @@ export default function UsuariosView() {
   const getStatusName = (status: string) => {
     if (status === 'Activated') return 'Activo'
     if (status === 'Disabled') return 'Inactivo'
+    if (status === 'Pending') return 'Pendiente'
     return status
   }
 
@@ -213,7 +214,7 @@ export default function UsuariosView() {
             <option value="Todos" className="bg-[#0f1533]">Todos los Roles</option>
             <option value="Administrador" className="bg-[#0f1533]">Administrador</option>
             <option value="Recepcionista" className="bg-[#0f1533]">Recepcionista</option>
-            <option value="Cajero" className="bg-[#0f1533]">Cajero</option>
+            <option value="Soporte" className="bg-[#0f1533]">Soporte</option>
           </select>
         </div>
       </div>
@@ -284,10 +285,14 @@ export default function UsuariosView() {
                         <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold ${
                           usuario.status === 'Activated'
                             ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                            : usuario.status === 'Pending'
+                            ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20'
                             : 'bg-red-500/10 text-red-400 border border-red-500/20'
                         }`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${
-                            usuario.status === 'Activated' ? 'bg-emerald-400' : 'bg-red-400'
+                            usuario.status === 'Activated' ? 'bg-emerald-400' 
+                            : usuario.status === 'Pending' ? 'bg-yellow-400'
+                            : 'bg-red-400'
                           }`}></span>
                           {estadoNombre}
                         </span>
@@ -383,7 +388,7 @@ export default function UsuariosView() {
               >
                 <option value="1" className="bg-[#0a0e27]">Administrador</option>
                 <option value="2" className="bg-[#0a0e27]">Recepcionista</option>
-                <option value="3" className="bg-[#0a0e27]">Cajero</option>
+                <option value="3" className="bg-[#0a0e27]">Soporte</option>
               </select>
             </div>
             <div>
@@ -396,6 +401,7 @@ export default function UsuariosView() {
                 className="w-full bg-[#0a0e27] border border-[#1a1f3a] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[#ccff00] focus:ring-1 focus:ring-[#ccff00]/30 transition-all cursor-pointer"
               >
                 <option value="Activated" className="bg-[#0a0e27]">Activo</option>
+                <option value="Pending" className="bg-[#0a0e27]">Pendiente</option>
                 <option value="Disabled" className="bg-[#0a0e27]">Inactivo</option>
               </select>
             </div>
@@ -498,7 +504,7 @@ export default function UsuariosView() {
                   >
                     <option value="1" className="bg-[#0a0e27]">Administrador</option>
                     <option value="2" className="bg-[#0a0e27]">Recepcionista</option>
-                    <option value="3" className="bg-[#0a0e27]">Cajero</option>
+                    <option value="3" className="bg-[#0a0e27]">Soporte</option>
                   </select>
                 </div>
                 <div>
@@ -511,6 +517,7 @@ export default function UsuariosView() {
                     className="w-full bg-[#0a0e27] border border-[#1a1f3a] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[#ccff00] focus:ring-1 focus:ring-[#ccff00]/30 transition-all cursor-pointer"
                   >
                     <option value="Activated" className="bg-[#0a0e27]">Activo</option>
+                    <option value="Pending" className="bg-[#0a0e27]">Pendiente</option>
                     <option value="Disabled" className="bg-[#0a0e27]">Inactivo</option>
                   </select>
                 </div>

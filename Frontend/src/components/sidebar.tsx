@@ -84,17 +84,16 @@ export default function Sidebar({ activeModule, setActiveModule, isMobileMenuOpe
   const roleBadge = () => {
     const roleId = user?.role_id
     if (roleId === 1) return 'Administrador'
-    if (roleId === 3) return 'Manager'
-    if (roleId === 4) return 'Staff'
-    if (roleId === 7 || roleId === 10) return 'Cliente'
+    if (roleId === 2) return 'Recepcionista'
+    if (roleId === 3) return 'Soporte'
     return 'Usuario'
   }
 
   const roleColor = () => {
     const roleId = user?.role_id
     if (roleId === 1) return 'from-[#ccff00] to-[#a6e000]'
+    if (roleId === 2) return 'from-purple-400 to-purple-500'
     if (roleId === 3) return 'from-blue-400 to-blue-500'
-    if (roleId === 4) return 'from-purple-400 to-purple-500'
     return 'from-zinc-400 to-zinc-500'
   }
 

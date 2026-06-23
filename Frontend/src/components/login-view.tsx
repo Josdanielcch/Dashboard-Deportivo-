@@ -80,7 +80,7 @@ export default function LoginView({ onLogin }: LoginViewProps) {
         first_name: name, last_name: lastName, email, phone, password, username
       })
       if (data.success) {
-        setSuccess('Registro exitoso. Inicia sesión con tus credenciales.')
+        setSuccess('Registro exitoso. Tu cuenta debe ser aprobada por un administrador antes de iniciar sesión.')
         setActiveTab('login')
         setEmail(username)
       }

@@ -23,8 +23,16 @@ const login = async (req, res) => {
 
     const user = result.rows[0];
 
+    if (user.status === "Pending" || user.status === "pending") {
+      return res.status(403).json({ error: "Tu cuenta está pendiente de aprobación por un administrador." });
+    }
+
     if (user.status !== "Activated" && user.status !== "activated") {
       return res.status(403).json({ error: "Usuario inactivo" });
+    }
+
+    if (user.role_id === 10 || user.role_id === 7) {
+      return res.status(403).json({ error: "Acceso denegado. Este usuario solo puede ingresar por la página web." });
     }
 
     const isHashed =
@@ -99,17 +107,11 @@ const register = async (req, res) => {
 
     const salt = await bcrypt.genSalt(10);
     const password_hash = await bcrypt.hash(password, salt);
-
-    const roleId = 10; // Normalmente un usuario final
-    // Asegurar que el rol 10 exista antes de registrar el usuario
-    await pool.query(
-      "INSERT INTO roles (id, role_name, description) VALUES ($1, $2, $3) ON CONFLICT (id) DO NOTHING",
-      [roleId, 'Client', 'Cliente Final del Sitio Web']
-    );
+    const roleId = 2; // Por defecto Recepcionista para el panel
 
     const userResult = await pool.query(
-      `INSERT INTO users (username, password_hash, first_name, last_name, role_id, email)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO users (username, password_hash, first_name, last_name, role_id, email, status)
+       VALUES ($1, $2, $3, $4, $5, $6, 'Pending')
        RETURNING id, username, first_name, last_name, role_id, status, first_name || ' ' || last_name AS full_name`,
       [userName, password_hash, first_name, last_name, roleId, email]
     );
@@ -125,16 +127,36 @@ const register = async (req, res) => {
       newCustomerId = customerResult.rows[0].id;
     }
 
-    const token = jwt.sign(
-      { id: userResult.rows[0].id, username: userResult.rows[0].username, role_id: roleId },
-      process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
-    );
+    // Notificar a los administradores
+    try {
+      const adminsResult = await pool.query("SELECT email FROM users WHERE role_id = 1 AND status = 'Activated'");
+      const adminEmails = adminsResult.rows.map(admin => admin.email).filter(e => e);
+
+      if (adminEmails.length > 0) {
+        await mailer.sendMail({
+          from: process.env.SMTP_FROM || '"CourtManager" <no-reply@courtmanager.com>',
+          to: adminEmails.join(','),
+          subject: "Nueva Cuenta de Usuario Pendiente de Aprobación",
+          html: `
+            <h2>Nueva solicitud de acceso al Panel Administrativo</h2>
+            <p>Se ha registrado un nuevo usuario desde la pantalla de login del panel:</p>
+            <ul>
+              <li><strong>Nombre:</strong> ${first_name} ${last_name}</li>
+              <li><strong>Usuario:</strong> ${userName}</li>
+              <li><strong>Email:</strong> ${email}</li>
+              <li><strong>Teléfono:</strong> ${phone}</li>
+            </ul>
+            <p>Por favor, ingrese al sistema en el módulo de <strong>Usuarios</strong> para activar o rechazar esta cuenta.</p>
+          `,
+        });
+      }
+    } catch (mailError) {
+      console.error("Error al notificar a los administradores:", mailError);
+    }
 
     return res.status(201).json({
       success: true,
-      message: "Registro exitoso",
-      token,
+      message: "Registro exitoso. Tu cuenta debe ser aprobada por un administrador.",
       user: userResult.rows[0],
       customer_id: newCustomerId,
     });
