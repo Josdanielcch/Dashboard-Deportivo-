@@ -27,7 +27,8 @@ export const userService = {
    * @param {object} userData - Datos del usuario.
    * @param {string} userData.username - Nombre de usuario (mínimo 3 caracteres).
    * @param {string} userData.password - Contraseña (mínimo 6 caracteres).
-   * @param {string} userData.full_name - Nombre completo (mínimo 3 caracteres).
+   * @param {string} userData.first_name - Nombre (mínimo 3 caracteres).
+   * @param {string} userData.last_name - Apellido (mínimo 3 caracteres).
    * @param {number} [userData.role_id] - ID del rol (por defecto 1).
    * @returns {Promise<object>} Respuesta con los datos del usuario creado.
    */
@@ -38,7 +39,7 @@ export const userService = {
   /**
    * Actualiza los datos de un usuario existente.
    * @param {string|number} id - ID del usuario.
-   * @param {object} userData - Datos a actualizar (full_name, role_id, status).
+   * @param {object} userData - Datos a actualizar (first_name, last_name, role_id, status).
    * @returns {Promise<object>} Respuesta con los datos actualizados.
    */
   update: async (id, userData) => {

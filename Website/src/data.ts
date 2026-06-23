@@ -151,28 +151,28 @@ export const SPORT_CATEGORIES = [
   {
     id: 'padel',
     name: 'Padel Pro League',
-    image: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?q=80&w=1200&auto=format&fit=crop',
+    image: '/images/court-1.jpg',
     tag: 'POPULAR',
     description: 'La liga de pádel más rápida y divertida de la ciudad.'
   },
   {
     id: 'futbol',
     name: 'Fútbol 5 & 7',
-    image: 'https://images.unsplash.com/photo-1544698310-74ea9d1c8258?q=80&w=1200&auto=format&fit=crop',
+    image: '/images/court-2.jpg',
     tag: 'SINTÉTICO',
     description: 'Pastos artificiales profesionales con iluminación nocturna.'
   },
   {
     id: 'basquet',
     name: 'Basketball',
-    image: 'https://6a19a64a0bc623d413af26c4.imgix.net/black-man-doing-sports-playing-basketball-sunrise-jumping-silhouette.jpg',
+    image: '/images/basketball-silhouette.jpg',
     tag: 'DUELA PRO',
     description: 'Duelas profesionales techadas para retos urbanos.'
   },
   {
     id: 'tenis',
     name: 'Tenis Classic',
-    image: 'https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?q=80&w=1200&auto=format&fit=crop',
+    image: '/images/court-3.jpg',
     tag: 'ARCILLA Y RÁPIDA',
     description: 'Canchas históricas con el mantenimiento perfecto.'
   }

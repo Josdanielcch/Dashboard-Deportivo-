@@ -14,7 +14,7 @@ const login = async (req, res) => {
     }
 
     const query =
-      "SELECT id, username, email, password_hash, first_name, last_name, role_id, status, first_name || ' ' || last_name AS full_name FROM users WHERE username = $1 OR email = $1";
+      "SELECT id, username, email, password_hash, first_name, last_name, role_id, status, avatar_url, first_name || ' ' || last_name AS full_name FROM users WHERE username = $1 OR email = $1";
     const result = await pool.query(query, [username]);
 
     if (result.rows.length === 0) {
@@ -61,6 +61,7 @@ const login = async (req, res) => {
         customer_id: customer ? customer.id : null,
         phone: customer ? customer.phone : null,
         email: customer ? customer.email : null,
+        avatar_url: user.avatar_url,
       },
     });
   } catch (error) {
@@ -148,7 +149,7 @@ const register = async (req, res) => {
 
 const getMe = async (req, res) => {
   try {
-    const userQuery = "SELECT id, username, email, first_name || ' ' || last_name AS full_name, role_id, status FROM users WHERE id = $1";
+    const userQuery = "SELECT id, username, email, first_name || ' ' || last_name AS full_name, role_id, status, avatar_url FROM users WHERE id = $1";
     const userResult = await pool.query(userQuery, [req.user.id]);
     const user = userResult.rows[0] || req.user;
     const customerQuery = "SELECT id, phone, email FROM customers WHERE email = $1";
@@ -165,6 +166,7 @@ const getMe = async (req, res) => {
         customer_id: customer ? customer.id : null,
         phone: customer ? customer.phone : null,
         email: customer ? customer.email : user.email,
+        avatar_url: user.avatar_url,
       }
     });
   } catch (error) {
@@ -459,7 +461,30 @@ const clientRecoverPassword = async (req, res) => {
       from: `"CourtConnect" <no-reply@courtconnect.com>`,
       to: customer.email,
       subject: "Recuperación de contraseña - CourtConnect",
-      html: `<p>Hola ${customer.first_name},</p><p>Haz clic <a href="${resetLink}">aquí</a> para restablecer tu contraseña.</p>`,
+      html: `
+        <div style="font-family: 'Inter', Arial, sans-serif; max-width: 580px; margin: 0 auto; background: #0a0e27; padding: 40px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.06);">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <div style="display: inline-block; width: 56px; height: 56px; background: linear-gradient(135deg, #ccff00, #a6e000); border-radius: 14px; line-height: 56px; margin-bottom: 12px;">
+              <span style="font-size: 24px;">🏟️</span>
+            </div>
+            <h1 style="color: #ffffff; font-size: 22px; font-weight: 900; margin: 0; letter-spacing: -0.5px;">CourtConnect</h1>
+            <p style="color: #ccff00; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 3px; margin: 4px 0 0 0;">Plataforma de Reservas Premium</p>
+          </div>
+          <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.06); margin: 24px 0;">
+          <p style="color: #a0a0b0; font-size: 14px; line-height: 1.6;">Hola, <strong style="color: #ffffff;">${customer.first_name}</strong>,</p>
+          <p style="color: #a0a0b0; font-size: 14px; line-height: 1.6;">Recibimos una solicitud para restablecer tu contraseña en <strong style="color: #ffffff;">CourtConnect</strong>.</p>
+          <p style="color: #a0a0b0; font-size: 14px; line-height: 1.6;">Haz clic en el botón para continuar:</p>
+          <div style="text-align: center; margin: 32px 0;">
+            <a href="${resetLink}" style="background: linear-gradient(135deg, #ccff00, #a6e000); color: #0a0e27; padding: 14px 32px; text-decoration: none; border-radius: 12px; font-weight: 900; font-size: 14px; display: inline-block; letter-spacing: 0.5px; box-shadow: 0 0 30px rgba(204,255,0,0.15);">Restablecer Contraseña</a>
+          </div>
+          <p style="font-size: 12px; color: #ef4444; font-weight: 600; text-align: center;">Este enlace expira en 1 hora</p>
+          <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.06); margin: 24px 0;">
+          <p style="font-size: 12px; color: #555566;">Si el botón no funciona, copia este enlace en tu navegador:</p>
+          <p style="font-size: 12px; color: #ccff00; word-break: break-all; font-family: monospace; background: rgba(255,255,255,0.03); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);">${resetLink}</p>
+          <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.06); margin: 24px 0;">
+          <p style="font-size: 12px; color: #555566; text-align: center;">Si no solicitaste esto, ignora este correo.</p>
+        </div>
+      `,
     });
 
     return res.json({ success: true, message: "Si el correo existe, recibirás un enlace." });
@@ -491,7 +516,69 @@ const clientResetPassword = async (req, res) => {
   }
 };
 
+const clientGoogleLogin = async (req, res) => {
+  try {
+    const { access_token } = req.body;
+    if (!access_token) return res.status(400).json({ error: "Access token requerido" });
+
+    // Fetch user info from Google
+    const fetchResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: `Bearer ${access_token}` }
+    });
+    
+    if (!fetchResponse.ok) {
+      return res.status(401).json({ error: "Token de Google inválido o expirado" });
+    }
+
+    const payload = await fetchResponse.json();
+    const email = payload.email.toLowerCase();
+    const firstName = payload.given_name || 'Google User';
+    const lastName = payload.family_name || '';
+
+    // Check if customer exists
+    let customerResult = await pool.query("SELECT * FROM customers WHERE email = $1", [email]);
+    let customer;
+
+    if (customerResult.rows.length === 0) {
+      // Create new customer
+      const insertRes = await pool.query(
+        "INSERT INTO customers (first_name, last_name, email, phone) VALUES ($1, $2, $3, $4) RETURNING *",
+        [firstName, lastName, email, ""]
+      );
+      customer = insertRes.rows[0];
+    } else {
+      customer = customerResult.rows[0];
+    }
+
+    // Generate JWT
+    const token = jwt.sign(
+      { id: customer.id, username: customer.email, role_id: 10, is_client: true },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
+    );
+
+    return res.json({
+      success: true,
+      message: "Login con Google exitoso",
+      token,
+      user: {
+        id: customer.id,
+        username: customer.email,
+        full_name: `${customer.first_name} ${customer.last_name}`,
+        role_id: 10,
+        customer_id: customer.id,
+        phone: customer.phone,
+        email: customer.email,
+      },
+      customer_id: customer.id,
+    });
+  } catch (error) {
+    console.error("Google Login error:", error);
+    res.status(500).json({ error: "Error en el servidor al autenticar con Google" });
+  }
+};
+
 module.exports = { 
   login, register, getMe, recoverPassword, resetPassword,
-  clientLogin, clientRegister, clientRecoverPassword, clientResetPassword 
+  clientLogin, clientRegister, clientRecoverPassword, clientResetPassword, clientGoogleLogin
 };

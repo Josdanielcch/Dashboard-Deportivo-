@@ -9,9 +9,12 @@ import ReservasView from '@/components/reservas-view'
 import ClientesView from '@/components/clientes-view'
 import ProductosView from '@/components/productos-view'
 import VentasView from '@/components/ventas-view'
+import ComprasView from '@/components/compras-view'
 import CxcView from '@/components/cxc-view'
+import CxpView from '@/components/cxp-view'
 import UsuariosView from '@/components/usuarios-view'
 import AuditoriaView from '@/components/auditoria-view'
+import ProveedoresView from '@/components/proveedores-view'
 
 export default function AppContent() {
   const { isAuthenticated, login, user } = useAuth()
@@ -39,9 +42,12 @@ export default function AppContent() {
       case 'canchas': return <CanchasView />
       case 'reservas': return <ReservasView />
       case 'clientes': return <ClientesView />
+      case 'proveedores': return <ProveedoresView />
       case 'productos': return <ProductosView />
       case 'ventas': return <VentasView />
+      case 'compras': return <ComprasView />
       case 'cxc': return <CxcView />
+      case 'cxp': return <CxpView />
       case 'usuarios': return <UsuariosView />
       case 'auditoria': return <AuditoriaView />
       default: return <DashboardView />

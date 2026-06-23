@@ -1,6 +1,6 @@
 import React from 'react';
 import { Booking } from '../types';
-import { Calendar, Clock, MapPin, Trash2, ShieldAlert, BadgeCheck, Phone, CheckCircle } from 'lucide-react';
+import { Calendar, Clock, Trash2, BadgeCheck } from 'lucide-react';
 
 interface MyBookingsProps {
   bookings: Booking[];
@@ -9,8 +9,8 @@ interface MyBookingsProps {
 }
 
 export default function MyBookings({ bookings, onCancelBooking, setCurrentTab }: MyBookingsProps) {
-  const activeBookings = bookings.filter((b) => b.status === 'confirmed');
-  const pastBookings = bookings.filter((b) => b.status === 'cancelled');
+  const activeBookings = bookings.filter((b) => ['pending', 'confirmed'].includes(b.status));
+  const pastBookings = bookings.filter((b) => ['cancelled', 'no_show', 'completed'].includes(b.status));
 
   const getSportLabel = (sport: string) => {
     switch (sport) {
@@ -22,6 +22,23 @@ export default function MyBookings({ bookings, onCancelBooking, setCurrentTab }:
     }
   };
 
+  const renderStatusBadge = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return <span className="bg-yellow-500/20 text-yellow-500 border border-yellow-500/30 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider">Pendiente</span>;
+      case 'confirmed':
+        return <span className="bg-[#c0ff00]/20 text-[#c0ff00] border border-[#c0ff00]/30 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider">Confirmada</span>;
+      case 'completed':
+        return <span className="bg-blue-500/20 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider">Completada</span>;
+      case 'cancelled':
+        return <span className="bg-red-500/20 text-red-500 border border-red-500/30 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider">Cancelada</span>;
+      case 'no_show':
+        return <span className="bg-zinc-500/20 text-zinc-400 border border-zinc-500/30 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider">No Asistió</span>;
+      default:
+        return <span className="bg-zinc-500/20 text-zinc-400 border border-zinc-500/30 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider">{status}</span>;
+    }
+  };
+
   return (
     <div className="space-y-8 relative z-10" id="my-bookings-container">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -30,7 +47,7 @@ export default function MyBookings({ bookings, onCancelBooking, setCurrentTab }:
             Mis Canchas Reservadas
           </h2>
           <p className="text-sm text-zinc-400 mt-1">
-            Revisa, accede con tus códigos o cancela tus agendas de juego activas.
+            Revisa, accede con tus códigos o cancela tus agendas de juego.
           </p>
         </div>
         
@@ -49,7 +66,7 @@ export default function MyBookings({ bookings, onCancelBooking, setCurrentTab }:
           </div>
           <h3 className="text-lg font-black text-white font-headline uppercase tracking-wide">No tienes reservas activas</h3>
           <p className="text-sm text-zinc-400 max-w-sm mx-auto font-medium">
-            Aún no has programado ningún juego. Explora nuestra amplia gama de canchas de pádel, tenis, fútbol o básquetbol.
+            Aún no has programado ningún juego o están en tu historial pasado. Explora nuestro catálogo de canchas.
           </p>
           <button
             onClick={() => setCurrentTab('explore')}
@@ -67,7 +84,10 @@ export default function MyBookings({ bookings, onCancelBooking, setCurrentTab }:
               id={`booking-item-${booking.id}`}
             >
               {/* Upper row */}
-              <div className="flex bg-zinc-950/80 text-white p-5 gap-4 border-b border-white/5">
+              <div className="flex bg-zinc-950/80 text-white p-5 gap-4 border-b border-white/5 relative">
+                <div className="absolute top-3 right-3">
+                  {renderStatusBadge(booking.status)}
+                </div>
                 <img
                   src={booking.courtImage}
                   alt={booking.courtName}
@@ -76,11 +96,11 @@ export default function MyBookings({ bookings, onCancelBooking, setCurrentTab }:
                 />
                 
                 <div className="flex-1">
-                  <span className="text-[9px] uppercase tracking-widest bg-[#c0ff00]/20 text-[#c0ff00] border border-[#c0ff00]/20 px-2.5 py-1 rounded font-black font-mono">
+                  <span className="text-[9px] uppercase tracking-widest bg-white/10 text-white border border-white/10 px-2.5 py-1 rounded font-black font-mono">
                     {getSportLabel(booking.sport)}
                   </span>
                   <h3 className="text-base font-black font-headline text-white mt-2 line-clamp-1 uppercase whitespace-nowrap">{booking.courtName}</h3>
-                  <p className="text-xs text-zinc-400 font-sans mt-1">Clave acceso: <span className="font-mono text-[#c0ff00] font-black">{booking.id}</span></p>
+                  <p className="text-xs text-zinc-400 font-sans mt-1">Clave: <span className="font-mono text-white font-black">{booking.id}</span></p>
                 </div>
               </div>
 
@@ -94,24 +114,24 @@ export default function MyBookings({ bookings, onCancelBooking, setCurrentTab }:
 
                   <div className="flex items-center gap-2 text-white font-bold">
                     <Clock className="h-4 w-4 text-[#c0ff00] shrink-0" />
-                    <span>{booking.timeSlot} <span className="text-[10px] text-zinc-500 font-normal">(1.5 hr)</span></span>
+                    <span>{booking.timeSlot}</span>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-1.5 text-xs text-zinc-300">
                   <BadgeCheck className="h-4.5 w-4.5 text-[#c0ff00]/80 shrink-0" />
-                  <span>Titular: <strong className="text-white">{booking.userName}</strong> ({booking.userPhone})</span>
+                  <span>Titular: <strong className="text-white">{booking.userName}</strong></span>
                 </div>
 
                 <div className="flex items-center justify-between pt-2">
                   <div className="text-xs">
-                    <span className="text-zinc-500 mr-1 uppercase font-mono text-[9px] tracking-wider block">Pagado</span>
+                    <span className="text-zinc-500 mr-1 uppercase font-mono text-[9px] tracking-wider block">Importe</span>
                     <span className="font-extrabold text-[#c0ff00] text-sm md:text-base">${booking.price} USD</span>
                   </div>
 
                   <button
                     onClick={() => {
-                      if (confirm('¿Estás seguro que deseas cancelar esta reserva? Se reintegrará el importe según nuestros términos.')) {
+                      if (confirm('¿Estás seguro que deseas cancelar esta reserva?')) {
                         onCancelBooking(booking.id);
                       }
                     }}
@@ -132,7 +152,7 @@ export default function MyBookings({ bookings, onCancelBooking, setCurrentTab }:
       {pastBookings.length > 0 && (
         <div className="mt-12 pt-8 border-t border-white/10">
           <h3 className="text-xs uppercase tracking-widest font-black text-zinc-500 mb-4 font-mono">
-            Historial de Juego & Cancelaciones
+            Historial y Cancelaciones
           </h3>
           <div className="bg-zinc-950/50 rounded-2xl overflow-hidden border border-white/10 shadow-lg">
             <div className="divide-y divide-white/5">
@@ -143,9 +163,7 @@ export default function MyBookings({ bookings, onCancelBooking, setCurrentTab }:
                     <div className="text-[10px] text-zinc-500 mt-0.5">{b.date} • {b.timeSlot}</div>
                   </div>
                   <div className="flex items-center gap-4">
-                    <span className="bg-red-950/45 text-red-400 border border-red-900/40 px-2.5 py-1 rounded text-[9px] font-black uppercase tracking-wider font-mono">
-                      CANCELADA
-                    </span>
+                    {renderStatusBadge(b.status)}
                     <span className="font-mono text-zinc-400 font-bold">${b.price} USD</span>
                   </div>
                 </div>

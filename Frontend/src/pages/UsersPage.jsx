@@ -47,7 +47,7 @@ export default function UsersPage({ user }) {
     fetchUsers();
   }, []);
 
-  const fetchUsers = async () => {
+  async function fetchUsers() {
     setLoading(true);
     setError('');
     try {
@@ -162,6 +162,36 @@ export default function UsersPage({ user }) {
     return d.toLocaleDateString('es-VE', { day: '2-digit', month: '2-digit', year: 'numeric' });
   };
 
+  // Handler for uploading an avatar
+  const handleAvatarUpload = async (e, userId) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:3000/api/users/${userId}/avatar`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setUsers(prev => prev.map(u => u.id === userId ? { ...u, avatar_url: data.data.avatar_url } : u));
+        setEditingUser(prev => ({ ...prev, avatar_url: data.data.avatar_url }));
+      } else {
+        alert(data.error || 'Error al subir la imagen');
+      }
+    } catch {
+      alert('Error de conexión al subir la imagen');
+    }
+  };
+
   // Non-admin gate
   if (!isAdmin) {
     return (
@@ -236,8 +266,12 @@ export default function UsersPage({ user }) {
                 <tr key={u.id} className={u.status === 'Disabled' ? 'row-disabled' : ''}>
                   <td>
                     <div className="user-name-cell">
-                      <div className="user-avatar-small">
-                        <User size={14} />
+                      <div className="user-avatar-small" style={{ overflow: 'hidden' }}>
+                        {u.avatar_url ? (
+                          <img src={`http://localhost:3000${u.avatar_url}`} alt={u.username} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                          <User size={14} />
+                        )}
                       </div>
                       <span style={{ fontWeight: '600' }}>{u.username}</span>
                     </div>
@@ -417,9 +451,30 @@ export default function UsersPage({ user }) {
               </button>
             </div>
 
-            <div className="edit-user-info">
-              <span className="edit-user-label">Usuario:</span>
-              <span className="edit-user-value">{editingUser.username}</span>
+            <div className="edit-user-info" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <span className="edit-user-label">Usuario:</span>
+                <span className="edit-user-value">{editingUser.username}</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                <div className="user-avatar-small" style={{ width: '48px', height: '48px', overflow: 'hidden' }}>
+                  {editingUser.avatar_url ? (
+                    <img src={`http://localhost:3000${editingUser.avatar_url}`} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <User size={24} />
+                  )}
+                </div>
+                <input 
+                  type="file" 
+                  id="avatar-upload" 
+                  style={{ display: 'none' }} 
+                  accept="image/png, image/jpeg" 
+                  onChange={(e) => handleAvatarUpload(e, editingUser.id)} 
+                />
+                <button type="button" onClick={() => document.getElementById('avatar-upload').click()} style={{ fontSize: '10px', padding: '4px 8px', borderRadius: '4px', background: '#3b82f6', color: '#fff', border: 'none', cursor: 'pointer', outline: 'none' }}>
+                  Cambiar Foto
+                </button>
+              </div>
             </div>
 
             <form onSubmit={handleEditUser} className="modal-form">

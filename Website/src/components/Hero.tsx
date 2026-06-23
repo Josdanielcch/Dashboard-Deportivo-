@@ -21,7 +21,7 @@ export default function Hero({ onExploreClick, onHowItWorksClick, onQuickSearch 
       {/* Background Image Container with Gradient Overlay */}
       <div className="absolute inset-0 bg-gradient-to-r from-black via-zinc-950/95 to-zinc-950/60 z-10" />
       <img
-        src="https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?q=80&w=1800&auto=format&fit=crop"
+        src="/images/court-1.jpg"
         alt="Padel Court Background"
         className="absolute inset-0 w-full h-full object-cover object-center scale-100"
         referrerPolicy="no-referrer"

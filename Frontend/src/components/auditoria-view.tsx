@@ -17,7 +17,7 @@ export default function AuditoriaView() {
   const fetchLogs = async () => {
     try {
       setLoading(true)
-      const res = await auditService.getAll()
+      const res = await auditService.getLogs()
       if (res.success) {
         setLogs(res.data || [])
       }

@@ -14,7 +14,14 @@ import {
   ChevronLeft,
   ChevronRight,
   Sparkles,
-  Settings
+  Settings,
+  Truck,
+  ShoppingCart,
+  CreditCard,
+  Receipt,
+  LayoutGrid,
+  CalendarDays,
+  ShoppingBag
 } from 'lucide-react'
 import { useAuthSafe } from './auth-context'
 import { useState } from 'react'
@@ -35,12 +42,15 @@ export default function Sidebar({ activeModule, setActiveModule, isMobileMenuOpe
 
   const modules = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'canchas', label: 'Canchas', icon: Dumbbell },
-    { id: 'reservas', label: 'Reservas', icon: Calendar },
+    { id: 'canchas', label: 'Canchas', icon: LayoutGrid },
+    { id: 'reservas', label: 'Reservas', icon: CalendarDays },
     { id: 'clientes', label: 'Clientes', icon: Users },
+    { id: 'proveedores', label: 'Proveedores', icon: Truck },
     { id: 'productos', label: 'Productos', icon: Package },
-    { id: 'ventas', label: 'Ventas', icon: TrendingUp },
-    { id: 'cxc', label: 'CxC', icon: Shield },
+    { id: 'ventas', label: 'Ventas', icon: ShoppingBag },
+    { id: 'compras', label: 'Compras', icon: ShoppingCart },
+    { id: 'cxc', label: 'CxC', icon: Receipt },
+    { id: 'cxp', label: 'CxP', icon: CreditCard },
     { id: 'usuarios', label: 'Usuarios', icon: UserCog },
     { id: 'auditoria', label: 'Auditoría', icon: Shield },
   ]
@@ -154,8 +164,12 @@ export default function Sidebar({ activeModule, setActiveModule, isMobileMenuOpe
           {/* User Profile */}
           <div className={`flex items-center ${collapsed ? 'flex-col' : 'gap-3'} px-1`}>
             <div className="relative">
-              <div className={`flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br ${roleColor()} text-[#060a1a] text-sm font-bold shrink-0`}>
-                {(userName || 'U').charAt(0).toUpperCase()}
+              <div className={`flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br ${roleColor()} text-[#060a1a] text-sm font-bold shrink-0 overflow-hidden`}>
+                {user?.avatar_url ? (
+                  <img src={`http://localhost:3000${user.avatar_url}`} alt={userName} className="w-full h-full object-cover" />
+                ) : (
+                  (userName || 'U').charAt(0).toUpperCase()
+                )}
               </div>
               <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-[#060a1a]" />
             </div>

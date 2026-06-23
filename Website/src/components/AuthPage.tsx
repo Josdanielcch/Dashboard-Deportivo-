@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { User, Lock, Mail, Phone, ShieldCheck, Globe, Trophy, Award, Check, KeyRound, ArrowLeft } from 'lucide-react';
 import { User as UserType } from '../types';
-import { loginUser, registerUser, recoverPassword, resetPassword } from '../api';
+import { loginUser, registerUser, recoverPassword, resetPassword, googleLoginUser } from '../api';
+import { useGoogleLogin } from '@react-oauth/google';
 
 interface AuthPageProps {
+  initialMode?: 'login' | 'register' | 'reset';
+  onModeSwitch?: (mode: 'login' | 'register') => void;
   onLoginSuccess: (user: UserType) => void;
   onCancel: () => void;
 }
 
-export default function AuthPage({ onLoginSuccess, onCancel }: AuthPageProps) {
-  const [activeTab, setActiveTab] = useState<'register' | 'login' | 'recover' | 'reset'>('register');
+export default function AuthPage({ initialMode = 'register', onModeSwitch, onLoginSuccess, onCancel }: AuthPageProps) {
+  const [activeTab, setActiveTab] = useState<'register' | 'login' | 'recover' | 'reset'>(initialMode);
   const [token, setToken] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
@@ -20,13 +23,15 @@ export default function AuthPage({ onLoginSuccess, onCancel }: AuthPageProps) {
 
   // Check URL query parameters for token (e.g. ?token=...)
   useEffect(() => {
+    setActiveTab(initialMode);
+  }, [initialMode]);
+
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const urlToken = params.get('token');
     if (urlToken) {
       setToken(urlToken);
       setActiveTab('reset');
-      // Clean up the URL to keep it pristine and secure
-      window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
 
@@ -175,10 +180,32 @@ export default function AuthPage({ onLoginSuccess, onCancel }: AuthPageProps) {
       email: `deporte.${platform.toLowerCase()}@courtconnect.com`,
       phone: '+52 55 9999 8888',
       membershipLevel: 'pro',
+      customerId: 1,
     };
     localStorage.setItem('courtconnect_user_session', JSON.stringify(socialUser));
     onLoginSuccess(socialUser);
   };
+
+  const loginWithGoogle = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      try {
+        const apiResponse = await googleLoginUser({ access_token: tokenResponse.access_token });
+        const userSession: UserType = {
+          name: apiResponse.user.full_name,
+          email: apiResponse.user.email,
+          phone: apiResponse.user.phone || '',
+          membershipLevel: 'standard',
+          customerId: apiResponse.user.customer_id,
+        };
+        localStorage.setItem('courtconnect_token', apiResponse.token);
+        localStorage.setItem('courtconnect_user_session', JSON.stringify(userSession));
+        onLoginSuccess(userSession);
+      } catch (err: any) {
+        setError(err?.message || 'Error al iniciar sesión con Google.');
+      }
+    },
+    onError: () => setError('Error al autenticar con Google.'),
+  });
 
   return (
     <div className="max-w-[1200px] mx-auto bg-zinc-900/60 border border-white/10 rounded-3xl overflow-hidden shadow-2xl backdrop-blur-md flex flex-col md:flex-row min-h-[600px] mb-12 relative z-10 animate-fade-in text-white">
@@ -189,7 +216,7 @@ export default function AuthPage({ onLoginSuccess, onCancel }: AuthPageProps) {
         {/* Background mesh glow and stadium image mask */}
         <div className="absolute inset-0 bg-gradient-to-t from-black via-zinc-950/70 to-zinc-950/20 z-10" />
         <img
-          src="https://images.unsplash.com/photo-1544698310-74ea9d1c8258?q=80&w=1200&auto=format&fit=crop"
+          src="/images/court-2.jpg"
           alt="Branded Basketball Stadium"
           className="absolute inset-0 w-full h-full object-cover object-center opacity-40 mix-blend-overlay"
           referrerPolicy="no-referrer"
@@ -217,19 +244,19 @@ export default function AuthPage({ onLoginSuccess, onCancel }: AuthPageProps) {
             <div className="flex -space-x-3.5">
               <img
                 className="inline-block h-10 w-10 rounded-full ring-2 ring-zinc-900 object-cover"
-                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=256&auto=format&fit=crop"
+                src="/images/avatar-1.jpg"
                 alt="Player Avatar"
                 referrerPolicy="no-referrer"
               />
               <img
                 className="inline-block h-10 w-10 rounded-full ring-2 ring-zinc-900 object-cover"
-                src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=256&auto=format&fit=crop"
+                src="/images/avatar-2.jpg"
                 alt="Player Avatar"
                 referrerPolicy="no-referrer"
               />
               <img
                 className="inline-block h-10 w-10 rounded-full ring-2 ring-zinc-900 object-cover"
-                src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=256&auto=format&fit=crop"
+                src="/images/avatar-3.jpg"
                 alt="Player Avatar"
                 referrerPolicy="no-referrer"
               />
@@ -245,33 +272,20 @@ export default function AuthPage({ onLoginSuccess, onCancel }: AuthPageProps) {
       {/* RIGHT COLUMN: Interactive login/register sheet (Matches Image 3) */}
       <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center">
 
-        {/* Dual Tab navigation: Registrarse vs Iniciar Sesión */}
-        <div className="bg-zinc-950/60 border border-white/5 p-1.5 rounded-2xl flex gap-1 mb-8" id="auth-tabs">
-          <button
-            onClick={() => {
-              setActiveTab('register');
-              setError('');
-            }}
-            className={`flex-1 py-3 text-center rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${activeTab === 'register'
-                ? 'bg-[#c0ff00] text-black shadow-lg font-black'
-                : 'text-zinc-400 hover:text-[#c0ff00]'
-              }`}
-          >
-            Registrarse
-          </button>
-
-          <button
-            onClick={() => {
-              setActiveTab('login');
-              setError('');
-            }}
-            className={`flex-1 py-3 text-center rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${activeTab === 'login'
-                ? 'bg-[#c0ff00] text-black shadow-lg font-black'
-                : 'text-zinc-400 hover:text-[#c0ff00]'
-              }`}
-          >
-            Iniciar Sesión
-          </button>
+        {/* Dynamic Header instead of confusing button-like box */}
+        <div className="mb-8" id="auth-header">
+          <h2 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tight font-headline">
+            {activeTab === 'register' ? 'Crear ' : activeTab === 'login' ? 'Iniciar ' : activeTab === 'recover' ? 'Recuperar ' : 'Nueva '}
+            <span className="text-[#c0ff00]">
+              {activeTab === 'register' ? 'Cuenta' : activeTab === 'login' ? 'Sesión' : 'Contraseña'}
+            </span>
+          </h2>
+          <p className="text-sm text-zinc-400 mt-2 font-medium">
+            {activeTab === 'register' ? 'Completa tus datos para unirte a la comunidad.' : 
+             activeTab === 'login' ? 'Bienvenido de vuelta, ingresa tus credenciales.' : 
+             activeTab === 'recover' ? 'Ingresa tu correo para enviarte un enlace de recuperación.' : 
+             'Ingresa tu nueva contraseña segura.'}
+          </p>
         </div>
 
         {activeTab === 'register' ? (
@@ -408,6 +422,20 @@ export default function AuthPage({ onLoginSuccess, onCancel }: AuthPageProps) {
             >
               Crear Cuenta
             </button>
+            <div className="text-center mt-4">
+              <span className="text-xs text-zinc-400 font-medium">¿Ya tienes cuenta? </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('login');
+                  onModeSwitch?.('login');
+                  setError('');
+                }}
+                className="text-xs text-[#c0ff00] hover:underline font-bold"
+              >
+                Inicia sesión aquí
+              </button>
+            </div>
           </form>
         ) : activeTab === 'login' ? (
           /* LOGIN FORM */
@@ -468,6 +496,20 @@ export default function AuthPage({ onLoginSuccess, onCancel }: AuthPageProps) {
             >
               Iniciar Sesión
             </button>
+            <div className="text-center mt-4">
+              <span className="text-xs text-zinc-400 font-medium">¿No tienes cuenta? </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('register');
+                  onModeSwitch?.('register');
+                  setError('');
+                }}
+                className="text-xs text-[#c0ff00] hover:underline font-bold"
+              >
+                Regístrate aquí
+              </button>
+            </div>
           </form>
         ) : activeTab === 'recover' ? (
           /* RECOVER PASSWORD FORM */
@@ -586,7 +628,8 @@ export default function AuthPage({ onLoginSuccess, onCancel }: AuthPageProps) {
         {/* Google & Facebook Direct login tags */}
         <div className="grid grid-cols-2 gap-4">
           <button
-            onClick={() => handleSocialClick('Google')}
+            type="button"
+            onClick={() => loginWithGoogle()}
             className="py-2.5 px-4 border border-white/10 rounded-xl text-xs font-bold text-white bg-zinc-950/40 hover:bg-zinc-800/50 flex items-center justify-center gap-2 transition-all cursor-pointer hover:shadow-sm"
           >
             {/* Google SVG Logo */}
@@ -600,6 +643,7 @@ export default function AuthPage({ onLoginSuccess, onCancel }: AuthPageProps) {
           </button>
 
           <button
+            type="button"
             onClick={() => handleSocialClick('Facebook')}
             className="py-2.5 px-4 border border-white/10 rounded-xl text-xs font-bold text-white bg-zinc-950/40 hover:bg-zinc-800/50 flex items-center justify-center gap-2 transition-all cursor-pointer hover:shadow-sm"
           >

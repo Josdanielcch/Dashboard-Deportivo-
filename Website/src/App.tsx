@@ -18,12 +18,16 @@ import { Search, MapPin, Calendar, Award, ChevronLeft, ChevronRight, Trophy, Spa
 export default function App() {
   // Navigation State
   const [currentTab, setCurrentTab] = useState<string>('home'); // 'home' | 'explore' | 'how-it-works' | 'about-us' | 'my-bookings' | 'auth'
+  const [authMode, setAuthMode] = useState<'login' | 'register' | 'reset'>('register');
   
   // User Session State
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   
   // Active Bookings database stored locally
   const [bookings, setBookings] = useState<Booking[]>([]);
+
+  // Courts database
+  const [allCourts, setAllCourts] = useState<Court[]>([]);
 
   // Filtering States in Explorar view
   const [selectedSports, setSelectedSports] = useState<SportType[]>([]);
@@ -60,8 +64,38 @@ export default function App() {
     const params = new URLSearchParams(window.location.search);
     const urlToken = params.get('token');
     if (urlToken) {
+      setAuthMode('reset');
       setCurrentTab('auth');
     }
+
+    // 3. Fetch courts from backend
+    const fetchCourtsData = async () => {
+      try {
+        const { getCourts } = await import('./api');
+        const res = await getCourts();
+        if (res.success && Array.isArray(res.data)) {
+          const mappedCourts = res.data.map((bCourt: any, index: number) => {
+            // Select a base mock court to steal its image and mock fields
+            const baseCourt = INITIAL_COURTS[index % INITIAL_COURTS.length];
+            return {
+              ...baseCourt,
+              id: `court-${bCourt.id}`,
+              backendId: bCourt.id,
+              name: bCourt.court_name,
+              isAvailable: bCourt.status === 'Available',
+              pricePerHour: parseFloat(bCourt.hourly_rate) > 0 ? parseFloat(bCourt.hourly_rate) : baseCourt.pricePerHour,
+            } as Court;
+          });
+          setAllCourts(mappedCourts);
+        } else {
+          setAllCourts(INITIAL_COURTS);
+        }
+      } catch (err) {
+        console.error('Error fetching courts, using mock', err);
+        setAllCourts(INITIAL_COURTS);
+      }
+    };
+    fetchCourtsData();
   }, []);
 
   // Sync bookings from backend if logged in, otherwise from localStorage
@@ -73,21 +107,35 @@ export default function App() {
           const response = await getCustomerBookings(currentUser.customerId);
           if (response && response.success && Array.isArray(response.data)) {
             const backendBookings: Booking[] = response.data.map((b: any) => {
-              const courtDetail = INITIAL_COURTS.find((c) => c.backendId === b.court_id);
-              const cleanStart = b.start_time ? b.start_time.split(':').slice(0, 2).join(':') : '';
-              const cleanEnd = b.end_time ? b.end_time.split(':').slice(0, 2).join(':') : '';
+              const courtDetail = allCourts.find((c) => c.backendId === b.court_id) || INITIAL_COURTS.find((c) => c.backendId === b.court_id);
+              const formatAMPM = (timeStr: string) => {
+                if (!timeStr) return '';
+                const parts = timeStr.split(':');
+                if (parts.length >= 2) {
+                  let h = parseInt(parts[0], 10);
+                  const m = parts[1];
+                  const ampm = h >= 12 ? 'PM' : 'AM';
+                  h = h % 12;
+                  h = h ? h : 12;
+                  return `${h.toString().padStart(2, '0')}:${m} ${ampm}`;
+                }
+                return timeStr;
+              };
+              
+              const cleanStart = formatAMPM(b.start_time);
+              const cleanEnd = formatAMPM(b.end_time);
               const cleanDate = b.booking_date ? b.booking_date.split('T')[0] : '';
               
               return {
                 id: `BKG-${b.id}`,
                 courtId: courtDetail?.id || `court-${b.court_id}`,
                 courtName: b.court_name || courtDetail?.name || 'Cancha',
-                courtImage: courtDetail?.imageUrl || 'https://images.unsplash.com/photo-1544698310-74ea9d1c8258',
+                courtImage: courtDetail?.imageUrl || '/images/court-2.jpg',
                 sport: (courtDetail?.sport || 'padel') as SportType,
                 date: cleanDate,
                 timeSlot: `${cleanStart} - ${cleanEnd}`,
                 price: parseFloat(b.total_amount || '30'),
-                status: b.status === 'Cancelled' || b.status === 'No_show' ? 'cancelled' : 'confirmed',
+                status: (b.status || 'Pending').toLowerCase() as any,
                 userName: currentUser.name,
                 userEmail: currentUser.email,
                 userPhone: currentUser.phone,
@@ -121,7 +169,7 @@ export default function App() {
             date: '2026-05-28',
             timeSlot: '17:30 - 19:00',
             price: 338,
-            status: 'confirmed',
+            status: 'pending',
             userName: 'Josedaniel',
             userEmail: 'josdanielcch@gmail.com',
             userPhone: '+52 55 9876 5432',
@@ -136,7 +184,7 @@ export default function App() {
             date: '2026-05-30',
             timeSlot: '19:00 - 20:30',
             price: 675,
-            status: 'confirmed',
+            status: 'pending',
             userName: 'Josedaniel',
             userEmail: 'josdanielcch@gmail.com',
             userPhone: '+52 55 9876 5432',
@@ -245,7 +293,10 @@ export default function App() {
   };
 
   // Master Filter Routine for Court Listings
-  const filteredCourts = INITIAL_COURTS.filter((court) => {
+  const filteredCourts = allCourts.filter((court) => {
+    // 0. Availability check
+    if (!court.isAvailable) return false;
+
     // 1. Sport check
     if (selectedSports.length > 0 && !selectedSports.includes(court.sport)) {
       return false;
@@ -275,7 +326,7 @@ export default function App() {
   const paginatedCourts = filteredCourts.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
-    <div className="min-h-screen bg-[#050505] flex flex-col justify-between text-[#f4f4f5] font-sans relative overflow-x-hidden">
+    <div className="min-h-screen bg-[#050505] flex flex-col justify-between text-[#f4f4f5] font-sans relative overflow-hidden">
       
       {/* Background radial atmosphere glow highlights (Immersive UI aspect) */}
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden select-none">
@@ -290,7 +341,10 @@ export default function App() {
         setCurrentTab={setCurrentTab}
         currentUser={currentUser}
         onLogout={handleLogout}
-        onOpenAuth={() => setCurrentTab('auth')}
+        onOpenAuth={(mode) => {
+          setAuthMode(mode);
+          setCurrentTab('auth');
+        }}
       />
 
       {/* Main Container Wrapper */}
@@ -512,6 +566,8 @@ export default function App() {
         {/* VIEW: AUTHENTICATION SHEET SCREEN (Split registration) */}
         {currentTab === 'auth' && (
           <AuthPage
+            initialMode={authMode}
+            onModeSwitch={setAuthMode}
             onLoginSuccess={handleLoginSuccess}
             onCancel={() => setCurrentTab('explore')}
           />

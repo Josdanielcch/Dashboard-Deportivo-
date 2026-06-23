@@ -38,6 +38,7 @@ export default function AuthPage({ onLoginSuccess }) {
     const params = new URLSearchParams(window.location.search);
     const urlToken = params.get('token');
     if (urlToken) {
+      // eslint-disable-next-line
       setToken(urlToken);
       setView('reset');
       // Clean up the URL to keep it pristine and secure

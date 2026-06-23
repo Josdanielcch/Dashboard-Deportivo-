@@ -4,6 +4,20 @@ const { protect, authorize } = require('../middleware/authMiddleware');
 const userController = require('../controllers/userController');
 const { validate } = require('../middleware/validate');
 const { z } = require('zod');
+const multer = require('multer');
+const path = require('path');
+
+// Configuración de multer
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, path.join(__dirname, '../../uploads/avatars'));
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, req.params.id + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+const upload = multer({ storage: storage });
 
 // Esquema de validación para crear usuario con Zod
 const createUserSchema = z.object({
@@ -50,6 +64,7 @@ router.get('/:id', userController.getUserById);
 router.post('/', validate(createUserSchema), userController.createUser);
 router.put('/:id', validate(updateUserSchema), userController.updateUser);
 router.patch('/:id/status', validate(updateUserStatusSchema), userController.updateUserStatus);
+router.post('/:id/avatar', upload.single('avatar'), userController.uploadAvatar);
 
 router.delete('/:id', userController.deleteUser);
 

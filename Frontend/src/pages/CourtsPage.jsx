@@ -33,7 +33,7 @@ export default function CourtsPage({ user }) {
     fetchCourts();
   }, []);
 
-  const fetchCourts = async () => {
+  async function fetchCourts() {
     setLoading(true);
     setError('');
     try {

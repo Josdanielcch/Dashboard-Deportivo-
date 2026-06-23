@@ -1,13 +1,14 @@
 // src/controllers/bookingController.js
 const pool = require('../config/database');
+const mailer = require('../config/mailer');
 
 // Obtener todas las reservas (con datos relacionados)
 const getAllBookings = async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT b.id, b.booking_date, b.start_time, b.end_time, b.status,
+      SELECT b.id, b.booking_date, b.start_time, b.end_time, b.status, b.customer_id,
              c.first_name || ' ' || c.last_name as customer_name, c.phone, 
-             co.court_name,
+             co.court_name, co.hourly_rate,
              u.username as created_by
       FROM bookings b
       JOIN customers c ON b.customer_id = c.id
@@ -110,6 +111,19 @@ const createBooking = async (req, res) => {
       return res.status(400).json({ error: 'La cancha seleccionada se encuentra en mantenimiento o fuera de servicio' });
     }
     
+    // --- LÓGICA ANTI-SPAM: Máximo 3 reservas pendientes ---
+    const pendingBookings = await client.query(`
+      SELECT COUNT(*) as pending_count 
+      FROM bookings 
+      WHERE customer_id = $1 AND status = 'Pending'
+    `, [customer_id]);
+    
+    if (parseInt(pendingBookings.rows[0].pending_count, 10) >= 3) {
+      await client.query('ROLLBACK');
+      return res.status(429).json({ error: 'Has alcanzado el límite de 3 reservas sin pagar. Por favor, realiza el pago de tus reservas pendientes o asiste a las mismas antes de agendar una nueva.' });
+    }
+    // --------------------------------------------------------
+    
     // Verificar disponibilidad
     const conflict = await client.query(`
       SELECT COUNT(*) FROM bookings
@@ -187,6 +201,147 @@ const updateBookingStatus = async (req, res) => {
     }
     
     await client.query('COMMIT');
+    
+    // Enviar correo si la reserva fue confirmada
+    if (status === 'Confirmed') {
+      try {
+        const bookingDetails = await pool.query(`
+          SELECT b.booking_date, b.start_time, b.end_time,
+                 c.first_name, c.email,
+                 co.court_name
+          FROM bookings b
+          JOIN customers c ON b.customer_id = c.id
+          JOIN courts co ON b.court_id = co.id
+          WHERE b.id = $1
+        `, [id]);
+        
+        if (bookingDetails.rows.length > 0) {
+          const detail = bookingDetails.rows[0];
+          
+          // Formatear la fecha para que se vea bonita (evita problemas de zona horaria si la tratamos como string directamente)
+          // El booking_date viene de postgres, si es un objeto Date, toLocaleDateString() funciona bien.
+          let fechaFormateada = detail.booking_date;
+          if (detail.booking_date instanceof Date) {
+            fechaFormateada = detail.booking_date.toLocaleDateString('es-VE');
+          } else if (typeof detail.booking_date === 'string') {
+            fechaFormateada = detail.booking_date.split('T')[0];
+          }
+
+          const formatAMPM = (timeStr) => {
+            if (!timeStr) return '';
+            const parts = timeStr.split(':');
+            if (parts.length >= 2) {
+              let h = parseInt(parts[0], 10);
+              const m = parts[1];
+              const ampm = h >= 12 ? 'PM' : 'AM';
+              h = h % 12;
+              h = h ? h : 12;
+              return `${h.toString().padStart(2, '0')}:${m} ${ampm}`;
+            }
+            return timeStr;
+          };
+
+          const cleanStart = formatAMPM(detail.start_time);
+          const cleanEnd = formatAMPM(detail.end_time);
+
+          const mailOptions = {
+            from: '"CourtConnect" <no-reply@courtconnect.com>',
+            to: detail.email,
+            subject: '¡Tu reserva ha sido confirmada! 🎉',
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+                <h2 style="color: #4CAF50;">¡Reserva Confirmada!</h2>
+                <p>Hola <strong>${detail.first_name}</strong>,</p>
+                <p>¡Tenemos excelentes noticias! Tu reserva ha sido aprobada y confirmada con éxito por la administración.</p>
+                
+                <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #4CAF50;">
+                  <h3 style="margin-top: 0; color: #555;">Detalles de tu reserva:</h3>
+                  <ul style="list-style: none; padding: 0;">
+                    <li style="margin-bottom: 8px;">📍 <strong>Cancha:</strong> ${detail.court_name}</li>
+                    <li style="margin-bottom: 8px;">📅 <strong>Fecha:</strong> ${fechaFormateada}</li>
+                    <li style="margin-bottom: 8px;">⏰ <strong>Horario:</strong> ${cleanStart} a ${cleanEnd}</li>
+                  </ul>
+                </div>
+                
+                <p>Te esperamos con los brazos abiertos. ¡Prepárate para jugar!</p>
+                <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
+                <p style="font-size: 12px; color: #888; text-align: center;">Atentamente,<br>El equipo de CourtConnect</p>
+              </div>
+            `
+          };
+          
+          await mailer.sendMail(mailOptions);
+        }
+      } catch (mailError) {
+        console.error('Error enviando correo de confirmación:', mailError);
+        // No devolvemos error al cliente web si el correo falla, la reserva ya está confirmada.
+      }
+    } else if (status === 'Cancelled') {
+      try {
+        const bookingDetails = await pool.query(`
+          SELECT b.booking_date, b.start_time, b.end_time,
+                 c.first_name, c.email,
+                 co.court_name
+          FROM bookings b
+          JOIN customers c ON b.customer_id = c.id
+          JOIN courts co ON b.court_id = co.id
+          WHERE b.id = $1
+        `, [id]);
+        
+        if (bookingDetails.rows.length > 0) {
+          const detail = bookingDetails.rows[0];
+          
+          let fechaFormateada = detail.booking_date;
+          if (detail.booking_date instanceof Date) {
+            fechaFormateada = detail.booking_date.toLocaleDateString('es-VE');
+          } else if (typeof detail.booking_date === 'string') {
+            fechaFormateada = detail.booking_date.split('T')[0];
+          }
+
+          const formatAMPM = (timeStr) => {
+            if (!timeStr) return '';
+            const parts = timeStr.split(':');
+            if (parts.length >= 2) {
+              let h = parseInt(parts[0], 10);
+              const m = parts[1];
+              const ampm = h >= 12 ? 'PM' : 'AM';
+              h = h % 12;
+              h = h ? h : 12;
+              return `${h.toString().padStart(2, '0')}:${m} ${ampm}`;
+            }
+            return timeStr;
+          };
+
+          const cleanStart = formatAMPM(detail.start_time);
+
+          const mailOptions = {
+            from: '"CourtConnect" <no-reply@courtconnect.com>',
+            to: detail.email,
+            subject: 'Actualización sobre tu reserva en CourtConnect ⚠️',
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+                <h2 style="color: #E53935;">Aviso de Cancelación</h2>
+                <p>Hola <strong>${detail.first_name}</strong>,</p>
+                <p>Lamentablemente, hemos tenido que cancelar tu solicitud de reserva para la cancha <strong>${detail.court_name}</strong> el día <strong>${fechaFormateada}</strong> a las <strong>${cleanStart}</strong>.</p>
+                
+                <div style="background-color: #ffebee; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #E53935;">
+                  <p style="margin: 0; color: #b71c1c;">Esto suele ocurrir por cruces de horarios de último minuto o mantenimiento inesperado de las instalaciones. Te pedimos una sincera disculpa por el inconveniente.</p>
+                </div>
+                
+                <p>Las buenas noticias son que tenemos muchas otras canchas y horarios disponibles. ¡Te invitamos a buscar un nuevo turno para tu partido!</p>
+                <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
+                <p style="font-size: 12px; color: #888; text-align: center;">Atentamente,<br>El equipo de CourtConnect</p>
+              </div>
+            `
+          };
+          
+          await mailer.sendMail(mailOptions);
+        }
+      } catch (mailError) {
+        console.error('Error enviando correo de cancelación:', mailError);
+      }
+    }
+
     res.json({ success: true, data: result.rows[0] });
   } catch (error) {
     await client.query('ROLLBACK');

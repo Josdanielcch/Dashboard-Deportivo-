@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { DollarSign, TrendingUp, Search, Filter, Plus, Trash2, X, ShoppingCart, Eye, ChevronRight } from 'lucide-react'
+import { DollarSign, TrendingUp, Search, Filter, Plus, Trash2, X, ShoppingCart, Eye, ChevronRight, Calendar } from 'lucide-react'
 import { billingService } from '@/services/billingService'
 import { customerService } from '@/services/customerService'
 import { productService } from '@/services/productService'
@@ -18,6 +18,7 @@ export default function VentasView() {
   const [productos, setProductos] = useState<any[]>([])
   const [bookings, setBookings] = useState<any[]>([])
 
+  // Modal Nueva Venta (Productos / Mixta)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [formData, setFormData] = useState({
     customer_id: '',
@@ -27,6 +28,11 @@ export default function VentasView() {
   const [cart, setCart] = useState<{product_id: string, product_name: string, price: number, quantity: number}[]>([])
   const [currentProduct, setCurrentProduct] = useState('')
   const [currentQty, setCurrentQty] = useState('1')
+
+  // Modal Facturar Reserva Exclusivo
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false)
+  const [selectedBookingForBilling, setSelectedBookingForBilling] = useState('')
+  const [bookingPaymentMethod, setBookingPaymentMethod] = useState('1')
 
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -115,6 +121,40 @@ export default function VentasView() {
     }
   }
 
+  const handleBillingBookingSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selectedBookingForBilling) {
+      alert('Debes seleccionar una reserva.')
+      return
+    }
+
+    const b = bookings.find(x => x.id.toString() === selectedBookingForBilling)
+    if (!b) return
+
+    setIsSubmitting(true)
+    try {
+      const payload = {
+        customer_id: parseInt(b.customer_id),
+        user_id: 1,
+        payment_method_id: parseInt(bookingPaymentMethod),
+        booking_id: parseInt(b.id),
+        products: [] 
+      }
+      const res = await billingService.create(payload)
+      if (res.success) {
+        setIsBookingModalOpen(false)
+        setSelectedBookingForBilling('')
+        setBookingPaymentMethod('1')
+        fetchData()
+      }
+    } catch (error: any) {
+      console.error('Error facturando reserva:', error)
+      alert(error.message || 'Hubo un error al facturar la reserva.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   const handleViewInvoice = async (id: number) => {
     setIsInvoiceModalOpen(true)
     setLoadingInvoice(true)
@@ -154,8 +194,27 @@ export default function VentasView() {
     return new Date(dateObj.getTime() + Math.abs(dateObj.getTimezoneOffset() * 60000)).toLocaleDateString()
   }
 
-  const pendingBookings = bookings.filter(b => b.status === 'Pending' && b.customer_id?.toString() === formData.customer_id)
+  const pendingBookingsCustomer = bookings.filter(b => b.status === 'Pending' && b.customer_id?.toString() === formData.customer_id)
+  const allPendingBookings = bookings.filter(b => b.status === 'Pending')
+  
   const cartTotal = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0)
+
+  // Cálculo de total para reserva seleccionada
+  let selectedBookingTotal = 0
+  let selectedBookingTax = 0
+  let selectedBookingGrandTotal = 0
+
+  if (selectedBookingForBilling) {
+    const b = bookings.find(x => x.id.toString() === selectedBookingForBilling)
+    if (b && b.hourly_rate) {
+      const start = new Date(`1970-01-01T${b.start_time}`)
+      const end = new Date(`1970-01-01T${b.end_time}`)
+      const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60)
+      selectedBookingTotal = hours * Number(b.hourly_rate)
+      selectedBookingTax = selectedBookingTotal * 0.16
+      selectedBookingGrandTotal = selectedBookingTotal + selectedBookingTax
+    }
+  }
 
   return (
     <div className="min-h-screen bg-[#0a0e27] p-4 md:p-8">
@@ -165,18 +224,31 @@ export default function VentasView() {
           <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">Ventas</h1>
           <p className="text-zinc-400">Seguimiento de tus ventas y pagos</p>
         </div>
-        <button 
-          onClick={() => {
-            setCart([])
-            setBookingId('')
-            setFormData({ customer_id: '', payment_method_id: '1' })
-            setIsModalOpen(true)
-          }}
-          className="flex items-center gap-2 bg-[#ccff00] text-[#0a0e27] px-5 py-2.5 rounded-xl hover:brightness-110 transition-all font-bold shadow-lg shadow-[#ccff00]/20"
-        >
-          <Plus size={20} />
-          Nueva Venta
-        </button>
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => {
+              setSelectedBookingForBilling('')
+              setBookingPaymentMethod('1')
+              setIsBookingModalOpen(true)
+            }}
+            className="flex items-center gap-2 bg-white/[0.03] border border-white/[0.06] text-white px-5 py-2.5 rounded-xl hover:border-[#ccff00]/50 hover:bg-[#ccff00]/10 hover:text-[#ccff00] transition-all font-bold"
+          >
+            <Calendar size={20} />
+            Facturar Reserva
+          </button>
+          <button 
+            onClick={() => {
+              setCart([])
+              setBookingId('')
+              setFormData({ customer_id: '', payment_method_id: '1' })
+              setIsModalOpen(true)
+            }}
+            className="flex items-center gap-2 bg-[#ccff00] text-[#0a0e27] px-5 py-2.5 rounded-xl hover:brightness-110 transition-all font-bold shadow-lg shadow-[#ccff00]/20"
+          >
+            <Plus size={20} />
+            Nueva Venta
+          </button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -305,7 +377,87 @@ export default function VentasView() {
         </div>
       </div>
 
-      {/* Modal Nueva Venta */}
+      {/* Modal Facturar Reserva Específica */}
+      <Modal 
+        isOpen={isBookingModalOpen} 
+        onClose={() => setIsBookingModalOpen(false)} 
+        title="Facturar Reserva"
+      >
+        <form onSubmit={handleBillingBookingSubmit} className="flex flex-col gap-5">
+          <div>
+            <label className="block text-sm font-medium text-zinc-400 mb-1.5">
+              Buscar Reserva Pendiente *
+            </label>
+            <select 
+              required
+              value={selectedBookingForBilling}
+              onChange={(e) => setSelectedBookingForBilling(e.target.value)}
+              className="w-full bg-[#0a0e27] border border-[#1a1f3a] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[#ccff00]/50 transition-colors cursor-pointer"
+            >
+              <option value="" disabled className="bg-[#0a0e27]">Seleccione una reserva...</option>
+              {allPendingBookings.map(b => (
+                <option key={b.id} value={b.id} className="bg-[#0a0e27]">
+                  Reserva #{b.id} - {b.customer_name} - {formatDate(b.booking_date)} ({b.start_time})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {selectedBookingForBilling && (
+            <div className="bg-[#0a0e27]/60 border border-[#1a1f3a] rounded-xl p-4 flex flex-col gap-3">
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-zinc-400">Subtotal Reserva:</span>
+                <span className="text-white font-medium">${selectedBookingTotal.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between items-center text-sm border-b border-[#1a1f3a] pb-3">
+                <span className="text-zinc-400">IVA (16%):</span>
+                <span className="text-white font-medium">${selectedBookingTax.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-zinc-400 font-medium">Gran Total:</span>
+                <span className="text-2xl font-black text-[#ccff00]">${selectedBookingGrandTotal.toFixed(2)}</span>
+              </div>
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-medium text-zinc-400 mb-1.5">
+              Método de Pago *
+            </label>
+            <select 
+              required
+              value={bookingPaymentMethod}
+              onChange={(e) => setBookingPaymentMethod(e.target.value)}
+              className="w-full bg-[#0a0e27] border border-[#1a1f3a] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[#ccff00]/50 transition-colors cursor-pointer"
+            >
+              <option value="1" className="bg-[#0a0e27]">Efectivo</option>
+              <option value="2" className="bg-[#0a0e27]">Pago Móvil</option>
+              <option value="3" className="bg-[#0a0e27]">Transferencia</option>
+              <option value="5" className="bg-[#0a0e27]">Zelle</option>
+              <option value="9" className="bg-[#0a0e27]">Crédito</option>
+            </select>
+          </div>
+          
+          <div className="flex justify-end gap-3 mt-2">
+            <button 
+              type="button" 
+              onClick={() => setIsBookingModalOpen(false)}
+              className="px-5 py-2.5 bg-[#0a0e27] border border-[#1a1f3a] text-zinc-400 rounded-xl hover:bg-[#1a1f3a] hover:text-white transition-all font-medium"
+            >
+              Cancelar
+            </button>
+            <button 
+              type="submit" 
+              disabled={isSubmitting || !selectedBookingForBilling}
+              className="px-5 py-2.5 bg-[#ccff00] text-[#0a0e27] font-bold rounded-xl hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-[#ccff00]/20"
+            >
+              {isSubmitting ? 'Procesando...' : 'Cobrar Reserva'}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Modal Nueva Venta Original (Productos) */}
       <Modal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
@@ -332,7 +484,7 @@ export default function VentasView() {
             </select>
           </div>
 
-          {formData.customer_id && pendingBookings.length > 0 && (
+          {formData.customer_id && pendingBookingsCustomer.length > 0 && (
             <div>
               <label className="block text-sm font-medium text-zinc-400 mb-1.5">
                 Asociar Reserva (Opcional)
@@ -343,7 +495,7 @@ export default function VentasView() {
                 className="w-full bg-[#0a0e27] border border-[#1a1f3a] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[#ccff00]/50 transition-colors cursor-pointer"
               >
                 <option value="" className="bg-[#0a0e27]">Sin reserva</option>
-                {pendingBookings.map(b => (
+                {pendingBookingsCustomer.map(b => (
                   <option key={b.id} value={b.id} className="bg-[#0a0e27]">
                     Reserva #{b.id} - {formatDate(b.booking_date)} ({b.start_time})
                   </option>

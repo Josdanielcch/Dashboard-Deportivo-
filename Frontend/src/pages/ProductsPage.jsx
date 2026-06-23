@@ -15,7 +15,7 @@ import {
 import { productService } from '../services/productService';
 import './ProductsPage.css';
 
-export default function ProductsPage({ user }) {
+export default function ProductsPage() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -42,7 +42,7 @@ export default function ProductsPage({ user }) {
     fetchProducts();
   }, []);
 
-  const fetchProducts = async () => {
+  async function fetchProducts() {
     setLoading(true);
     setError('');
     try {

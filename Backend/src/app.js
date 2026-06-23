@@ -3,6 +3,8 @@ const express = require('express');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const compression = require('compression');
+const path = require('path');
+
 
 // Importar rutas
 const authRoutes = require('./routes/authRoutes');
@@ -14,6 +16,10 @@ const billingRoutes = require('./routes/billingRoutes');
 const auditRoutes = require('./routes/auditRoutes');
 const userRoutes = require('./routes/userRoutes');
 const cxcRoutes = require('./routes/cxcRoutes');
+const dashboardRoutes = require('./routes/dashboardRoutes');
+const supplierRoutes = require('./routes/supplierRoutes');
+const purchaseRoutes = require('./routes/purchaseRoutes');
+const cxpRoutes = require('./routes/cxpRoutes');
 
 // Middleware de error
 const { errorHandler } = require('./middleware/errorHandler');
@@ -41,6 +47,9 @@ app.use(morgan('combined'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Servir la carpeta de subidas estáticamente
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+
 // Ruta de salud
 app.get('/api/health', (req, res) => {
   res.json({
@@ -61,6 +70,10 @@ app.use('/api/billings', billingRoutes);
 app.use('/api/audit', auditRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/cxc', cxcRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/suppliers', supplierRoutes);
+app.use('/api/purchases', purchaseRoutes);
+app.use('/api/cxp', cxpRoutes);
 
 // Ruta 404
 app.use((req, res) => {
