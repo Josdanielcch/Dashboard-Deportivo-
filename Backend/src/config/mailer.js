@@ -1,3 +1,4 @@
+require('dotenv').config();
 const nodemailer = require("nodemailer");
 
 let transporter = null;
@@ -16,7 +17,12 @@ const createTransporter = async () => {
     });
     try {
       await transporter.verify();
-      console.log("📧 Servidor SMTP configurado y listo");
+      console.log("");
+      console.log("╔══════════════════════════════════════════════════╗");
+      console.log("║        📧 SMTP CONFIGURADO CORRECTAMENTE        ║");
+      console.log("║        Los correos ya llegan a destino          ║");
+      console.log("╚══════════════════════════════════════════════════╝");
+      console.log("");
     } catch (err) {
       console.error("❌ Error SMTP:", err.message);
       console.log("📧 Usando Ethereal (email de prueba)...");
@@ -52,11 +58,16 @@ const sendMail = async (options) => {
     try {
       const info = await transporter.sendMail(options);
       const previewUrl = nodemailer.getTestMessageUrl(info);
+      console.log("");
+      console.log("╔══════════════════════════════════════════════════╗");
+      console.log("║        📧 EMAIL ENVIADO CON ÉXITO              ║");
+      console.log("║  Para:    " + (options.to || "").padEnd(30) + "║");
+      console.log("║  Asunto:  " + (options.subject || "").substring(0, 28).padEnd(28) + "║");
       if (previewUrl) {
-        console.log("📧 Email enviado (vista previa):", previewUrl);
-      } else {
-        console.log("📧 Email enviado a:", options.to);
+        console.log("║  Preview: " + previewUrl.substring(0, 28).padEnd(28) + "║");
       }
+      console.log("╚══════════════════════════════════════════════════╝");
+      console.log("");
       return info;
     } catch (err) {
       console.error("❌ Error enviando email:", err.message);

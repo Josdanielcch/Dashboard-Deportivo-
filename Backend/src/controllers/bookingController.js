@@ -89,22 +89,18 @@ const createBooking = async (req, res) => {
     await client.query('BEGIN');
     
     const { customer_id, court_id, booking_date, start_time, end_time, user_id } = req.body;
-    // Use provided user_id or null (user_id is nullable in bookings)
     const bookingUserId = user_id || null;
     
-    // Validaciones
     if (!customer_id || !court_id || !booking_date || !start_time || !end_time) {
       return res.status(400).json({ error: 'Todos los campos son requeridos' });
     }
     
-    // Validar fecha y hora pasada
     const bookingDateTime = new Date(`${booking_date}T${start_time}`);
     if (bookingDateTime < new Date()) {
       await client.query('ROLLBACK');
       return res.status(400).json({ error: 'No se permiten reservas en fechas u horas pasadas' });
     }
 
-    // Validar estado de la cancha
     const courtStatus = await client.query('SELECT status FROM courts WHERE id = $1', [court_id]);
     if (courtStatus.rows.length === 0 || ['Maintenance', 'Out_of_service'].includes(courtStatus.rows[0].status)) {
       await client.query('ROLLBACK');
@@ -136,10 +132,8 @@ const createBooking = async (req, res) => {
       return res.status(409).json({ error: 'Horario no disponible' });
     }
     
-    // Calcular horas (la cancha no tiene hourly_rate en DB, calculamos duración)
     const hoursDiff = (new Date(`1970-01-01T${end_time}`) - new Date(`1970-01-01T${start_time}`)) / (1000 * 60 * 60);
     
-    // Crear reserva
     const result = await client.query(`
       INSERT INTO bookings (customer_id, court_id, user_id, booking_date, start_time, end_time, status)
       VALUES ($1, $2, $3, $4, $5, $6, 'Pending')
@@ -147,12 +141,41 @@ const createBooking = async (req, res) => {
     `, [customer_id, court_id, bookingUserId, booking_date, start_time, end_time]);
     
     await client.query('COMMIT');
+
+    const newBooking = result.rows[0];
+    const io = req.app.get('io');
+    if (io) {
+      try {
+        const customerRes = await pool.query(
+          "SELECT first_name || ' ' || last_name as customer_name FROM customers WHERE id = $1",
+          [customer_id]
+        );
+        const courtRes = await pool.query(
+          'SELECT court_name FROM courts WHERE id = $1',
+          [court_id]
+        );
+        io.to('dashboard').emit('new-booking', {
+          id: newBooking.id,
+          customer_id: newBooking.customer_id,
+          court_id: newBooking.court_id,
+          booking_date: newBooking.booking_date,
+          start_time: newBooking.start_time,
+          end_time: newBooking.end_time,
+          status: newBooking.status,
+          customer_name: customerRes.rows[0]?.customer_name || 'Cliente',
+          court_name: courtRes.rows[0]?.court_name || 'Cancha',
+          created_at: new Date().toISOString()
+        });
+      } catch (socketErr) {
+        console.error('Error emitting socket event:', socketErr);
+      }
+    }
     
     res.status(201).json({
       success: true,
       message: 'Reserva creada exitosamente',
       data: {
-        ...result.rows[0],
+        ...newBooking,
         total_amount: null,
         hourly_rate: 0,
         hours: hoursDiff
