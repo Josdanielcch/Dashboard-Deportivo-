@@ -18,19 +18,24 @@ const getDashboardStats = async (req, res) => {
       `, [today]),
 
       pool.query(`
-        SELECT COALESCE(SUM(total_amount), 0)::float as today_income
-        FROM billings WHERE payment_date::date = $1
+        SELECT COALESCE(SUM(bi.total_amount), 0)::float as today_income
+        FROM billings bi
+        LEFT JOIN bookings b ON bi.booking_id = b.id
+        WHERE (bi.payment_date::date = $1 OR b.booking_date = $1)
       `, [today]),
 
       pool.query(`
-        SELECT COALESCE(SUM(total_amount), 0)::float as week_income
-        FROM billings WHERE payment_date::date >= $1
+        SELECT COALESCE(SUM(bi.total_amount), 0)::float as week_income
+        FROM billings bi
+        LEFT JOIN bookings b ON bi.booking_id = b.id
+        WHERE (bi.payment_date::date >= $1 OR b.booking_date >= $1)
       `, [weekStart]),
 
       pool.query(`
-        SELECT COALESCE(SUM(total_amount), 0)::float as month_income
-        FROM billings 
-        WHERE payment_date::date >= date_trunc('month', CURRENT_DATE)
+        SELECT COALESCE(SUM(bi.total_amount), 0)::float as month_income
+        FROM billings bi
+        LEFT JOIN bookings b ON bi.booking_id = b.id
+        WHERE (bi.payment_date::date >= date_trunc('month', CURRENT_DATE) OR b.booking_date >= date_trunc('month', CURRENT_DATE))
       `),
 
       pool.query(`
@@ -91,14 +96,24 @@ const getDashboardStats = async (req, res) => {
       `, [weekStart]),
 
       pool.query(`
-        SELECT to_char(b.booking_date, 'YYYY-MM-DD') as date, 
-               COALESCE(SUM(bi.total_amount), 0)::float as income,
-               COUNT(b.id)::int as bookings
-        FROM bookings b
-        LEFT JOIN billings bi ON bi.booking_id = b.id
-        WHERE b.booking_date >= $1
-        GROUP BY b.booking_date
-        ORDER BY b.booking_date
+        SELECT d.date, 
+               COALESCE(SUM(income_by_date.amount), 0)::float as income,
+               COALESCE(SUM(income_by_date.bookings), 0)::int as bookings
+        FROM (
+          SELECT b.booking_date as date, bi.total_amount as amount, 1 as bookings
+          FROM bookings b
+          LEFT JOIN billings bi ON bi.booking_id = b.id
+          WHERE b.booking_date >= $1
+          UNION ALL
+          SELECT bi.payment_date::date as date, bi.total_amount as amount, 0 as bookings
+          FROM billings bi
+          WHERE bi.booking_id IS NULL AND bi.payment_date::date >= $1
+        ) income_by_date
+        RIGHT JOIN (
+          SELECT generate_series($1::date, CURRENT_DATE, '1 day'::interval)::date as date
+        ) d ON d.date = income_by_date.date
+        GROUP BY d.date
+        ORDER BY d.date
       `, [weekStart]),
 
       pool.query(`
