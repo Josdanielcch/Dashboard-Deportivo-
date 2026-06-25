@@ -14,6 +14,7 @@ const billingRoutes = require('./routes/billingRoutes');
 const auditRoutes = require('./routes/auditRoutes');
 const userRoutes = require('./routes/userRoutes');
 const cxcRoutes = require('./routes/cxcRoutes');
+const statsRoutes = require('./routes/statsRoutes');
 
 // Middleware de error
 const { errorHandler } = require('./middleware/errorHandler');
@@ -61,6 +62,7 @@ app.use('/api/billings', billingRoutes);
 app.use('/api/audit', auditRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/cxc', cxcRoutes);
+app.use('/api/stats', statsRoutes);
 
 // Ruta 404
 app.use((req, res) => {
