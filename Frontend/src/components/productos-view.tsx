@@ -19,6 +19,7 @@ export default function ProductosView() {
   })
   const [editingId, setEditingId] = useState<number | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [infoModal, setInfoModal] = useState({ isOpen: false, message: '', title: '' })
 
   useEffect(() => {
     fetchProductos()
@@ -46,6 +47,14 @@ export default function ProductosView() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
+    
+    const exists = formData.product_name && productos.some(p => p.product_name.toLowerCase() === formData.product_name.toLowerCase() && p.id !== editingId);
+    if (exists) {
+      setInfoModal({ isOpen: true, message: 'Este nombre de producto ya está registrado en el sistema.', title: 'Producto duplicado' });
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       const payload = {
         product_name: formData.product_name,
@@ -68,7 +77,7 @@ export default function ProductosView() {
       }
     } catch (error: any) {
       console.error('Error guardando producto:', error)
-      alert(error.message || 'Hubo un error al guardar el producto')
+      setInfoModal({ isOpen: true, message: error.message || 'Hubo un error al guardar el producto', title: 'Error' })
     } finally {
       setIsSubmitting(false)
     }
@@ -235,7 +244,7 @@ export default function ProductosView() {
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-1.5">
-              Nombre del Producto *
+              Nombre del Producto (Identificación) *
             </label>
             <input 
               type="text" 
@@ -243,8 +252,17 @@ export default function ProductosView() {
               placeholder="Ej: Raqueta de Tenis Pro"
               value={formData.product_name}
               onChange={(e) => setFormData({...formData, product_name: e.target.value})}
-              className="w-full bg-[#0a0e27] border border-[#1a1f3a] rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-[#ccff00] transition-colors"
+              className={`w-full bg-[#0a0e27] border ${
+                formData.product_name && productos.some(p => p.product_name.toLowerCase() === formData.product_name.toLowerCase() && p.id !== editingId)
+                  ? 'border-red-500 focus:border-red-500'
+                  : 'border-[#1a1f3a] focus:border-[#ccff00] transition-colors'
+              } rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none`}
             />
+            {formData.product_name && productos.some(p => p.product_name.toLowerCase() === formData.product_name.toLowerCase() && p.id !== editingId) && (
+              <p className="text-red-500 text-xs mt-1.5 font-semibold">
+                Este nombre de producto ya está registrado.
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -288,7 +306,7 @@ export default function ProductosView() {
             </button>
             <button 
               type="submit" 
-              disabled={isSubmitting}
+              disabled={isSubmitting || (formData.product_name ? productos.some(p => p.product_name.toLowerCase() === formData.product_name.toLowerCase() && p.id !== editingId) : false)}
               className="px-5 py-2.5 bg-[#ccff00] text-[#0a0e27] font-bold rounded-lg hover:bg-[#b8e600] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? (
@@ -300,6 +318,20 @@ export default function ProductosView() {
             </button>
           </div>
         </form>
+      </Modal>
+
+      <Modal isOpen={infoModal.isOpen} onClose={() => setInfoModal({ ...infoModal, isOpen: false })} title={infoModal.title || "Información"}>
+        <div className="flex flex-col gap-5">
+          <p className="text-zinc-300 text-sm">{infoModal.message}</p>
+          <div className="flex justify-end mt-2">
+            <button
+              onClick={() => setInfoModal({ ...infoModal, isOpen: false })}
+              className="px-5 py-2.5 bg-[#ccff00] text-[#0a0e27] font-bold rounded-xl hover:bg-[#b8e600] transition-all text-sm"
+            >
+              Aceptar
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   )

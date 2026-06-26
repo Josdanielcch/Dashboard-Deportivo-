@@ -51,6 +51,7 @@ export default function Sidebar({ activeModule, setActiveModule, isMobileMenuOpe
       title: 'Gestión Operativa',
       items: [
         { id: 'canchas', label: 'Canchas', icon: LayoutGrid },
+        { id: 'deportes', label: 'Deportes', icon: Dumbbell },
         { id: 'reservas', label: 'Reservas', icon: CalendarDays },
         { id: 'clientes', label: 'Clientes', icon: Users },
       ]

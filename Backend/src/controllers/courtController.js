@@ -4,9 +4,10 @@ const pool = require('../config/database');
 const getAllCourts = async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT id, court_name, status 
-      FROM courts 
-      ORDER BY id
+      SELECT c.id, c.court_name, c.status, c.hourly_rate, c.sport_id, s.name as sport_name, s.image_url as sport_image
+      FROM courts c
+      LEFT JOIN sports s ON c.sport_id = s.id
+      ORDER BY c.id
     `);
     
     res.json({
@@ -23,7 +24,12 @@ const getAllCourts = async (req, res) => {
 const getCourtById = async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await pool.query('SELECT * FROM courts WHERE id = $1', [id]);
+    const result = await pool.query(`
+      SELECT c.*, s.name as sport_name, s.image_url as sport_image
+      FROM courts c
+      LEFT JOIN sports s ON c.sport_id = s.id
+      WHERE c.id = $1
+    `, [id]);
     
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Cancha no encontrada' });
@@ -37,15 +43,21 @@ const getCourtById = async (req, res) => {
 
 const createCourt = async (req, res) => {
   try {
-    const { court_name, status } = req.body;
+    const { court_name, status, sport_id, hourly_rate } = req.body;
     
     if (!court_name) {
       return res.status(400).json({ error: 'El nombre es requerido' });
     }
     
+    // Check for duplicate court name
+    const existingCourt = await pool.query('SELECT id FROM courts WHERE court_name ILIKE $1', [court_name]);
+    if (existingCourt.rows.length > 0) {
+      return res.status(400).json({ error: 'Ya existe una cancha con ese nombre' });
+    }
+    
     const result = await pool.query(
-      'INSERT INTO courts (court_name, status) VALUES ($1, $2) RETURNING *',
-      [court_name, status || 'Available']
+      'INSERT INTO courts (court_name, status, sport_id, hourly_rate) VALUES ($1, $2, $3, $4) RETURNING *',
+      [court_name, status || 'Available', sport_id || null, hourly_rate || 0]
     );
     
     res.status(201).json({
@@ -86,15 +98,21 @@ const updateCourtStatus = async (req, res) => {
 const updateCourt = async (req, res) => {
   try {
     const { id } = req.params;
-    const { court_name, status } = req.body;
+    const { court_name, status, sport_id, hourly_rate } = req.body;
     
     if (!court_name) {
       return res.status(400).json({ error: 'El nombre es requerido' });
     }
     
+    // Check for duplicate court name (excluding current court)
+    const existingCourt = await pool.query('SELECT id FROM courts WHERE court_name ILIKE $1 AND id != $2', [court_name, id]);
+    if (existingCourt.rows.length > 0) {
+      return res.status(400).json({ error: 'Ya existe otra cancha con ese nombre' });
+    }
+    
     const result = await pool.query(
-      'UPDATE courts SET court_name = $1, status = COALESCE($2, status) WHERE id = $3 RETURNING *',
-      [court_name, status, id]
+      'UPDATE courts SET court_name = $1, status = COALESCE($2, status), sport_id = COALESCE($3, sport_id), hourly_rate = COALESCE($4, hourly_rate) WHERE id = $5 RETURNING *',
+      [court_name, status, sport_id, hourly_rate, id]
     );
     
     if (result.rows.length === 0) {

@@ -5,9 +5,14 @@ import { ArrowRight } from 'lucide-react';
 
 interface FeaturedSportsProps {
   onSportSelect: (sport: SportType) => void;
+  dynamicSports?: any[];
 }
 
-export default function FeaturedSports({ onSportSelect }: FeaturedSportsProps) {
+export default function FeaturedSports({ onSportSelect, dynamicSports = [] }: FeaturedSportsProps) {
+  const sportsToDisplay = dynamicSports.length > 0 
+    ? dynamicSports.map(s => ({ id: s.name, name: s.name, image: s.image_url, tag: 'DISPONIBLE', description: 'Reserva tu cancha de ' + s.name }))
+    : SPORT_CATEGORIES;
+
   return (
     <div className="mb-16 relative z-10">
       <div className="text-center mb-10">
@@ -21,7 +26,7 @@ export default function FeaturedSports({ onSportSelect }: FeaturedSportsProps) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {SPORT_CATEGORIES.map((cat, idx) => (
+        {sportsToDisplay.map((cat, idx) => (
           <div
             key={cat.id}
             onClick={() => onSportSelect(cat.id as SportType)}

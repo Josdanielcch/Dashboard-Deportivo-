@@ -5,6 +5,7 @@ import LoginView from '@/components/login-view'
 import Sidebar from '@/components/sidebar'
 import DashboardView from '@/components/dashboard-view'
 import CanchasView from '@/components/canchas-view'
+import DeportesView from '@/components/deportes-view'
 import ReservasView from '@/components/reservas-view'
 import ClientesView from '@/components/clientes-view'
 import ProductosView from '@/components/productos-view'
@@ -32,6 +33,10 @@ export default function AppContent() {
     return () => clearInterval(timer)
   }, [])
 
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [activeModule])
+
   const navigateTo = (module: string) => {
     setActiveModule(module)
     setIsMobileMenuOpen(false)
@@ -41,6 +46,7 @@ export default function AppContent() {
     switch (activeModule) {
       case 'dashboard': return <DashboardView onNavigate={navigateTo} />
       case 'canchas': return <CanchasView />
+      case 'deportes': return <DeportesView />
       case 'reservas': return <ReservasView />
       case 'clientes': return <ClientesView />
       case 'proveedores': return <ProveedoresView />

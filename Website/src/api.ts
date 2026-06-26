@@ -135,3 +135,7 @@ export async function resetPassword(payload: { token: string; password: string }
 export async function getCourts() {
   return request('/courts');
 }
+
+export async function getSports() {
+  return request('/sports');
+}

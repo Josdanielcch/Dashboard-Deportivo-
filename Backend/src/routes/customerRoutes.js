@@ -9,6 +9,7 @@ router.get('/search', protect, customerController.searchCustomers);
 router.get('/:id', protect, customerController.getCustomerById);
 router.post('/', customerController.createCustomer);
 router.put('/:id', protect, customerController.updateCustomer);
+router.delete('/:id', protect, customerController.deleteCustomer);
 router.post('/:id/pay', protect, authorize(1, 5, 10), customerController.recordPayment);
 
 module.exports = router;

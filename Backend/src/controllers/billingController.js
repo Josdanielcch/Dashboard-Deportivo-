@@ -87,10 +87,10 @@ const createBilling = async (req, res) => {
       );
     }
     
-    // Si hay reserva, actualizarla a Confirmed
+    // Si hay reserva, actualizarla a Completed
     if (booking_id) {
       await client.query(
-        "UPDATE bookings SET status = 'Confirmed' WHERE id = $1",
+        "UPDATE bookings SET status = 'Completed' WHERE id = $1",
         [booking_id]
       );
     }

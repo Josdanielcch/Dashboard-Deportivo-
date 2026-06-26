@@ -63,6 +63,12 @@ export default function ComprasView() {
 
   const handleAddToCart = () => {
     if (!currentDesc && !currentProductId) return
+    
+    const qty = parseInt(currentQty)
+    const cost = parseFloat(currentCost)
+    
+    if (isNaN(qty) || qty <= 0 || isNaN(cost) || cost < 0) return
+
     const p = products.find(x => x.id.toString() === currentProductId)
     
     setCart(prev => [
@@ -70,8 +76,8 @@ export default function ComprasView() {
       {
         product_id: currentProductId,
         description: p ? p.product_name : currentDesc,
-        quantity: parseInt(currentQty),
-        unit_cost: parseFloat(currentCost)
+        quantity: qty,
+        unit_cost: cost
       }
     ])
     
@@ -341,6 +347,7 @@ export default function ComprasView() {
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         title="Registrar Compra o Gasto"
+        size="lg"
       >
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
           <div className="grid grid-cols-2 gap-4">
@@ -526,6 +533,7 @@ export default function ComprasView() {
         isOpen={isInvoiceModalOpen} 
         onClose={() => setIsInvoiceModalOpen(false)} 
         title="Detalle de Compra"
+        size="lg"
       >
         {loadingInvoice ? (
           <div className="flex justify-center py-16">

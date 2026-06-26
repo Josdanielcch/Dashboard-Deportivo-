@@ -3,16 +3,18 @@
 import { useState, useEffect } from 'react'
 import { Plus, Edit2, Trash2, MapPin, Search, Filter, Dumbbell } from 'lucide-react'
 import { courtService } from '@/services/courtService'
+import { sportService } from '@/services/sportService'
 import { Modal } from '@/components/ui/modal'
 
 export default function CanchasView() {
   const [canchas, setCanchas] = useState<any[]>([])
+  const [sports, setSports] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('Todos')
 
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [formData, setFormData] = useState({ court_name: '', status: 'Available' })
+  const [formData, setFormData] = useState({ court_name: '', status: 'Available', sport_id: '', hourly_rate: '' })
   const [editingId, setEditingId] = useState<number | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
@@ -22,7 +24,19 @@ export default function CanchasView() {
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
   const [deleteConfirmCheck, setDeleteConfirmCheck] = useState(false)
 
-  useEffect(() => { fetchCanchas() }, [])
+  useEffect(() => { 
+    fetchCanchas() 
+    fetchSports()
+  }, [])
+
+  const fetchSports = async () => {
+    try {
+      const res = await sportService.getAll()
+      if (res.success) setSports(res.data || [])
+    } catch (error) {
+      console.error('Error fetching sports:', error)
+    }
+  }
 
   const fetchCanchas = async () => {
     try {
@@ -54,11 +68,11 @@ export default function CanchasView() {
     setSubmitError('')
     try {
       let res;
-      if (editingId) res = await courtService.updateStatus(editingId, formData.status)
-      else res = await courtService.create(formData.court_name, formData.status)
+      if (editingId) res = await courtService.update(editingId, formData)
+      else res = await courtService.create(formData.court_name, formData.status, formData.sport_id, formData.hourly_rate)
       if (res.success) {
         setIsModalOpen(false)
-        setFormData({ court_name: '', status: 'Available' })
+        setFormData({ court_name: '', status: 'Available', sport_id: sports.length > 0 ? sports[0].id : '', hourly_rate: '' })
         setEditingId(null)
         fetchCanchas()
       }
@@ -69,14 +83,14 @@ export default function CanchasView() {
 
   const openEditModal = (cancha: any) => {
     setEditingId(cancha.id)
-    setFormData({ court_name: cancha.court_name, status: cancha.status })
+    setFormData({ court_name: cancha.court_name, status: cancha.status, sport_id: cancha.sport_id || '', hourly_rate: cancha.hourly_rate || '' })
     setSubmitError('')
     setIsModalOpen(true)
   }
 
   const openCreateModal = () => {
     setEditingId(null)
-    setFormData({ court_name: '', status: 'Available' })
+    setFormData({ court_name: '', status: 'Available', sport_id: sports.length > 0 ? sports[0].id : '', hourly_rate: '' })
     setSubmitError('')
     setIsModalOpen(true)
   }
@@ -112,6 +126,12 @@ export default function CanchasView() {
     const matchesStatus = statusFilter === 'Todos' || estadoLabel === statusFilter
     return matchesSearch && matchesStatus
   })
+
+  const isDuplicateName = canchas.some(c => 
+    formData.court_name &&
+    c.court_name.trim().toLowerCase() === formData.court_name.trim().toLowerCase() && 
+    c.id !== editingId
+  )
 
   return (
     <div className="p-6 md:p-8">
@@ -165,7 +185,7 @@ export default function CanchasView() {
                       <h3 className="text-lg font-bold text-white leading-tight">{cancha.court_name}</h3>
                       <p className="text-xs text-zinc-500 flex items-center gap-1 mt-0.5">
                         <MapPin size={12} />
-                        Cancha Deportiva
+                        {cancha.sport_name || 'Sin Deporte'} • Tarifa: ${Number(cancha.hourly_rate || 0).toFixed(2)}/hr
                       </p>
                     </div>
                   </div>
@@ -209,8 +229,24 @@ export default function CanchasView() {
             <label className="block text-xs font-bold text-zinc-400 mb-2 uppercase tracking-wide">Nombre de la Cancha</label>
             <input type="text" required value={formData.court_name}
               onChange={(e) => setFormData({...formData, court_name: e.target.value})}
-              className="w-full bg-[#0a0e27] border border-[#1a1f3a] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#ccff00]/50 transition-all text-sm"
+              className={`w-full bg-[#0a0e27] border ${isDuplicateName ? 'border-red-500/50 focus:border-red-500' : 'border-[#1a1f3a] focus:border-[#ccff00]/50'} rounded-xl px-4 py-3 text-white focus:outline-none transition-all text-sm`}
               placeholder="Ej. Cancha Principal" />
+            {isDuplicateName && (
+              <p className="text-red-400 text-xs mt-1.5 font-medium flex items-center gap-1.5">
+                <span className="w-1 h-1 rounded-full bg-red-400"></span> Ya existe una cancha con este nombre
+              </p>
+            )}
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-zinc-400 mb-2 uppercase tracking-wide">Deporte</label>
+            <select required value={formData.sport_id}
+              onChange={(e) => setFormData({...formData, sport_id: e.target.value})}
+              className="w-full bg-[#0a0e27] border border-[#1a1f3a] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#ccff00]/50 transition-all text-sm cursor-pointer">
+              <option value="" disabled>Seleccione un deporte</option>
+              {sports.map(s => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="block text-xs font-bold text-zinc-400 mb-2 uppercase tracking-wide">Estado</label>
@@ -220,13 +256,20 @@ export default function CanchasView() {
               <option value="Maintenance">Mantenimiento</option>
             </select>
           </div>
+          <div>
+            <label className="block text-xs font-bold text-zinc-400 mb-2 uppercase tracking-wide">Tarifa por Hora ($)</label>
+            <input type="number" step="0.01" min="0" required value={formData.hourly_rate}
+              onChange={(e) => setFormData({...formData, hourly_rate: e.target.value})}
+              className="w-full bg-[#0a0e27] border border-[#1a1f3a] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#ccff00]/50 transition-all text-sm"
+              placeholder="Ej. 20.00" />
+          </div>
           <div className="flex justify-end gap-3 mt-2">
             <button type="button" onClick={() => setIsModalOpen(false)}
               className="px-5 py-2.5 bg-[#1a1f3a] text-zinc-300 rounded-xl hover:bg-[#253050] transition-all text-sm font-medium">
               Cancelar
             </button>
-            <button type="submit" disabled={isSubmitting}
-              className="px-5 py-2.5 bg-[#ccff00] text-[#0a0e27] font-bold rounded-xl hover:bg-[#b8e600] transition-all text-sm disabled:opacity-50">
+            <button type="submit" disabled={isSubmitting || isDuplicateName}
+              className="px-5 py-2.5 bg-[#ccff00] text-[#0a0e27] font-bold rounded-xl hover:bg-[#b8e600] transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed">
               {isSubmitting ? 'Guardando...' : 'Guardar Cancha'}
             </button>
           </div>
