@@ -26,8 +26,9 @@ export default function App() {
   // Active Bookings database stored locally
   const [bookings, setBookings] = useState<Booking[]>([]);
 
-  // Courts database
+  // Courts & Sports database
   const [allCourts, setAllCourts] = useState<Court[]>([]);
+  const [allSports, setAllSports] = useState<any[]>([]);
 
   // Filtering States in Explorar view
   const [selectedSports, setSelectedSports] = useState<SportType[]>([]);
@@ -71,6 +72,13 @@ export default function App() {
     // 3. Fetch courts from backend
     const fetchCourtsData = async () => {
       try {
+        // Fetch sports
+        const { getSports } = await import('./api');
+        const sportsRes = await getSports();
+        if (sportsRes.success && Array.isArray(sportsRes.data)) {
+          setAllSports(sportsRes.data);
+        }
+
         const { getCourts } = await import('./api');
         const res = await getCourts();
         if (res.success && Array.isArray(res.data)) {
@@ -82,6 +90,9 @@ export default function App() {
               id: `court-${bCourt.id}`,
               backendId: bCourt.id,
               name: bCourt.court_name,
+              sport: bCourt.sport_name || baseCourt.sport,
+              sport_image: bCourt.sport_image,
+              imageUrl: bCourt.sport_image || baseCourt.imageUrl,
               isAvailable: bCourt.status === 'Available',
               pricePerHour: parseFloat(bCourt.hourly_rate) > 0 ? parseFloat(bCourt.hourly_rate) : baseCourt.pricePerHour,
             } as Court;
@@ -130,8 +141,8 @@ export default function App() {
                 id: `BKG-${b.id}`,
                 courtId: courtDetail?.id || `court-${b.court_id}`,
                 courtName: b.court_name || courtDetail?.name || 'Cancha',
-                courtImage: courtDetail?.imageUrl || '/images/court-2.jpg',
-                sport: (courtDetail?.sport || 'padel') as SportType,
+                courtImage: b.sport_image || courtDetail?.imageUrl || '/images/court-2.jpg',
+                sport: (b.sport_name || courtDetail?.sport || 'padel') as SportType,
                 date: cleanDate,
                 timeSlot: `${cleanStart} - ${cleanEnd}`,
                 price: parseFloat(b.total_amount || '30'),
@@ -364,7 +375,7 @@ export default function App() {
             />
 
             {/* DOMINA CADA TERRENO: Sports grid */}
-            <FeaturedSports onSportSelect={handleQuickSportSelect} />
+            <FeaturedSports onSportSelect={handleQuickSportSelect} dynamicSports={allSports} />
 
             {/* Teaser interactive PRO membership card (Matches Image 1 layout) w/ Immersive style */}
             <div className="relative overflow-hidden rounded-3xl p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-6 border border-white/10 bg-zinc-950/40 backdrop-blur-md shadow-2xl">
@@ -443,6 +454,7 @@ export default function App() {
                 onPeriodToggle={handlePeriodToggle}
                 onClearFilters={handleClearFilters}
                 courtsCount={totalCourts}
+                dynamicSports={allSports}
               />
 
               {/* Main Catalog View */}

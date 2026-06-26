@@ -143,11 +143,35 @@ const recordPayment = async (req, res) => {
   }
 };
 
+// Eliminar cliente
+const deleteCustomer = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Primero, verificamos si el cliente tiene facturas, pagos o reservas
+    // Podríamos hacer un ON DELETE CASCADE en la BD, o manejarlo con Soft Delete.
+    // Para este caso intentaremos borrarlo directamente. Si viola la FK, saltará el error.
+    const result = await pool.query('DELETE FROM customers WHERE id = $1 RETURNING id', [id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Cliente no encontrado' });
+    }
+    
+    res.json({ success: true, message: 'Cliente eliminado correctamente' });
+  } catch (error) {
+    if (error.code === '23503') { // Foreign key violation
+      return res.status(409).json({ error: 'No se puede eliminar el cliente porque tiene registros asociados (reservas, facturas, etc.).' });
+    }
+    res.status(500).json({ error: 'Error al eliminar cliente' });
+  }
+};
+
 module.exports = {
   getAllCustomers,
   getCustomerById,
   searchCustomers,
   createCustomer,
   updateCustomer,
-  recordPayment
+  recordPayment,
+  deleteCustomer
 };

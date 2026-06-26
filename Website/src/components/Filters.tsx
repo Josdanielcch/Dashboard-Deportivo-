@@ -11,6 +11,7 @@ interface FiltersProps {
   onPeriodToggle: (period: string) => void;
   onClearFilters: () => void;
   courtsCount: number;
+  dynamicSports?: any[];
 }
 
 export default function Filters({
@@ -22,13 +23,16 @@ export default function Filters({
   onPeriodToggle,
   onClearFilters,
   courtsCount,
+  dynamicSports = [],
 }: FiltersProps) {
-  const sportsList: { id: SportType; label: string }[] = [
-    { id: 'padel', label: 'Pádel' },
-    { id: 'tenis', label: 'Tenis' },
-    { id: 'futbol', label: 'Fútbol' },
-    { id: 'basquet', label: 'Básquet' },
-  ];
+  const sportsList = dynamicSports.length > 0
+    ? dynamicSports.map(s => ({ id: s.name, label: s.name }))
+    : [
+        { id: 'padel', label: 'Pádel' },
+        { id: 'tenis', label: 'Tenis' },
+        { id: 'futbol', label: 'Fútbol' },
+        { id: 'basquet', label: 'Básquet' },
+      ];
 
   const periodsList = ['Mañana', 'Tarde', 'Noche', 'Madrugada'];
 

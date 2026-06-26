@@ -56,6 +56,15 @@ function MiniBar({ height, active = false }: { height: number; active?: boolean 
   )
 }
 
+// Dummy array to force Tailwind to compile these classes that come from the backend
+const SAFELIST = [
+  'bg-[#ccff00]', 'shadow-[#ccff00]/20',
+  'bg-blue-400', 'shadow-blue-400/20',
+  'bg-purple-400', 'shadow-purple-400/20',
+  'bg-orange-400', 'shadow-orange-400/20',
+  'bg-emerald-400', 'shadow-emerald-400/20'
+];
+
 export default function DashboardView({ onNavigate }: DashboardViewProps) {
   const [mounted, setMounted] = useState(false)
   const [loading, setLoading] = useState(true)

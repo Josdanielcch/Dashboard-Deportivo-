@@ -61,5 +61,14 @@ export const customerService = {
    */
   recordPayment: async (id, amount) => {
     return api.post(`/customers/${id}/pay`, { amount });
+  },
+
+  /**
+   * Elimina un cliente.
+   * @param {string|number} id - ID del cliente.
+   * @returns {Promise<object>} Respuesta de la operación.
+   */
+  delete: async (id) => {
+    return api.delete(`/customers/${id}`);
   }
 };

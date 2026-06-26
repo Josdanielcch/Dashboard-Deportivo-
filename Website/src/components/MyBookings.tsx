@@ -39,6 +39,19 @@ export default function MyBookings({ bookings, onCancelBooking, setCurrentTab }:
     }
   };
 
+  const getValidImageUrl = (url: string, sport: string) => {
+    if (!url || url.includes('unsplash.com') || url.includes('lh3.googleusercontent.com')) {
+      // Map to local fallback based on sport
+      const s = sport.toLowerCase();
+      if (s.includes('padel')) return '/images/sport-padel.jpg';
+      if (s.includes('teni')) return '/images/sport-tenis.jpg';
+      if (s.includes('futbol') || s.includes('fútbol')) return '/images/sport-futbol.jpg';
+      if (s.includes('basquet') || s.includes('básquet')) return '/images/sport-basquet.jpg';
+      return '/images/court-2.jpg';
+    }
+    return url;
+  };
+
   return (
     <div className="space-y-8 relative z-10" id="my-bookings-container">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -89,10 +102,11 @@ export default function MyBookings({ bookings, onCancelBooking, setCurrentTab }:
                   {renderStatusBadge(booking.status)}
                 </div>
                 <img
-                  src={booking.courtImage}
+                  src={getValidImageUrl(booking.courtImage, booking.sport)}
                   alt={booking.courtName}
                   className="w-20 h-20 rounded-xl object-cover shrink-0 border border-white/10"
                   referrerPolicy="no-referrer"
+                  onError={(e) => { (e.target as HTMLImageElement).src = '/images/court-2.jpg'; }}
                 />
                 
                 <div className="flex-1">

@@ -52,7 +52,8 @@ const checkAvailability = async (req, res) => {
       return res.status(400).json({ error: 'Faltan parámetros' });
     }
 
-    const bookingDateTime = new Date(`${booking_date}T${start_time}`);
+    // Crear fechas en la zona horaria local (-04:00)
+    const bookingDateTime = new Date(`${booking_date}T${start_time}-04:00`);
     if (bookingDateTime < new Date()) {
       return res.json({ success: true, available: false, message: 'La fecha y hora deben ser posteriores al momento actual' });
     }
@@ -98,7 +99,7 @@ const createBooking = async (req, res) => {
     }
     
     // Validar fecha y hora pasada
-    const bookingDateTime = new Date(`${booking_date}T${start_time}`);
+    const bookingDateTime = new Date(`${booking_date}T${start_time}-04:00`);
     if (bookingDateTime < new Date()) {
       await client.query('ROLLBACK');
       return res.status(400).json({ error: 'No se permiten reservas en fechas u horas pasadas' });
@@ -429,9 +430,10 @@ const getCustomerBookings = async (req, res) => {
   try {
     const { customerId } = req.params;
     const result = await pool.query(`
-      SELECT b.*, co.court_name
+      SELECT b.*, co.court_name, s.name as sport_name, s.image_url as sport_image
       FROM bookings b
       JOIN courts co ON b.court_id = co.id
+      LEFT JOIN sports s ON co.sport_id = s.id
       WHERE b.customer_id = $1
       ORDER BY b.booking_date DESC, b.start_time
     `, [customerId]);

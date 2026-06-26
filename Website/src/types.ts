@@ -1,10 +1,11 @@
-export type SportType = 'padel' | 'tenis' | 'futbol' | 'basquet';
+export type SportType = string;
 
 export interface Court {
   id: string;
   backendId?: number;
   name: string;
   sport: SportType;
+  sport_image?: string;
   type: string; // 'indoor' | 'outdoor' | 'arcilla' | 'sintetico' | 'duela' etc.
   club: string;
   city: string;

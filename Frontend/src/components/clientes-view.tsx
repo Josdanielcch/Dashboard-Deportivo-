@@ -21,6 +21,9 @@ export default function ClientesView() {
   })
   const [editingId, setEditingId] = useState<number | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, id: null as number | null, name: '' })
+  const [infoModal, setInfoModal] = useState({ isOpen: false, message: '', title: '' })
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
 
   useEffect(() => {
     fetchClientes()
@@ -47,6 +50,17 @@ export default function ClientesView() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (formData.tax_id) {
+      const exists = clientes.some(c => 
+        (c.tax_id || c.identification_number) === formData.tax_id && c.id !== editingId
+      );
+      if (exists) {
+        setInfoModal({ isOpen: true, message: 'Este número de cliente (cédula/identificación) ya está registrado en el sistema.', title: 'Cédula duplicada' });
+        return;
+      }
+    }
+
     setIsSubmitting(true)
     try {
       let res;
@@ -64,9 +78,29 @@ export default function ClientesView() {
       }
     } catch (error: any) {
       console.error('Error guardando cliente:', error)
-      alert(error.message || 'Hubo un error al guardar el cliente')
+      setInfoModal({ isOpen: true, message: error.message || 'Hubo un error al guardar el cliente', title: 'Error' })
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  const handleDelete = (id: number, name: string) => {
+    setDeleteConfirmText('');
+    setDeleteModal({ isOpen: true, id, name });
+  }
+
+  const executeDelete = async () => {
+    if (!deleteModal.id || deleteConfirmText.trim().toLowerCase() !== deleteModal.name.trim().toLowerCase()) return;
+    try {
+      const res = await customerService.delete(deleteModal.id);
+      if (res.success) {
+        setDeleteModal({ isOpen: false, id: null, name: '' });
+        fetchClientes();
+      }
+    } catch (error: any) {
+      console.error('Error eliminando cliente:', error);
+      setDeleteModal({ isOpen: false, id: null, name: '' });
+      setInfoModal({ isOpen: true, message: error.response?.data?.error || error.message || 'Error al eliminar el cliente', title: 'Error' });
     }
   }
 
@@ -94,7 +128,7 @@ export default function ClientesView() {
       cliente.full_name?.toLowerCase().includes(term) ||
       cliente.email?.toLowerCase().includes(term) ||
       cliente.phone?.toLowerCase().includes(term) ||
-      cliente.identification_number?.toLowerCase().includes(term)
+      (cliente.tax_id || cliente.identification_number)?.toLowerCase().includes(term)
 
     let matchesStatus = true
     if (statusFilter === 'debt') matchesStatus = Number(cliente.pending_debt) > 0
@@ -179,7 +213,7 @@ export default function ClientesView() {
                       <td className="py-4 px-6">
                         <span className="text-white font-bold">{cliente.full_name}</span>
                       </td>
-                      <td className="py-4 px-6 text-zinc-300">{cliente.identification_number || '-'}</td>
+                      <td className="py-4 px-6 text-zinc-300">{cliente.tax_id || cliente.identification_number || '-'}</td>
                       <td className="py-4 px-6">
                         <div className="flex items-center gap-2 text-zinc-300">
                           <Mail size={14} className="text-zinc-500" />
@@ -211,7 +245,10 @@ export default function ClientesView() {
                           >
                             <Edit2 size={15} />
                           </button>
-                          <button className="p-2 rounded-lg bg-[#1a1f3a] hover:bg-red-500/10 text-zinc-400 hover:text-red-400 transition-all">
+                          <button 
+                            onClick={() => handleDelete(cliente.id, cliente.full_name)}
+                            className="p-2 rounded-lg bg-[#1a1f3a] hover:bg-red-500/10 text-zinc-400 hover:text-red-400 transition-all"
+                          >
                             <Trash2 size={15} />
                           </button>
                         </div>
@@ -231,6 +268,26 @@ export default function ClientesView() {
         title={editingId ? 'Editar Cliente' : 'Registrar Nuevo Cliente'}
       >
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+          <div>
+            <label className="block text-xs font-bold text-zinc-400 mb-2 uppercase tracking-wide">Cédula / Identificación</label>
+            <input
+              type="text"
+              value={formData.tax_id}
+              onChange={(e) => setFormData({ ...formData, tax_id: e.target.value })}
+              className={`w-full bg-[#0a0e27] border ${
+                formData.tax_id && clientes.some(c => (c.tax_id || c.identification_number) === formData.tax_id && c.id !== editingId)
+                  ? 'border-red-500 focus:border-red-500'
+                  : 'border-[#1a1f3a] focus:border-[#ccff00]/50'
+              } rounded-xl px-4 py-3 text-white focus:outline-none transition-all text-sm`}
+              placeholder="Ej. 123456789"
+            />
+            {formData.tax_id && clientes.some(c => (c.tax_id || c.identification_number) === formData.tax_id && c.id !== editingId) && (
+              <p className="text-red-500 text-xs mt-1.5 font-semibold">
+                Este número de cliente (cédula/identificación) ya está registrado.
+              </p>
+            )}
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-zinc-400 mb-2 uppercase tracking-wide">Nombre *</label>
@@ -254,17 +311,6 @@ export default function ClientesView() {
                 placeholder="Ej. Pérez"
               />
             </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-zinc-400 mb-2 uppercase tracking-wide">Cédula / Identificación</label>
-            <input
-              type="text"
-              value={formData.tax_id}
-              onChange={(e) => setFormData({ ...formData, tax_id: e.target.value })}
-              className="w-full bg-[#0a0e27] border border-[#1a1f3a] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#ccff00]/50 transition-all text-sm"
-              placeholder="Ej. 123456789"
-            />
           </div>
 
           <div>
@@ -299,13 +345,62 @@ export default function ClientesView() {
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
-              className="px-5 py-2.5 bg-[#ccff00] text-[#0a0e27] font-bold rounded-xl hover:bg-[#b8e600] transition-all text-sm disabled:opacity-50"
+              disabled={isSubmitting || (formData.tax_id ? clientes.some(c => (c.tax_id || c.identification_number) === formData.tax_id && c.id !== editingId) : false)}
+              className="px-5 py-2.5 bg-[#ccff00] text-[#0a0e27] font-bold rounded-xl hover:bg-[#b8e600] transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? 'Guardando...' : 'Guardar Cliente'}
             </button>
           </div>
         </form>
+      </Modal>
+
+      <Modal isOpen={deleteModal.isOpen} onClose={() => setDeleteModal({ isOpen: false, id: null, name: '' })} title="Confirmar Eliminación">
+        <div className="flex flex-col gap-5">
+          <div className="text-zinc-300 text-sm">
+            ¿Estás seguro de que deseas eliminar al cliente <strong className="text-white">{deleteModal.name}</strong>? Esta acción no se puede deshacer.
+            <div className="mt-4">
+              <label className="block text-xs font-bold text-zinc-400 mb-2 uppercase tracking-wide">
+                Escribe <span className="text-white">{deleteModal.name}</span> para confirmar:
+              </label>
+              <input
+                type="text"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                className="w-full bg-[#0a0e27] border border-[#1a1f3a] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500/50 transition-all text-sm"
+                placeholder={deleteModal.name}
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-3 mt-2">
+            <button
+              onClick={() => setDeleteModal({ isOpen: false, id: null, name: '' })}
+              className="px-5 py-2.5 bg-[#1a1f3a] text-zinc-300 rounded-xl hover:bg-[#253050] transition-all text-sm font-medium"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={executeDelete}
+              disabled={deleteConfirmText.trim().toLowerCase() !== deleteModal.name.trim().toLowerCase()}
+              className="px-5 py-2.5 bg-red-500/10 text-red-500 font-bold rounded-xl hover:bg-red-500 hover:text-white transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Eliminar
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal isOpen={infoModal.isOpen} onClose={() => setInfoModal({ ...infoModal, isOpen: false })} title={infoModal.title || "Información"}>
+        <div className="flex flex-col gap-5">
+          <p className="text-zinc-300 text-sm">{infoModal.message}</p>
+          <div className="flex justify-end mt-2">
+            <button
+              onClick={() => setInfoModal({ ...infoModal, isOpen: false })}
+              className="px-5 py-2.5 bg-[#ccff00] text-[#0a0e27] font-bold rounded-xl hover:bg-[#b8e600] transition-all text-sm"
+            >
+              Aceptar
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   )

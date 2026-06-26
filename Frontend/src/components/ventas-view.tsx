@@ -31,10 +31,7 @@ export default function VentasView() {
   const [currentProduct, setCurrentProduct] = useState('')
   const [currentQty, setCurrentQty] = useState('1')
 
-  // Modal Facturar Reserva Exclusivo
-  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false)
-  const [selectedBookingForBilling, setSelectedBookingForBilling] = useState('')
-  const [bookingPaymentMethod, setBookingPaymentMethod] = useState('1')
+  // Modals unificados
 
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -68,16 +65,17 @@ export default function VentasView() {
   }
 
   const handleAddToCart = () => {
-    if (!currentProduct || parseInt(currentQty) <= 0) return
+    const qty = parseInt(currentQty)
+    if (!currentProduct || isNaN(qty) || qty <= 0) return
     const p = productos.find(x => x.id.toString() === currentProduct)
     if (!p) return
 
     setCart(prev => {
       const existing = prev.find(x => x.product_id === currentProduct)
       if (existing) {
-        return prev.map(x => x.product_id === currentProduct ? { ...x, quantity: x.quantity + parseInt(currentQty) } : x)
+        return prev.map(x => x.product_id === currentProduct ? { ...x, quantity: x.quantity + qty } : x)
       }
-      return [...prev, { product_id: currentProduct, product_name: p.product_name, price: Number(p.price), quantity: parseInt(currentQty) }]
+      return [...prev, { product_id: currentProduct, product_name: p.product_name, price: Number(p.price), quantity: qty }]
     })
     setCurrentProduct('')
     setCurrentQty('1')
@@ -123,39 +121,7 @@ export default function VentasView() {
     }
   }
 
-  const handleBillingBookingSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!selectedBookingForBilling) {
-      alert('Debes seleccionar una reserva.')
-      return
-    }
 
-    const b = bookings.find(x => x.id.toString() === selectedBookingForBilling)
-    if (!b) return
-
-    setIsSubmitting(true)
-    try {
-      const payload = {
-        customer_id: parseInt(b.customer_id),
-        user_id: 1,
-        payment_method_id: parseInt(bookingPaymentMethod),
-        booking_id: parseInt(b.id),
-        products: [] 
-      }
-      const res = await billingService.create(payload)
-      if (res.success) {
-        setIsBookingModalOpen(false)
-        setSelectedBookingForBilling('')
-        setBookingPaymentMethod('1')
-        fetchData()
-      }
-    } catch (error: any) {
-      console.error('Error facturando reserva:', error)
-      alert(error.message || 'Hubo un error al facturar la reserva.')
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
 
   const handlePrintVenta = (format: 'a4' | 'ticket') => {
     if (!selectedInvoice) return;
@@ -227,8 +193,18 @@ export default function VentasView() {
     return new Date(dateObj.getTime() + Math.abs(dateObj.getTimezoneOffset() * 60000)).toLocaleDateString()
   }
 
-  const pendingBookingsCustomer = bookings.filter(b => b.status === 'Pending' && b.customer_id?.toString() === formData.customer_id)
-  const allPendingBookings = bookings.filter(b => b.status === 'Pending')
+  const formatTime = (timeStr?: string) => {
+    if (!timeStr) return ''
+    const [hStr, mStr] = timeStr.split(':')
+    let h = parseInt(hStr, 10)
+    const ampm = h >= 12 ? 'PM' : 'AM'
+    h = h % 12
+    h = h ? h : 12
+    return `${h.toString().padStart(2, '0')}:${mStr} ${ampm}`
+  }
+
+  const pendingBookingsCustomer = bookings.filter(b => (b.status === 'Pending' || b.status === 'Confirmed') && b.customer_id?.toString() === formData.customer_id)
+  const allPendingBookings = bookings.filter(b => b.status === 'Pending' || b.status === 'Confirmed')
   
   const cartTotal = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0)
 
@@ -237,8 +213,8 @@ export default function VentasView() {
   let selectedBookingTax = 0
   let selectedBookingGrandTotal = 0
 
-  if (selectedBookingForBilling) {
-    const b = bookings.find(x => x.id.toString() === selectedBookingForBilling)
+  if (bookingId) {
+    const b = bookings.find(x => x.id.toString() === bookingId)
     if (b && b.hourly_rate) {
       const start = new Date(`1970-01-01T${b.start_time}`)
       const end = new Date(`1970-01-01T${b.end_time}`)
@@ -249,6 +225,8 @@ export default function VentasView() {
     }
   }
 
+  const grandTotal = cartTotal + selectedBookingGrandTotal
+
   return (
     <div className="min-h-screen bg-[#0a0e27] p-4 md:p-8">
       {/* Header */}
@@ -258,17 +236,6 @@ export default function VentasView() {
           <p className="text-zinc-400">Seguimiento de tus ventas y pagos</p>
         </div>
         <div className="flex items-center gap-3">
-          <button 
-            onClick={() => {
-              setSelectedBookingForBilling('')
-              setBookingPaymentMethod('1')
-              setIsBookingModalOpen(true)
-            }}
-            className="flex items-center gap-2 bg-white/[0.03] border border-white/[0.06] text-white px-5 py-2.5 rounded-xl hover:border-[#ccff00]/50 hover:bg-[#ccff00]/10 hover:text-[#ccff00] transition-all font-bold"
-          >
-            <Calendar size={20} />
-            Facturar Reserva
-          </button>
           <button 
             onClick={() => {
               setCart([])
@@ -410,93 +377,45 @@ export default function VentasView() {
         </div>
       </div>
 
-      {/* Modal Facturar Reserva Específica */}
-      <Modal 
-        isOpen={isBookingModalOpen} 
-        onClose={() => setIsBookingModalOpen(false)} 
-        title="Facturar Reserva"
-      >
-        <form onSubmit={handleBillingBookingSubmit} className="flex flex-col gap-5">
-          <div>
-            <label className="block text-sm font-medium text-zinc-400 mb-1.5">
-              Buscar Reserva Pendiente *
-            </label>
-            <select 
-              required
-              value={selectedBookingForBilling}
-              onChange={(e) => setSelectedBookingForBilling(e.target.value)}
-              className="w-full bg-[#0a0e27] border border-[#1a1f3a] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[#ccff00]/50 transition-colors cursor-pointer"
-            >
-              <option value="" disabled className="bg-[#0a0e27]">Seleccione una reserva...</option>
-              {allPendingBookings.map(b => (
-                <option key={b.id} value={b.id} className="bg-[#0a0e27]">
-                  Reserva #{b.id} - {b.customer_name} - {formatDate(b.booking_date)} ({b.start_time})
-                </option>
-              ))}
-            </select>
-          </div>
 
-          {selectedBookingForBilling && (
-            <div className="bg-[#0a0e27]/60 border border-[#1a1f3a] rounded-xl p-4 flex flex-col gap-3">
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-zinc-400">Subtotal Reserva:</span>
-                <span className="text-white font-medium">${selectedBookingTotal.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between items-center text-sm border-b border-[#1a1f3a] pb-3">
-                <span className="text-zinc-400">IVA (16%):</span>
-                <span className="text-white font-medium">${selectedBookingTax.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-zinc-400 font-medium">Gran Total:</span>
-                <span className="text-2xl font-black text-[#ccff00]">${selectedBookingGrandTotal.toFixed(2)}</span>
-              </div>
-            </div>
-          )}
-
-          <div>
-            <label className="block text-sm font-medium text-zinc-400 mb-1.5">
-              Método de Pago *
-            </label>
-            <select 
-              required
-              value={bookingPaymentMethod}
-              onChange={(e) => setBookingPaymentMethod(e.target.value)}
-              className="w-full bg-[#0a0e27] border border-[#1a1f3a] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[#ccff00]/50 transition-colors cursor-pointer"
-            >
-              <option value="1" className="bg-[#0a0e27]">Efectivo</option>
-              <option value="2" className="bg-[#0a0e27]">Pago Móvil</option>
-              <option value="3" className="bg-[#0a0e27]">Transferencia</option>
-              <option value="5" className="bg-[#0a0e27]">Zelle</option>
-              <option value="9" className="bg-[#0a0e27]">Crédito</option>
-            </select>
-          </div>
-          
-          <div className="flex justify-end gap-3 mt-2">
-            <button 
-              type="button" 
-              onClick={() => setIsBookingModalOpen(false)}
-              className="px-5 py-2.5 bg-[#0a0e27] border border-[#1a1f3a] text-zinc-400 rounded-xl hover:bg-[#1a1f3a] hover:text-white transition-all font-medium"
-            >
-              Cancelar
-            </button>
-            <button 
-              type="submit" 
-              disabled={isSubmitting || !selectedBookingForBilling}
-              className="px-5 py-2.5 bg-[#ccff00] text-[#0a0e27] font-bold rounded-xl hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-[#ccff00]/20"
-            >
-              {isSubmitting ? 'Procesando...' : 'Cobrar Reserva'}
-            </button>
-          </div>
-        </form>
-      </Modal>
 
       {/* Modal Nueva Venta Original (Productos) */}
       <Modal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         title="Registrar Nueva Venta"
+        size="lg"
       >
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+          <div>
+            <label className="block text-sm font-medium text-zinc-400 mb-1.5">
+              Asociar Reserva (Opcional)
+            </label>
+            <select 
+              value={bookingId}
+              onChange={(e) => {
+                const bId = e.target.value
+                setBookingId(bId)
+                if (bId) {
+                  const b = bookings.find(x => x.id.toString() === bId)
+                  if (b && b.customer_id) {
+                    setFormData(prev => ({...prev, customer_id: b.customer_id.toString()}))
+                  }
+                }
+              }}
+              className="w-full bg-[#0a0e27] border border-[#1a1f3a] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[#ccff00]/50 transition-colors cursor-pointer"
+            >
+              <option value="" className="bg-[#0a0e27]">Sin reserva</option>
+              {allPendingBookings
+                .filter(b => !formData.customer_id || b.customer_id?.toString() === formData.customer_id)
+                .map(b => (
+                <option key={b.id} value={b.id} className="bg-[#0a0e27]">
+                  #{b.id} • {b.customer_name} • {b.court_name} • {formatDate(b.booking_date)}, {formatTime(b.start_time)}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-zinc-400 mb-1.5">
               Cliente *
@@ -506,7 +425,12 @@ export default function VentasView() {
               value={formData.customer_id}
               onChange={(val) => {
                 setFormData({...formData, customer_id: val.toString()})
-                setBookingId('')
+                if (bookingId) {
+                  const b = bookings.find(x => x.id.toString() === bookingId)
+                  if (b && b.customer_id?.toString() !== val.toString()) {
+                    setBookingId('')
+                  }
+                }
               }}
               placeholder="Selecciona un cliente"
               className="w-full bg-[#0a0e27] border border-[#1a1f3a] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[#ccff00]/50 transition-colors cursor-pointer flex justify-between items-center text-left"
@@ -519,23 +443,20 @@ export default function VentasView() {
             />
           </div>
 
-          {formData.customer_id && pendingBookingsCustomer.length > 0 && (
-            <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-1.5">
-                Asociar Reserva (Opcional)
-              </label>
-              <select 
-                value={bookingId}
-                onChange={(e) => setBookingId(e.target.value)}
-                className="w-full bg-[#0a0e27] border border-[#1a1f3a] rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[#ccff00]/50 transition-colors cursor-pointer"
-              >
-                <option value="" className="bg-[#0a0e27]">Sin reserva</option>
-                {pendingBookingsCustomer.map(b => (
-                  <option key={b.id} value={b.id} className="bg-[#0a0e27]">
-                    Reserva #{b.id} - {formatDate(b.booking_date)} ({b.start_time})
-                  </option>
-                ))}
-              </select>
+          {bookingId && (
+            <div className="bg-[#0a0e27]/60 border border-[#1a1f3a] rounded-xl p-4 flex flex-col gap-3">
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-zinc-400">Subtotal Reserva:</span>
+                <span className="text-white font-medium">${selectedBookingTotal.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between items-center text-sm border-b border-[#1a1f3a] pb-3">
+                <span className="text-zinc-400">IVA (16%):</span>
+                <span className="text-white font-medium">${selectedBookingTax.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-zinc-400 font-medium">Total Reserva:</span>
+                <span className="text-xl font-bold text-white">${selectedBookingGrandTotal.toFixed(2)}</span>
+              </div>
             </div>
           )}
 
@@ -611,12 +532,15 @@ export default function VentasView() {
             )}
           </div>
 
-          <div className="flex justify-between items-center gap-4">
-            <div>
-              <p className="text-sm text-zinc-400 mb-1">Total Productos</p>
-              <p className="text-2xl font-bold text-white">${cartTotal.toFixed(2)}</p>
+          <div className="flex flex-col sm:flex-row justify-between items-end gap-4 mt-2">
+            <div className="flex flex-col gap-1 w-full sm:w-auto">
+              {bookingId && cartTotal > 0 && (
+                <p className="text-sm text-zinc-400">Total Productos: ${cartTotal.toFixed(2)}</p>
+              )}
+              <p className="text-sm text-zinc-400 mb-1">Gran Total</p>
+              <p className="text-3xl font-black text-[#ccff00]">${grandTotal.toFixed(2)}</p>
             </div>
-            <div className="flex-1 max-w-xs">
+            <div className="flex-1 w-full sm:max-w-xs">
               <label className="block text-sm font-medium text-zinc-400 mb-1.5">
                 Método de Pago *
               </label>
@@ -659,6 +583,7 @@ export default function VentasView() {
         isOpen={isInvoiceModalOpen} 
         onClose={() => setIsInvoiceModalOpen(false)} 
         title="Detalle de Factura"
+        size="lg"
       >
         {loadingInvoice ? (
           <div className="flex justify-center py-16">

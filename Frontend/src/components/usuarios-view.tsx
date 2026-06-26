@@ -23,6 +23,7 @@ export default function UsuariosView() {
     status: 'Activated'
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [infoModal, setInfoModal] = useState({ isOpen: false, message: '', title: '' })
 
   // Edit User State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
@@ -94,6 +95,13 @@ export default function UsuariosView() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
+    
+    if (formData.username && usuarios.some(u => u.username === formData.username)) {
+      setInfoModal({ isOpen: true, message: 'Este nombre de usuario ya está registrado en el sistema.', title: 'Usuario duplicado' });
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       const payload = {
         ...formData,
@@ -107,7 +115,7 @@ export default function UsuariosView() {
       }
     } catch (error: any) {
       console.error('Error creando usuario:', error)
-      alert(error.message || 'Hubo un error al guardar el usuario')
+      setInfoModal({ isOpen: true, message: error.message || 'Hubo un error al guardar el usuario', title: 'Error' })
     } finally {
       setIsSubmitting(false)
     }
@@ -133,11 +141,11 @@ export default function UsuariosView() {
         setIsEditModalOpen(false)
         fetchUsuarios()
       } else {
-        alert('Hubo un error al actualizar el usuario')
+        setInfoModal({ isOpen: true, message: 'Hubo un error al actualizar el usuario', title: 'Error' })
       }
     } catch (error: any) {
       console.error('Error actualizando usuario:', error)
-      alert(error.message || 'Hubo un error al guardar los cambios')
+      setInfoModal({ isOpen: true, message: error.message || 'Hubo un error al guardar los cambios', title: 'Error' })
     } finally {
       setIsSubmitting(false)
     }
@@ -323,6 +331,28 @@ export default function UsuariosView() {
         title="Registrar Nuevo Usuario"
       >
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+          <div>
+            <label className="block text-sm font-medium text-zinc-400 mb-1.5">
+              Nombre de Usuario (Login / Identificación) *
+            </label>
+            <input 
+              type="text" 
+              required
+              value={formData.username}
+              onChange={(e) => setFormData({...formData, username: e.target.value})}
+              className={`w-full bg-[#0a0e27] border ${
+                formData.username && usuarios.some(u => u.username === formData.username)
+                  ? 'border-red-500 focus:border-red-500'
+                  : 'border-[#1a1f3a] focus:border-[#ccff00] focus:ring-1 focus:ring-[#ccff00]/30'
+              } rounded-xl px-4 py-2.5 text-white placeholder-zinc-500 focus:outline-none transition-all`}
+            />
+            {formData.username && usuarios.some(u => u.username === formData.username) && (
+              <p className="text-red-500 text-xs mt-1.5 font-semibold">
+                Este nombre de usuario ya está registrado.
+              </p>
+            )}
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-zinc-400 mb-1.5">
@@ -348,19 +378,6 @@ export default function UsuariosView() {
                 className="w-full bg-[#0a0e27] border border-[#1a1f3a] rounded-xl px-4 py-2.5 text-white placeholder-zinc-500 focus:outline-none focus:border-[#ccff00] focus:ring-1 focus:ring-[#ccff00]/30 transition-all"
               />
             </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-zinc-400 mb-1.5">
-              Nombre de Usuario (Login) *
-            </label>
-            <input 
-              type="text" 
-              required
-              value={formData.username}
-              onChange={(e) => setFormData({...formData, username: e.target.value})}
-              className="w-full bg-[#0a0e27] border border-[#1a1f3a] rounded-xl px-4 py-2.5 text-white placeholder-zinc-500 focus:outline-none focus:border-[#ccff00] focus:ring-1 focus:ring-[#ccff00]/30 transition-all"
-            />
           </div>
 
           <div>
@@ -417,7 +434,7 @@ export default function UsuariosView() {
             </button>
             <button 
               type="submit" 
-              disabled={isSubmitting}
+              disabled={isSubmitting || (formData.username ? usuarios.some(u => u.username === formData.username) : false)}
               className="px-6 py-2.5 bg-[#ccff00] text-[#0a0e27] font-semibold rounded-xl hover:brightness-110 transition-all disabled:opacity-50 shadow-lg shadow-[#ccff00]/10"
             >
               {isSubmitting ? 'Guardando...' : 'Guardar Usuario'}
@@ -543,6 +560,20 @@ export default function UsuariosView() {
           </div>
         </Modal>
       )}
+
+      <Modal isOpen={infoModal.isOpen} onClose={() => setInfoModal({ ...infoModal, isOpen: false })} title={infoModal.title || "Información"}>
+        <div className="flex flex-col gap-5">
+          <p className="text-zinc-300 text-sm">{infoModal.message}</p>
+          <div className="flex justify-end mt-2">
+            <button
+              onClick={() => setInfoModal({ ...infoModal, isOpen: false })}
+              className="px-5 py-2.5 bg-[#ccff00] text-[#0a0e27] font-bold rounded-xl hover:bg-[#b8e600] transition-all text-sm"
+            >
+              Aceptar
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

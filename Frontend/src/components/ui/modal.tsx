@@ -6,9 +6,18 @@ interface ModalProps {
   onClose: () => void;
   title: string;
   children: React.ReactNode;
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
 }
 
-export function Modal({ isOpen, onClose, title, children }: ModalProps) {
+export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalProps) {
+  const sizeClasses = {
+    sm: 'max-w-sm',
+    md: 'max-w-lg',
+    lg: 'max-w-2xl',
+    xl: 'max-w-4xl',
+    '2xl': 'max-w-6xl',
+    '3xl': 'max-w-7xl'
+  };
   // Prevenir scroll en el body cuando el modal está abierto
   useEffect(() => {
     if (isOpen) {
@@ -32,7 +41,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
       />
       
       {/* Contenido del Modal */}
-      <div className="relative z-10 w-full max-w-lg bg-card border border-border rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div className={`relative z-10 w-full ${sizeClasses[size]} bg-card border border-border rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]`}>
         
         {/* Encabezado */}
         <div className="flex items-center justify-between p-6 border-b border-border bg-card/50">

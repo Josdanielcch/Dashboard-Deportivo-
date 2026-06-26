@@ -11,7 +11,7 @@ export const INITIAL_COURTS: Court[] = [
     city: 'CDMX',
     score: 4.9,
     pricePerHour: 20,
-    imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCrK7kD9iB7twRwcrmMZeAd-AaejnMF-N5b18ei_MNi77qds9xXqzQu8Y07WfPMAg69oQz6WUHjEIWRolvq34BGGwZKtAjF1tnFAwTBR_mLa9OvGhwmAMJpYA-XHoZ_7ikUbuaVI6fTj1OUwTUMDaOoZ0Cl4BvO_08oXYSSoeRnflr47QDl1EKeXk3njkjQWj70rcMdhzbZyRbksyLrwML9fCW00AklWNpk6Kx0tkA3UkT2ei9FEmOTZ09Yvc51OFAPqBFnYTD8O2g',
+    imageUrl: '/images/court-1.jpg',
     address: 'Campos Elíseos 134, Polanco, CDMX, México',
     isAvailable: true,
   },
@@ -25,7 +25,7 @@ export const INITIAL_COURTS: Court[] = [
     city: 'CDMX',
     score: 4.7,
     pricePerHour: 25,
-    imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAXdbdq9o3GiNN-V_l13w_uldGx60kVowaAzEAx4zZazcV5P9OayQc6b-GWQIEEcfFJokHpenceEb2K89IMGi5oMek5TIKU7S1BD0rYPxjwuzabujjBeR2sOJ5KKwmu2pRwaJPhaBosVLSv5nteo8_DlboanVkTk7Za1uHSjacYAAuRtNtbGmqt0quQGIVNLBZUQV7buWoUGRBk0C8KiosWC2qphVc3-unqe8bsjA6QXAyeTMxCpTzGALWHbz37R6hTEQWRdjyuKRQ',
+    imageUrl: '/images/court-2.jpg',
     address: 'Av. Vasco de Quiroga 2000, Lomas de Santa Fe, CDMX, México',
     isAvailable: true,
     upcomingSpots: true,
@@ -40,7 +40,7 @@ export const INITIAL_COURTS: Court[] = [
     city: 'Roma Norte, CDMX',
     score: 4.8,
     pricePerHour: 30,
-    imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB94KbkV0VHtWs83FMAxH31xsdN-r6945eD6mEXUX_pq4vv9ZOc3Ca_SqU93EEoXnCDJJwsdKg_j9Yy7LevuebLGgLiaVqVkysZYgoLH9QZOwnbWEp5CQWPs3LtgBMLcPjsGmgpVqLHL6L14Ce-n4yQi7jhPYrAJNLv8_A4nkvVUR8E3fZoYEOTNMS5ugsPC3_FjPBG6ycZ_k0pfWexLDEt_Te-zx_JyqpZ3ohRvJ2V69V0YW-f68kZB4aYXqW0CMtw1qS69fDrCAs',
+    imageUrl: '/images/court-3.jpg',
     address: 'Álvaro Obregón 154, Roma Norte, CDMX, México',
     isAvailable: true,
   },
@@ -54,7 +54,7 @@ export const INITIAL_COURTS: Court[] = [
     city: 'Coyoacán, CDMX',
     score: 5.0,
     pricePerHour: 10,
-    imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDRk7imwWYwGKA7htwJtibvnLq9_ZxgVd1gyTQp6cI_x7LBHDjOpj2VSP_G86AukgyCnVRklW72jTPVluij6cbxNCDwOS7oGxNfIxs-0Fwkhtnd1ZdsJE1k75q8AJCAufLsfbJ7dCwmBDQZpxgvVt0YtzGKAPHaoJUCpnjNojxbJ8S7JpCTc4Xc9P6ulVy3XtTJydBYjieYWg_0R3urBn3CIg8XewYQfZ60rbK8kljnQXkrM8M9WXr25idkmGhrNnULMEVCXB3Yf38',
+    imageUrl: '/images/court-4.jpg',
     address: 'Aguayo 23, Culhuacán, Coyoacán, CDMX, México',
     isAvailable: true,
   },
@@ -68,7 +68,7 @@ export const INITIAL_COURTS: Court[] = [
     city: 'Lomas, CDMX',
     score: 4.6,
     pricePerHour: 15,
-    imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDA_eQMsx5tXpfa1XANsqb08FWsoQYxRwq7_7L44hOhTlQ3SAU_uHx-vqbD-RRT7oVBUDWbX5RJXEXcOfQwEBjeFoDtJRjrAB_y8SThEAOUkUgumoWoalFYcA-TFEAdS0LmsyZM-jc6jYRW0f6EUIpZrIg5t3y29iHKLRPGsKixsJYN2mtsnmNgBfJd4IW-PW3kxP2xJK1m4dE6GpYDOPTtwFYjOb9MGSfXZam6POEndF0TS80gWWNjdC5nC2roXpZmAWG9IHy6suU',
+    imageUrl: '/images/court-5.jpg',
     address: 'Paseo de la Reforma 4000, Lomas de Vista Hermosa, CDMX, México',
     isAvailable: false,
   },
@@ -82,7 +82,7 @@ export const INITIAL_COURTS: Court[] = [
     city: 'San Ángel, CDMX',
     score: 4.9,
     pricePerHour: 25,
-    imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAXdbdq9o3GiNN-V_l13w_uldGx60kVowaAzEAx4zZazcV5P9OayQc6b-GWQIEEcfFJokHpenceEb2K89IMGi5oMek5TIKU7S1BD0rYPxjwuzabujjBeR2sOJ5KKwmu2pRwaJPhaBosVLSv5nteo8_DlboanVkTk7Za1uHSjacYAAuRtNtbGmqt0quQGIVNLBZUQV7buWoUGRBk0C8KiosWC2qphVc3-unqe8bsjA6QXAyeTMxCpTzGALWHbz37R6hTEQWRdjyuKRQ',
+    imageUrl: '/images/court-6.jpg',
     address: 'Altavista 12, San Ángel, Álvaro Obregón, CDMX, México',
     isAvailable: true,
   },
@@ -96,7 +96,7 @@ export const INITIAL_COURTS: Court[] = [
     city: 'La Condesa, CDMX',
     score: 4.9,
     pricePerHour: 35,
-    imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB94KbkV0VHtWs83FMAxH31xsdN-r6945eD6mEXUX_pq4vv9ZOc3Ca_SqU93EEoXnCDJJwsdKg_j9Yy7LevuebLGgLiaVqVkysZYgoLH9QZOwnbWEp5CQWPs3LtgBMLcPjsGmgpVqLHL6L14Ce-n4yQi7jhPYrAJNLv8_A4nkvVUR8E3fZoYEOTNMS5ugsPC3_FjPBG6ycZ_k0pfWexLDEt_Te-zx_JyqpZ3ohRvJ2V69V0YW-f68kZB4aYXqW0CMtw1qS69fDrCAs',
+    imageUrl: '/images/court-7.jpg',
     address: 'Nuevo León 230, Hipódromo Condesa, CDMX, México',
     isAvailable: true,
   },
@@ -110,7 +110,7 @@ export const INITIAL_COURTS: Court[] = [
     city: 'Naucalpan, Edomex',
     score: 4.8,
     pricePerHour: 25,
-    imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCrK7kD9iB7twRwcrmMZeAd-AaejnMF-N5b18ei_MNi77qds9xXqzQu8Y07WfPMAg69oQz6WUHjEIWRolvq34BGGwZKtAjF1tnFAwTBR_mLa9OvGhwmAMJpYA-XHoZ_7ikUbuaVI6fTj1OUwTUMDaOoZ0Cl4BvO_08oXYSSoeRnflr47QDl1EKeXk3njkjQWj70rcMdhzbZyRbksyLrwML9fCW00AklWNpk6Kx0tkA3UkT2ei9FEmOTZ09Yvc51OFAPqBFnYTD8O2g',
+    imageUrl: '/images/court-8.jpg',
     address: 'Circuito Novelistas 20, Ciudad Satélite, Naucalpan, Estado de México',
     isAvailable: true,
     upcomingSpots: true,
@@ -125,7 +125,7 @@ export const INITIAL_COURTS: Court[] = [
     city: 'CDMX',
     score: 4.5,
     pricePerHour: 10,
-    imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDRk7imwWYwGKA7htwJtibvnLq9_ZxgVd1gyTQp6cI_x7LBHDjOpj2VSP_G86AukgyCnVRklW72jTPVluij6cbxNCDwOS7oGxNfIxs-0Fwkhtnd1ZdsJE1k75q8AJCAufLsfbJ7dCwmBDQZpxgvVt0YtzGKAPHaoJUCpnjNojxbJ8S7JpCTc4Xc9P6ulVy3XtTJydBYjieYWg_0R3urBn3CIg8XewYQfZ60rbK8kljnQXkrM8M9WXr25idkmGhrNnULMEVCXB3Yf38',
+    imageUrl: '/images/court-9.jpg',
     address: 'Eje Central Lázaro Cárdenas, Guerrero, CDMX, México',
     isAvailable: true,
   }
@@ -145,27 +145,27 @@ export const MOCK_TIME_SLOTS = [
   { id: 't11', time: '22:00 - 23:30', period: 'Madrugada' }
 ];
 
-export const ADS_IMAGE_PRO_TIP = 'https://lh3.googleusercontent.com/aida-public/AB6AXuDOMZdAxBcXSJf_JwBnqwgeP1ogZ8_rVejyzCOVOxUUx0eu0imfhiJEzfdbRgIUYm7_jZ3Bm1J2N8tg2UlCFrUgc5AYdkvmxQSHd9w4kuonYCuxMCSKejRcT6SYAnKCRnXIC7JBTMLGVoezorHAUOUCLJ1MhTNB2iNdEsI2FkosqHEbNkXqkf9tkKqXdE0upcLpDtnJolSBSKPWOdiFNAtu5LGbKyRNEVShuh6OhYZ_H61AVbYk38FaqCUIxMmn0nB8444PHtBf0-M';
+export const ADS_IMAGE_PRO_TIP = '/images/ad-protip.jpg';
 
 export const SPORT_CATEGORIES = [
   {
     id: 'padel',
     name: 'Padel Pro League',
-    image: '/images/court-1.jpg',
+    image: '/images/sport-padel.jpg',
     tag: 'POPULAR',
     description: 'La liga de pádel más rápida y divertida de la ciudad.'
   },
   {
     id: 'futbol',
     name: 'Fútbol 5 & 7',
-    image: '/images/court-2.jpg',
+    image: '/images/sport-futbol.jpg',
     tag: 'SINTÉTICO',
     description: 'Pastos artificiales profesionales con iluminación nocturna.'
   },
   {
     id: 'basquet',
     name: 'Basketball',
-    image: '/images/basketball-silhouette.jpg',
+    image: '/images/sport-basquet.jpg',
     tag: 'DUELA PRO',
     description: 'Duelas profesionales techadas para retos urbanos.'
   },

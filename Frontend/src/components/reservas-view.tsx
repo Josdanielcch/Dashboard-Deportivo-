@@ -247,7 +247,10 @@ export default function ReservasView() {
     // Extraer YYYY-MM-DD de la base de datos de forma directa (ignorar T00:00:00.000Z)
     const rDateStr = typeof r.booking_date === 'string' ? r.booking_date.split('T')[0] : new Date(r.booking_date).toISOString().split('T')[0]
     
-    return rDateStr === targetDateStr
+    // Ignorar reservas canceladas o no asiste para no bloquear la cuadrícula
+    const isActive = r.status !== 'Cancelled' && r.status !== 'No_show'
+    
+    return rDateStr === targetDateStr && isActive
   })
 
   const buildGrid = () => {
@@ -514,7 +517,7 @@ export default function ReservasView() {
                             className={`h-full w-full rounded-md border-l-4 border-y border-r p-2 cursor-pointer transition-all flex flex-col justify-start relative overflow-hidden ${bgColor}`}
                             style={{ minHeight: `${(rowSpan * 53) - 12}px` }}
                           >
-                            <div className="font-bold text-xs truncate pr-4">{reserva.customer_name}</div>
+                            <div className="font-bold text-xs truncate pr-4">#{reserva.id} - {reserva.customer_name}</div>
                             {rowSpan > 1 && (
                               <div className="text-[11px] opacity-80 mt-1 flex items-center gap-1">
                                 <Clock size={10} />
@@ -578,6 +581,7 @@ export default function ReservasView() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-secondary">
+                  <th className="text-left py-4 px-6 text-muted-foreground font-semibold">Reserva #</th>
                   <th className="text-left py-4 px-6 text-muted-foreground font-semibold">Cliente</th>
                   <th className="text-left py-4 px-6 text-muted-foreground font-semibold">Cancha</th>
                   <th className="text-left py-4 px-6 text-muted-foreground font-semibold">Fecha</th>
@@ -590,7 +594,7 @@ export default function ReservasView() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={7} className="py-12 text-center">
+                    <td colSpan={8} className="py-12 text-center">
                       <div className="flex justify-center">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                       </div>
@@ -598,7 +602,7 @@ export default function ReservasView() {
                   </tr>
                 ) : filteredReservas.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-12 text-center text-muted-foreground">
+                    <td colSpan={8} className="py-12 text-center text-muted-foreground">
                       No se encontraron reservas en el historial.
                     </td>
                   </tr>
@@ -626,6 +630,7 @@ export default function ReservasView() {
 
                     return (
                       <tr key={reserva.id} className="border-b border-border hover:bg-secondary transition-colors">
+                        <td className="py-4 px-6 text-foreground font-bold text-primary">#{reserva.id}</td>
                         <td className="py-4 px-6 text-foreground font-medium">
                           <div className="flex items-center gap-2">
                             <User size={16} className="text-accent opacity-70" />

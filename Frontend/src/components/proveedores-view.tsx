@@ -12,6 +12,7 @@ export default function ProveedoresView() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [currentSupplierId, setCurrentSupplierId] = useState<number | null>(null)
+  const [infoModal, setInfoModal] = useState({ isOpen: false, message: '', title: '' })
 
   const [formData, setFormData] = useState({
     name: '',
@@ -64,6 +65,13 @@ export default function ProveedoresView() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
+    
+    if (formData.tax_id && suppliers.some(s => s.tax_id === formData.tax_id && s.id !== currentSupplierId)) {
+      setInfoModal({ isOpen: true, message: 'Este RIF/NIT ya está registrado en el sistema.', title: 'Documento duplicado' });
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       if (isEditing && currentSupplierId) {
         await supplierService.update(currentSupplierId, formData)
@@ -72,9 +80,9 @@ export default function ProveedoresView() {
       }
       setIsModalOpen(false)
       fetchSuppliers()
-    } catch (error) {
+    } catch (error: any) {
       console.error(error)
-      alert('Error al guardar proveedor')
+      setInfoModal({ isOpen: true, message: error.message || 'Error al guardar proveedor', title: 'Error' });
     } finally {
       setIsSubmitting(false)
     }
@@ -194,18 +202,34 @@ export default function ProveedoresView() {
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={isEditing ? 'Editar Proveedor' : 'Nuevo Proveedor'}>
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+          <div>
+            <label className="block text-xs font-bold text-zinc-400 mb-2 uppercase tracking-wide">RIF/NIT / Identificación</label>
+            <input
+              type="text"
+              value={formData.tax_id}
+              onChange={e => setFormData({...formData, tax_id: e.target.value})}
+              className={`w-full bg-[#0a0e27] border ${
+                formData.tax_id && suppliers.some(s => s.tax_id === formData.tax_id && s.id !== currentSupplierId)
+                  ? 'border-red-500 focus:border-red-500'
+                  : 'border-[#1a1f3a] focus:border-[#ccff00]/50'
+              } rounded-xl px-4 py-3 text-white focus:outline-none transition-all text-sm`}
+              placeholder="Ej. J-12345678"
+            />
+            {formData.tax_id && suppliers.some(s => s.tax_id === formData.tax_id && s.id !== currentSupplierId) && (
+              <p className="text-red-500 text-xs mt-1.5 font-semibold">
+                Este documento o RIF/NIT ya está registrado.
+              </p>
+            )}
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="sm:col-span-2">
               <label className="block text-xs font-bold text-zinc-400 mb-2 uppercase tracking-wide">Nombre de Empresa *</label>
               <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-[#0a0e27] border border-[#1a1f3a] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#ccff00]/50 transition-all text-sm" placeholder="Ej. Inversiones X" />
             </div>
-            <div>
+            <div className="sm:col-span-2">
               <label className="block text-xs font-bold text-zinc-400 mb-2 uppercase tracking-wide">Contacto (Nombre)</label>
               <input type="text" value={formData.contact_name} onChange={e => setFormData({...formData, contact_name: e.target.value})} className="w-full bg-[#0a0e27] border border-[#1a1f3a] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#ccff00]/50 transition-all text-sm" placeholder="Ej. Carlos Pérez" />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-zinc-400 mb-2 uppercase tracking-wide">RIF/NIT</label>
-              <input type="text" value={formData.tax_id} onChange={e => setFormData({...formData, tax_id: e.target.value})} className="w-full bg-[#0a0e27] border border-[#1a1f3a] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#ccff00]/50 transition-all text-sm" placeholder="J-12345678" />
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -232,13 +256,27 @@ export default function ProveedoresView() {
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || (formData.tax_id ? suppliers.some(s => s.tax_id === formData.tax_id && s.id !== currentSupplierId) : false)}
               className="px-5 py-2.5 bg-[#ccff00] text-[#0a0e27] font-bold rounded-xl hover:bg-[#b8e600] transition-all text-sm disabled:opacity-50"
             >
               {isSubmitting ? 'Guardando...' : 'Guardar Proveedor'}
             </button>
           </div>
         </form>
+      </Modal>
+
+      <Modal isOpen={infoModal.isOpen} onClose={() => setInfoModal({ ...infoModal, isOpen: false })} title={infoModal.title || "Información"}>
+        <div className="flex flex-col gap-5">
+          <p className="text-zinc-300 text-sm">{infoModal.message}</p>
+          <div className="flex justify-end mt-2">
+            <button
+              onClick={() => setInfoModal({ ...infoModal, isOpen: false })}
+              className="px-5 py-2.5 bg-[#ccff00] text-[#0a0e27] font-bold rounded-xl hover:bg-[#b8e600] transition-all text-sm"
+            >
+              Aceptar
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   )

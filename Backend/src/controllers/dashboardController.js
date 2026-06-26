@@ -5,8 +5,10 @@ const getDashboardStats = async (req, res) => {
   try {
     const statsData = {};
 
-    // 1. Reservas Hoy
-    const today = new Date().toISOString().split('T')[0];
+    // 1. Reservas Hoy (Ajustado a zona horaria UTC-4 / Venezuela)
+    const now = new Date();
+    const localNow = new Date(now.getTime() - (4 * 60 * 60 * 1000));
+    const today = localNow.toISOString().split('T')[0];
     const reservasHoyQuery = await pool.query(`
       SELECT COUNT(*) as count 
       FROM bookings 
@@ -158,6 +160,20 @@ const getDashboardStats = async (req, res) => {
       ORDER BY b.id DESC
       LIMIT 5
     `);
+    const formatAMPM = (timeStr) => {
+      if (!timeStr) return '';
+      const parts = timeStr.split(':');
+      if (parts.length >= 2) {
+        let h = parseInt(parts[0], 10);
+        const m = parts[1];
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        h = h % 12;
+        h = h ? h : 12;
+        return `${h.toString().padStart(2, '0')}:${m} ${ampm}`;
+      }
+      return timeStr;
+    };
+
     statsData.recentBookings = recentBookingsQuery.rows.map(row => {
       let estado = 'Pendiente';
       if (row.status === 'Confirmed') estado = 'Confirmada';
@@ -168,7 +184,7 @@ const getDashboardStats = async (req, res) => {
       return {
         cliente: row.customer_name.trim(),
         cancha: row.court_name,
-        hora: row.start_time.slice(0, 5),
+        hora: formatAMPM(row.start_time),
         estado: estado
       };
     });
