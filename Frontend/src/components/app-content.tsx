@@ -109,10 +109,11 @@ export default function AppContent() {
           </div>
         </div>
 
-        <div className="flex-1 w-full max-w-[1600px] mx-auto overflow-x-hidden relative z-10">
+        <div className="flex-1 w-full max-w-[2200px] mx-auto overflow-x-hidden relative z-10">
           {renderView()}
         </div>
       </main>
+      </SocketProvider>
     </div>
   )
 }
