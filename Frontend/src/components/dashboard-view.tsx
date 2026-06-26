@@ -1,8 +1,9 @@
 'use client'
 
-import { TrendingUp, Users, Calendar, DollarSign, ArrowUpRight, ArrowDownRight, Clock, CheckCircle, XCircle, Activity, BarChart3, Sparkles, ArrowRight } from 'lucide-react'
+import { TrendingUp, Users, Calendar, DollarSign, ArrowUpRight, ArrowDownRight, Clock, CheckCircle, XCircle, Activity, BarChart3, Sparkles, ArrowRight, Zap, Wallet } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { dashboardService } from '@/services/dashboardService'
+import { useSocket } from '@/contexts/socket-context'
 
 interface DashboardViewProps {
   onNavigate?: (module: string) => void
@@ -10,7 +11,6 @@ interface DashboardViewProps {
 
 function AnimatedCounter({ value, suffix = '', decimals = 0 }: { value: number; suffix?: string; decimals?: number }) {
   const [count, setCount] = useState(0)
-  const prevValue = useRef(0)
 
   useEffect(() => {
     let current = 0
@@ -28,52 +28,35 @@ function AnimatedCounter({ value, suffix = '', decimals = 0 }: { value: number; 
       } else {
         setCount(Math.floor(current))
       }
-    }
+    }, 16)
 
-    prevValue.current = end
-    requestAnimationFrame(tick)
+    return () => clearInterval(timer)
   }, [value])
 
   return <>{count.toLocaleString('es-DO', { maximumFractionDigits: decimals, minimumFractionDigits: decimals })}{suffix}</>
 }
 
-function AnimatedBar({ height, amount, maxAmount, label, active = false, delay = 0 }: { height: number; amount: number; maxAmount: number; label: string; active?: boolean; delay?: number }) {
+function MiniBar({ height, active, amount }: { height: number; active: boolean; amount: number }) {
   const [h, setH] = useState(0)
-  const [showTooltip, setShowTooltip] = useState(false)
-
   useEffect(() => {
-    setTimeout(() => setH(height), 200 + delay)
-  }, [height, delay])
-
-  const barHeight = maxAmount > 0 ? (amount / maxAmount) * 100 : 0
+    setTimeout(() => setH(height), 200)
+  }, [height])
 
   return (
-    <div className="flex-1 flex flex-col items-center gap-1.5 group/bar">
-      <div className="relative w-full flex justify-center flex-1">
-        <div className={`absolute -top-10 left-1/2 -translate-x-1/2 bg-[#0f1533] border border-[#1a1f3a] rounded-xl px-3 py-2 shadow-2xl transition-all duration-200 whitespace-nowrap z-20 ${
-          showTooltip ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'
-        }`}>
-          <p className="text-xs font-bold text-[#ccff00]">$ {amount.toLocaleString()}</p>
-          {active && <p className="text-[10px] text-zinc-400 mt-0.5">Hoy</p>}
-        </div>
-        <div
-          onMouseEnter={() => setShowTooltip(true)}
-          onMouseLeave={() => setShowTooltip(false)}
-          className={`w-full max-w-[32px] rounded-lg transition-all duration-1000 ease-out cursor-pointer relative self-end ${
-            active
-              ? 'bg-gradient-to-t from-[#ccff00] to-[#ccff00]/70 shadow-[0_0_20px_rgba(204,255,0,0.2)]'
-              : amount > 0
-                ? 'bg-gradient-to-t from-zinc-500/40 to-zinc-500/20 hover:from-zinc-500/50'
-                : 'bg-zinc-800/30'
-          }`}
-          style={{ height: `${h}%`, minHeight: amount > 0 ? '4px' : '0px', maxHeight: '100%' }}
-        >
-          {active && (
-            <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[#ccff00] shadow-[0_0_10px_rgba(204,255,0,0.6)]" />
-          )}
-        </div>
-      </div>
-      <span className={`text-[10px] font-bold transition-colors ${active ? 'text-[#ccff00]' : 'text-zinc-500 group-hover/bar:text-zinc-300'}`}>{label}</span>
+    <div className={`w-full max-w-[24px] rounded-t-lg transition-all duration-1000 ease-out relative ${
+      active
+        ? 'bg-gradient-to-t from-[#ccff00] to-[#ccff00]/70 shadow-[0_0_15px_rgba(204,255,0,0.2)]'
+        : 'bg-gradient-to-t from-zinc-500/30 to-zinc-500/10 hover:from-zinc-500/40'
+    }`}
+    style={{ height: `${h}%`, minHeight: '4px' }}>
+      <span className={`absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-extrabold whitespace-nowrap transition-all duration-1000 ${
+        active ? 'text-[#ccff00]' : 'text-zinc-400'
+      }`}>
+        ${amount.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+      </span>
+      {active && (
+        <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[#ccff00] shadow-[0_0_10px_rgba(204,255,0,0.6)]" />
+      )}
     </div>
   )
 }
@@ -161,6 +144,7 @@ const SAFELIST = [
 export default function DashboardView({ onNavigate }: DashboardViewProps) {
   const [mounted, setMounted] = useState(false)
   const [loading, setLoading] = useState(true)
+  const { notifications } = useSocket()
 
   const [statsData, setStatsData] = useState({
     reservasHoy: 0,
@@ -235,7 +219,7 @@ export default function DashboardView({ onNavigate }: DashboardViewProps) {
   return (
     <div className={`p-4 md:p-8 transition-all duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
       {/* Notifications - toast se oculta solo, no borra de la lista */}
-      {socketNotifications.slice(0, 1).map((n) => (
+      {notifications.slice(0, 1).map((n) => (
         <NotificationToast key={`toast-${n.id}`} booking={n} onDismiss={() => {}} />
       ))}
 
@@ -266,7 +250,7 @@ export default function DashboardView({ onNavigate }: DashboardViewProps) {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {statCards.map((stat, i) => {
+        {stats.map((stat, i) => {
           const Icon = stat.icon
           return (
             <div key={stat.label}
@@ -283,7 +267,7 @@ export default function DashboardView({ onNavigate }: DashboardViewProps) {
                 </div>
                 <div className="flex items-end justify-between gap-2">
                   <span className="text-2xl md:text-3xl font-black text-white group-hover:scale-105 origin-left transition-transform">
-                    {stat.prefix}<AnimatedCounter value={stat.value} decimals={stat.label === 'Ingresos Hoy' ? 0 : 0} />
+                    {(stat as any).prefix}<AnimatedCounter value={stat.value} suffix={(stat as any).suffix} decimals={stat.label === 'Ingresos Hoy' ? 0 : 0} />
                   </span>
                   {stat.change && (
                     <div className={`flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-lg shrink-0 ${
@@ -294,7 +278,6 @@ export default function DashboardView({ onNavigate }: DashboardViewProps) {
                     </div>
                   )}
                 </div>
-                <p className="text-[11px] text-zinc-600 mt-2 font-medium">{stat.sub}</p>
               </div>
             </div>
           )
@@ -363,12 +346,9 @@ export default function DashboardView({ onNavigate }: DashboardViewProps) {
               <p className="text-zinc-500 text-sm py-4 w-full text-center">No hay ingresos registrados en los últimos 7 días.</p>
             ) : (
               weekDays.map((item, i) => (
-                <div key={i} className="flex-1 flex flex-col items-center gap-2 group/bar">
-                  <div className="w-full flex justify-center relative" style={{ height: '100%' }}>
-                    <div className="absolute -top-7 text-[10px] text-zinc-500 font-medium opacity-0 group-hover/bar:opacity-100 transition-all duration-300 whitespace-nowrap bg-white/[0.05] px-2 py-1 rounded-md border border-white/[0.06] backdrop-blur-sm shadow-lg z-10">
-                      ${item.amount.toLocaleString()}
-                    </div>
-                    <MiniBar height={item.height} active={i === weekDays.length - 1} />
+                <div key={i} className="flex-1 flex flex-col items-center gap-2 group/bar h-full">
+                  <div className="w-full flex justify-center items-end relative flex-1">
+                    <MiniBar height={item.height} active={i === weekDays.length - 1} amount={item.amount} />
                   </div>
                   <span className={`text-[11px] font-semibold transition-colors ${i === weekDays.length - 1 ? 'text-[#ccff00]' : 'text-zinc-500'}`}>{item.day}</span>
                 </div>
