@@ -159,15 +159,27 @@ export default function LoginView({ onLogin }: LoginViewProps) {
   return (
     <div className="min-h-screen bg-[#060a1a] flex font-sans text-white overflow-hidden relative">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full bg-[#ccff00]/5 blur-[120px]" />
-        <div className="absolute -bottom-40 -left-40 w-[500px] h-[500px] rounded-full bg-[#ccff00]/3 blur-[100px]" />
-        <div className="absolute top-1/3 left-1/4 w-[300px] h-[300px] rounded-full bg-[#6366f1]/5 blur-[80px]" />
-        <div className="absolute bottom-1/4 right-1/3 w-[200px] h-[200px] rounded-full bg-[#ccff00]/5 blur-[60px]" />
-        {[...Array(20)].map((_, i) => (
-          <div key={i} className="absolute w-1 h-1 rounded-full bg-[#ccff00]/20"
-            style={{ left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%`, animation: `float ${6 + Math.random() * 8}s ease-in-out ${Math.random() * 5}s infinite`, opacity: 0.3 + Math.random() * 0.4 }} />
+        {/* Morphing gradient blobs */}
+        <svg className="absolute inset-0 w-full h-full opacity-[0.12]" viewBox="0 0 1000 800" preserveAspectRatio="xMidYMid slice">
+          <defs>
+            <filter id="goo"><feGaussianBlur in="SourceGraphic" stdDeviation="40" result="blur" /><feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7" /></filter>
+          </defs>
+          <g filter="url(#goo)">
+            <circle cx="200" cy="200" r="180" fill="#ccff00" className="animate-morph1" />
+            <circle cx="800" cy="150" r="140" fill="#6366f1" className="animate-morph2" />
+            <circle cx="500" cy="650" r="200" fill="#ccff00" className="animate-morph3" />
+            <circle cx="850" cy="600" r="120" fill="#a6e000" className="animate-morph4" />
+          </g>
+        </svg>
+        <div className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full bg-[#ccff00]/5 blur-[120px] animate-pulse-slow" />
+        <div className="absolute -bottom-40 -left-40 w-[500px] h-[500px] rounded-full bg-[#ccff00]/3 blur-[100px] animate-pulse-slow" style={{ animationDelay: '2s' }} />
+        <div className="absolute top-1/3 left-1/4 w-[300px] h-[300px] rounded-full bg-[#6366f1]/5 blur-[80px] animate-pulse-slow" style={{ animationDelay: '4s' }} />
+        {[...Array(40)].map((_, i) => (
+          <div key={i} className="absolute w-1 h-1 rounded-full bg-white/30"
+            style={{ left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%`, animation: `float ${6 + Math.random() * 10}s ease-in-out ${Math.random() * 8}s infinite`, opacity: 0.1 + Math.random() * 0.3 }} />
         ))}
-        <svg className="absolute inset-0 w-full h-full opacity-[0.03]" xmlns="http://www.w3.org/2000/svg">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#060a1a]/30 to-[#060a1a]" />
+        <svg className="absolute inset-0 w-full h-full opacity-[0.02]" xmlns="http://www.w3.org/2000/svg">
           <defs><pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
             <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#ccff00" strokeWidth="0.5" />
           </pattern></defs>
@@ -519,6 +531,39 @@ export default function LoginView({ onLogin }: LoginViewProps) {
           0%, 100% { transform: translateY(0px) rotate(0deg); }
           50% { transform: translateY(-15px) rotate(3deg); }
         }
+        @keyframes pulse-slow {
+          0%, 100% { opacity: 0.5; transform: scale(1); }
+          50% { opacity: 0.8; transform: scale(1.05); }
+        }
+        .animate-pulse-slow { animation: pulse-slow 8s ease-in-out infinite; }
+        @keyframes morph1 {
+          0% { transform: translate(0, 0) scale(1); }
+          33% { transform: translate(60px, -40px) scale(1.1); }
+          66% { transform: translate(-30px, 50px) scale(0.9); }
+          100% { transform: translate(0, 0) scale(1); }
+        }
+        @keyframes morph2 {
+          0% { transform: translate(0, 0) scale(1); }
+          33% { transform: translate(-50px, 60px) scale(1.15); }
+          66% { transform: translate(40px, -30px) scale(0.85); }
+          100% { transform: translate(0, 0) scale(1); }
+        }
+        @keyframes morph3 {
+          0% { transform: translate(0, 0) scale(1); }
+          33% { transform: translate(-60px, -50px) scale(0.9); }
+          66% { transform: translate(50px, 60px) scale(1.15); }
+          100% { transform: translate(0, 0) scale(1); }
+        }
+        @keyframes morph4 {
+          0% { transform: translate(0, 0) scale(1); }
+          33% { transform: translate(40px, 50px) scale(0.85); }
+          66% { transform: translate(-60px, -40px) scale(1.1); }
+          100% { transform: translate(0, 0) scale(1); }
+        }
+        .animate-morph1 { animation: morph1 18s ease-in-out infinite; }
+        .animate-morph2 { animation: morph2 22s ease-in-out infinite; }
+        .animate-morph3 { animation: morph3 20s ease-in-out infinite; }
+        .animate-morph4 { animation: morph4 16s ease-in-out infinite; }
       `}</style>
     </div>
   )
