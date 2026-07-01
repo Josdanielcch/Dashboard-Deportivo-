@@ -178,6 +178,22 @@ export default function ReservasView() {
     return new Date(dateObj.getTime() + Math.abs(dateObj.getTimezoneOffset() * 60000)).toLocaleDateString()
   }
 
+  const getDateLabel = (dateStr: string) => {
+    if (!dateStr) return { label: '', color: '' }
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const tomorrow = new Date(today)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    const rDate = new Date(dateStr)
+    rDate.setHours(0, 0, 0, 0)
+    const diffDays = Math.round((rDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+
+    if (diffDays === 0) return { label: 'Hoy', color: 'bg-[#ccff00]/20 text-[#ccff00] border-[#ccff00]/30' }
+    if (diffDays === 1) return { label: 'Mañana', color: 'bg-purple-500/20 text-purple-300 border-purple-500/30' }
+    if (diffDays <= 7) return { label: `En ${diffDays} días`, color: 'bg-blue-500/20 text-blue-300 border-blue-500/30' }
+    return { label: `${rDate.toLocaleDateString('es-ES', { weekday: 'short' })}`, color: 'bg-zinc-500/20 text-zinc-300 border-zinc-500/30' }
+  }
+
   const formatAMPM = (timeStr?: string) => {
     if (!timeStr) return ''
     const [hStr, mStr] = timeStr.split(':')
@@ -352,6 +368,50 @@ export default function ReservasView() {
         </button>
       </div>
 
+      {/* TARJETAS DE ESTADÍSTICAS */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="bg-card/40 backdrop-blur-xl border border-border/60 rounded-2xl p-5 shadow-sm hover:border-accent/30 transition-all">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Reservas Hoy</span>
+            <div className="h-9 w-9 rounded-xl bg-[#ccff00]/10 border border-[#ccff00]/20 flex items-center justify-center">
+              <CalendarDays size={16} className="text-[#ccff00]" />
+            </div>
+          </div>
+          <p className="text-3xl font-black text-foreground">{reservas.filter(r => { const d = new Date(r.booking_date); const today = new Date(); return d.toDateString() === today.toDateString() && r.status !== 'Cancelled' && r.status !== 'No_show'; }).length}</p>
+          <p className="text-xs text-muted-foreground mt-1">Reservas activas para hoy</p>
+        </div>
+        <div className="bg-card/40 backdrop-blur-xl border border-border/60 rounded-2xl p-5 shadow-sm hover:border-yellow-500/30 transition-all">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Pendientes</span>
+            <div className="h-9 w-9 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center">
+              <Clock size={16} className="text-yellow-400" />
+            </div>
+          </div>
+          <p className="text-3xl font-black text-foreground">{reservas.filter(r => r.status === 'Pending').length}</p>
+          <p className="text-xs text-muted-foreground mt-1">Esperando aprobación</p>
+        </div>
+        <div className="bg-card/40 backdrop-blur-xl border border-border/60 rounded-2xl p-5 shadow-sm hover:border-green-500/30 transition-all">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Confirmadas</span>
+            <div className="h-9 w-9 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center">
+              <CalendarDays size={16} className="text-green-400" />
+            </div>
+          </div>
+          <p className="text-3xl font-black text-foreground">{reservas.filter(r => r.status === 'Confirmed').length}</p>
+          <p className="text-xs text-muted-foreground mt-1">Reservas aprobadas</p>
+        </div>
+        <div className="bg-card/40 backdrop-blur-xl border border-border/60 rounded-2xl p-5 shadow-sm hover:border-primary/30 transition-all">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Historial</span>
+            <div className="h-9 w-9 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+              <Search size={16} className="text-blue-400" />
+            </div>
+          </div>
+          <p className="text-3xl font-black text-foreground">{reservas.length}</p>
+          <p className="text-xs text-muted-foreground mt-1">Total de registros</p>
+        </div>
+      </div>
+
       {/* SECCIÓN 1: PRÓXIMAS RESERVAS PENDIENTES */}
       <div className="mb-12">
         <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
@@ -380,40 +440,50 @@ export default function ReservasView() {
         ) : (
           <div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {proximasMostradas.map((reserva) => (
-                <div key={reserva.id} className="bg-card border border-border rounded-xl p-5 hover:border-accent/50 transition-colors relative overflow-hidden">
-                  <div className="absolute top-0 left-0 w-1 h-full bg-yellow-500"></div>
+              {proximasMostradas.map((reserva) => {
+                const dateLabel = getDateLabel(reserva.booking_date)
+                return (
+                <div key={reserva.id} className="group bg-card/30 backdrop-blur-xl border border-border/50 rounded-2xl p-5 hover:border-accent/30 transition-all relative overflow-hidden shadow-lg">
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none" />
                   
-                  <div className="flex justify-between items-start mb-3">
-                    <h3 className="font-bold text-foreground flex items-center gap-2">
-                      <User size={16} className="text-accent" />
-                      {reserva.customer_name}
-                    </h3>
-                    <span className="bg-yellow-500/20 text-yellow-300 px-2 py-1 rounded text-xs font-semibold">
-                      Pendiente
-                    </span>
-                  </div>
-                  
-                  <div className="space-y-2 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      <CalendarDays size={14} />
-                      {formatDate(reserva.booking_date)}
+                  <div className="relative z-10">
+                    <div className="flex justify-between items-start mb-3">
+                      <h3 className="font-bold text-foreground flex items-center gap-2">
+                        <User size={16} className="text-accent" />
+                        {reserva.customer_name}
+                      </h3>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${dateLabel.color}`}>
+                          {dateLabel.label}
+                        </span>
+                        <span className="bg-yellow-500/20 text-yellow-300 px-2 py-1 rounded text-xs font-semibold">
+                          Pendiente
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Clock size={14} />
-                      {formatAMPM(reserva.start_time)} - {formatAMPM(reserva.end_time)} ({getDuracion(reserva.start_time, reserva.end_time)})
-                    </div>
-                    <div className="flex items-center gap-2 text-foreground font-medium mt-2 pt-2 border-t border-border/50">
-                      <MapPin size={14} className="text-primary" />
-                      {reserva.court_name}
-                    </div>
-                    <div className="flex gap-2 mt-3 pt-3 border-t border-border/50">
-                      <button onClick={() => handleStatusChange(reserva.id, 'Confirmed')} className="flex-1 bg-green-500/20 text-green-300 py-1.5 rounded text-xs font-bold hover:bg-green-500/30 transition-colors">Aprobar</button>
-                      <button onClick={() => handleStatusChange(reserva.id, 'Cancelled')} className="flex-1 bg-red-500/20 text-red-300 py-1.5 rounded text-xs font-bold hover:bg-red-500/30 transition-colors">Rechazar</button>
+                    
+                    <div className="space-y-2 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-2">
+                        <CalendarDays size={14} />
+                        {formatDate(reserva.booking_date)}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Clock size={14} />
+                        {formatAMPM(reserva.start_time)} - {formatAMPM(reserva.end_time)} ({getDuracion(reserva.start_time, reserva.end_time)})
+                      </div>
+                      <div className="flex items-center gap-2 text-foreground font-medium mt-2 pt-2 border-t border-border/50">
+                        <MapPin size={14} className="text-primary" />
+                        {reserva.court_name}
+                      </div>
+                      <div className="flex gap-2 mt-3 pt-3 border-t border-border/50">
+                        <button onClick={() => handleStatusChange(reserva.id, 'Confirmed')} className="flex-1 bg-green-500/20 text-green-300 py-1.5 rounded text-xs font-bold hover:bg-green-500/30 transition-colors backdrop-blur-sm">Aprobar</button>
+                        <button onClick={() => handleStatusChange(reserva.id, 'Cancelled')} className="flex-1 bg-red-500/20 text-red-300 py-1.5 rounded text-xs font-bold hover:bg-red-500/30 transition-colors backdrop-blur-sm">Rechazar</button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              ))}
+                )
+              })}
             </div>
             
             {proximasReservas.length > 3 && (

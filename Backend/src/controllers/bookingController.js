@@ -149,6 +149,33 @@ const createBooking = async (req, res) => {
     
     await client.query('COMMIT');
     
+    // Emitir evento Socket.IO para notificar al dashboard
+    try {
+      const io = req.app.get('io');
+      if (io) {
+        const newBookingData = await pool.query(`
+          SELECT b.*, c.first_name || ' ' || c.last_name as customer_name, co.court_name
+          FROM bookings b
+          JOIN customers c ON b.customer_id = c.id
+          JOIN courts co ON b.court_id = co.id
+          WHERE b.id = $1
+        `, [result.rows[0].id]);
+        
+        if (newBookingData.rows.length > 0) {
+          io.to('dashboard').emit('new-booking', {
+            id: newBookingData.rows[0].id,
+            customer_name: newBookingData.rows[0].customer_name,
+            court_name: newBookingData.rows[0].court_name,
+            start_time: newBookingData.rows[0].start_time,
+            end_time: newBookingData.rows[0].end_time,
+            created_at: new Date().toISOString()
+          });
+        }
+      }
+    } catch (socketError) {
+      console.error('Error emitiendo socket event:', socketError);
+    }
+    
     res.status(201).json({
       success: true,
       message: 'Reserva creada exitosamente',
@@ -341,6 +368,31 @@ const updateBookingStatus = async (req, res) => {
       } catch (mailError) {
         console.error('Error enviando correo de cancelación:', mailError);
       }
+    }
+
+    // Emitir evento Socket.IO para notificar cambio de estado
+    try {
+      const io = req.app.get('io');
+      if (io) {
+        const statusData = await pool.query(`
+          SELECT b.*, c.first_name || ' ' || c.last_name as customer_name, co.court_name
+          FROM bookings b
+          JOIN customers c ON b.customer_id = c.id
+          JOIN courts co ON b.court_id = co.id
+          WHERE b.id = $1
+        `, [id]);
+        
+        if (statusData.rows.length > 0) {
+          io.to('dashboard').emit('booking-status-changed', {
+            id: statusData.rows[0].id,
+            status,
+            customer_name: statusData.rows[0].customer_name,
+            court_name: statusData.rows[0].court_name
+          });
+        }
+      }
+    } catch (socketError) {
+      console.error('Error emitiendo socket status event:', socketError);
     }
 
     res.json({ success: true, data: result.rows[0] });

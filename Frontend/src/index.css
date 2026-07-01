@@ -230,3 +230,12 @@
   from { transform: translateY(-8px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
+
+@utility slide-in-from-bottom-4 {
+  animation: slide-in-from-bottom-4 0.3s ease-out;
+}
+
+@keyframes slide-in-from-bottom-4 {
+  from { transform: translateY(16px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}

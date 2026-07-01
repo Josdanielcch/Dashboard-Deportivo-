@@ -98,6 +98,8 @@ export default function AppContent() {
             <span className="text-xs text-zinc-400">Panel de Administración</span>
           </div>
           <div className="flex items-center gap-4 bg-white/[0.03] px-4 py-2.5 rounded-xl border border-white/[0.05] shadow-sm">
+            <NotificationBell onNavigate={navigateTo} />
+            <div className="h-6 w-px bg-white/[0.06]" />
             <div className="text-right">
               <div className="text-sm font-semibold text-[#ccff00] capitalize">
                 {currentTime.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
