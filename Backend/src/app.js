@@ -23,6 +23,8 @@ const cxpRoutes = require('./routes/cxpRoutes');
 const settingsRoutes = require('./routes/settingsRoutes');
 const sportRoutes = require('./routes/sportRoutes');
 
+const { apiLimiter } = require('./middleware/rateLimiter');
+
 // Middleware de error
 const { errorHandler } = require('./middleware/errorHandler');
 
@@ -32,6 +34,8 @@ const cors = require('cors');
 app.use(cors({
   origin: [
     'https://rococo-malasada-e1ce07.netlify.app',
+    'https://websitecourtconnect.netlify.app',
+    'https://aplicationfrontend.netlify.app',
     'http://localhost:5173',
     'http://localhost:5174',
     'http://localhost:4000'
@@ -52,6 +56,18 @@ app.use(express.urlencoded({ extended: true }));
 // Servir la carpeta de subidas estáticamente
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
+// Wrapper para envolver todas las respuestas JSON en { success, data }
+app.use((req, res, next) => {
+  const originalJson = res.json.bind(res);
+  res.json = function (body) {
+    if (body && typeof body === 'object' && !body.success && !body.errors && !body.error) {
+      return originalJson({ success: true, data: body });
+    }
+    return originalJson(body);
+  };
+  next();
+});
+
 // Ruta de salud
 app.get('/api/health', (req, res) => {
   res.json({
@@ -61,6 +77,9 @@ app.get('/api/health', (req, res) => {
     environment: process.env.NODE_ENV
   });
 });
+
+// Rate limit general para toda la API
+app.use('/api', apiLimiter);
 
 // Rutas de la API
 app.use('/api/auth', authRoutes);
