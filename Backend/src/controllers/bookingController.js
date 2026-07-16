@@ -272,8 +272,8 @@ const updateBookingStatus = async (req, res) => {
           const cleanStart = formatAMPM(detail.start_time);
           const cleanEnd = formatAMPM(detail.end_time);
 
-          const mailOptions = {
-            from: '"CourtConnect" <no-reply@courtconnect.com>',
+            const mailOptions = {
+            from: process.env.EMAIL_FROM || '"CourtConnect" <no-reply@courtconnect.com>',
             to: detail.email,
             subject: '¡Tu reserva ha sido confirmada! 🎉',
             html: `
@@ -343,7 +343,7 @@ const updateBookingStatus = async (req, res) => {
           const cleanStart = formatAMPM(detail.start_time);
 
           const mailOptions = {
-            from: '"CourtConnect" <no-reply@courtconnect.com>',
+            from: process.env.EMAIL_FROM || '"CourtConnect" <no-reply@courtconnect.com>',
             to: detail.email,
             subject: 'Actualización sobre tu reserva en CourtConnect ⚠️',
             html: `
