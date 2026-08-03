@@ -14,6 +14,7 @@ import AboutUs from './components/AboutUs';
 import { INITIAL_COURTS, ADS_IMAGE_PRO_TIP } from './data';
 import { Court, Booking, User, SportType } from './types';
 import { Search, MapPin, Calendar, Award, ChevronLeft, ChevronRight, Trophy, Sparkles } from 'lucide-react';
+import { io } from 'socket.io-client';
 
 export default function App() {
   // Navigation State
@@ -108,6 +109,39 @@ export default function App() {
     };
     fetchCourtsData();
   }, []);
+
+  // Conexión WebSockets para actualizaciones en tiempo real
+  useEffect(() => {
+    if (!currentUser?.customerId) return;
+
+    // Conectar al backend (remover /api de la URL si existe o usar localhost:3000 por defecto)
+    const baseUrl = 'http://localhost:3000';
+      
+    const socket = io(baseUrl, {
+      withCredentials: true
+    });
+
+    socket.on('connect', () => {
+      socket.emit('join-customer', currentUser.customerId);
+    });
+
+    socket.on('booking-status-changed', (payload: any) => {
+      setBookings(prevBookings => {
+        const updated = prevBookings.map(b => {
+          if (b.id === `BKG-${payload.id}`) {
+            return { ...b, status: payload.status.toLowerCase() };
+          }
+          return b;
+        });
+        localStorage.setItem('courtconnect_bookings', JSON.stringify(updated));
+        return updated;
+      });
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [currentUser]);
 
   // Sync bookings from backend if logged in, otherwise from localStorage
   useEffect(() => {
