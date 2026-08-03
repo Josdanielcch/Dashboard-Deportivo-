@@ -1,3 +1,4 @@
+process.env.TZ = 'America/Caracas';
 require('dotenv').config();
 const dns = require('dns');
 const http = require('http');
@@ -32,6 +33,13 @@ io.on('connection', (socket) => {
   
   socket.on('join-dashboard', () => {
     socket.join('dashboard');
+  });
+
+  socket.on('join-customer', (customerId) => {
+    if (customerId) {
+      socket.join(`customer-${customerId}`);
+      console.log(`Cliente suscrito a notificaciones privadas: customer-${customerId}`);
+    }
   });
 
   socket.on('disconnect', () => {

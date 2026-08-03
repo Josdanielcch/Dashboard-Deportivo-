@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Search, Filter, Mail, Phone, Edit2, Trash2, Users } from 'lucide-react'
+import { Plus, Search, Filter, Mail, Phone, Edit2, Trash2, Users, ChevronLeft, ChevronRight } from 'lucide-react'
 import { customerService } from '@/services/customerService'
 import { Modal } from '@/components/ui/modal'
 
@@ -10,6 +10,11 @@ export default function ClientesView() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [currentPage, setCurrentPage] = useState(1)
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm, statusFilter])
 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [formData, setFormData] = useState({
@@ -137,6 +142,10 @@ export default function ClientesView() {
     return matchesSearch && matchesStatus
   })
 
+  const ITEMS_PER_PAGE = 10
+  const totalPages = Math.ceil(filteredClientes.length / ITEMS_PER_PAGE)
+  const paginatedClientes = filteredClientes.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
+
   return (
     <div className="p-6 md:p-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
@@ -197,7 +206,7 @@ export default function ClientesView() {
                 </tr>
               </thead>
               <tbody>
-                {filteredClientes.length === 0 ? (
+                {paginatedClientes.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="py-16 text-center text-zinc-500">
                       <Users size={40} className="mx-auto mb-3 text-zinc-600" />
@@ -205,7 +214,7 @@ export default function ClientesView() {
                     </td>
                   </tr>
                 ) : (
-                  filteredClientes.map((cliente) => (
+                  paginatedClientes.map((cliente) => (
                     <tr
                       key={cliente.id}
                       className="border-b border-[#1a1f3a] hover:bg-[#0a0e27]/30 transition-colors last:border-b-0"
@@ -259,6 +268,33 @@ export default function ClientesView() {
               </tbody>
             </table>
           </div>
+          
+          {totalPages > 1 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 border-t border-[#1a1f3a] bg-[#0a0e27]/30">
+              <div className="text-sm text-zinc-400">
+                Mostrando <span className="font-medium text-white">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span> a <span className="font-medium text-white">{Math.min(currentPage * ITEMS_PER_PAGE, filteredClientes.length)}</span> de <span className="font-medium text-white">{filteredClientes.length}</span> resultados
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="p-2 rounded-lg bg-[#1a1f3a] text-zinc-300 hover:bg-[#253050] hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                >
+                  <ChevronLeft size={18} />
+                </button>
+                <div className="flex items-center px-4 bg-[#0a0e27] border border-[#1a1f3a] rounded-lg text-sm font-bold text-white">
+                  Página {currentPage} de {totalPages}
+                </div>
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="p-2 rounded-lg bg-[#1a1f3a] text-zinc-300 hover:bg-[#253050] hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                >
+                  <ChevronRight size={18} />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

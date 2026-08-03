@@ -383,12 +383,15 @@ const updateBookingStatus = async (req, res) => {
         `, [id]);
         
         if (statusData.rows.length > 0) {
-          io.to('dashboard').emit('booking-status-changed', {
+          const payload = {
             id: statusData.rows[0].id,
             status,
             customer_name: statusData.rows[0].customer_name,
             court_name: statusData.rows[0].court_name
-          });
+          };
+          
+          io.to('dashboard').emit('booking-status-changed', payload);
+          io.to(`customer-${statusData.rows[0].customer_id}`).emit('booking-status-changed', payload);
         }
       }
     } catch (socketError) {

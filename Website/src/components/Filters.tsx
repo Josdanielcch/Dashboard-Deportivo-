@@ -100,7 +100,7 @@ export default function Filters({
               type="date"
               value={selectedDate}
               onChange={(e) => onDateChange(e.target.value)}
-              min={new Date().toISOString().split('T')[0]}
+              min={new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]}
               className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-white/10 text-sm font-bold text-white bg-zinc-950/50 focus:border-[#c0ff00] focus:ring-1 focus:ring-[#c0ff00] outline-none transition-all cursor-pointer"
             />
           </div>
