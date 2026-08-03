@@ -111,16 +111,21 @@ export default function ReservasView() {
     }
   }
 
+  const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+
   const handleStatusChange = async (id: number, newStatus: string) => {
     setActionError('')
+    const label = newStatus === 'Confirmed' ? 'aprobada' : newStatus === 'Cancelled' ? 'rechazada' : 'actualizada'
+    setReservas(prev => prev.filter(r => r.id !== id))
+    setToastMessage({ type: 'success', text: `Reserva ${label} correctamente` })
+    setTimeout(() => setToastMessage(null), 3000)
     try {
-      const res = await bookingService.updateStatus(id, newStatus)
-      if (res.success) {
-        fetchData()
-      }
+      await bookingService.updateStatus(id, newStatus)
     } catch (error: any) {
-      console.error('Error changing status:', error)
-      setActionError(error.message || 'Error al cambiar el estado de la reserva')
+      setActionError(error.message || 'Error al cambiar el estado')
+      setToastMessage({ type: 'error', text: error.message || 'Error al cambiar el estado' })
+      setTimeout(() => setToastMessage(null), 4000)
+      fetchData()
     }
   }
 
@@ -180,18 +185,17 @@ export default function ReservasView() {
 
   const getDateLabel = (dateStr: string) => {
     if (!dateStr) return { label: '', color: '' }
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const tomorrow = new Date(today)
-    tomorrow.setDate(tomorrow.getDate() + 1)
-    const rDate = new Date(dateStr)
-    rDate.setHours(0, 0, 0, 0)
-    const diffDays = Math.round((rDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+    const datePart = dateStr.split('T')[0]
+    const todayStr = new Date().toISOString().split('T')[0]
+    const todayNum = parseInt(todayStr.replace(/-/g, ''), 10)
+    const dateNum = parseInt(datePart.replace(/-/g, ''), 10)
+    const diffDays = dateNum - todayNum
 
     if (diffDays === 0) return { label: 'Hoy', color: 'bg-[#ccff00]/20 text-[#ccff00] border-[#ccff00]/30' }
     if (diffDays === 1) return { label: 'Mañana', color: 'bg-purple-500/20 text-purple-300 border-purple-500/30' }
-    if (diffDays <= 7) return { label: `En ${diffDays} días`, color: 'bg-blue-500/20 text-blue-300 border-blue-500/30' }
-    return { label: `${rDate.toLocaleDateString('es-ES', { weekday: 'short' })}`, color: 'bg-zinc-500/20 text-zinc-300 border-zinc-500/30' }
+    if (diffDays >= 2 && diffDays <= 7) return { label: `En ${diffDays} días`, color: 'bg-blue-500/20 text-blue-300 border-blue-500/30' }
+    const d = new Date(dateStr)
+    return { label: `${d.toLocaleDateString('es-ES', { weekday: 'short' })}`, color: 'bg-zinc-500/20 text-zinc-300 border-zinc-500/30' }
   }
 
   const formatAMPM = (timeStr?: string) => {
@@ -312,21 +316,19 @@ export default function ReservasView() {
   // ==========================================
   // LÓGICA DE PRÓXIMAS RESERVAS (TOP SECTION)
   // ==========================================
-  const hoy = new Date()
-  hoy.setHours(0, 0, 0, 0)
+  const todayStr = new Date().toISOString().split('T')[0]
 
   const proximasReservas = reservas.filter(r => {
     if (r.status !== 'Pending') return false
-    const rDate = new Date(r.booking_date)
-    rDate.setHours(0,0,0,0)
-    return rDate >= hoy
+    const rDateStr = typeof r.booking_date === 'string' ? r.booking_date.split('T')[0] : new Date(r.booking_date).toISOString().split('T')[0]
+    return rDateStr >= todayStr
   }).sort((a, b) => {
-    const dateA = new Date(a.booking_date).getTime()
-    const dateB = new Date(b.booking_date).getTime()
+    const dateA = typeof a.booking_date === 'string' ? a.booking_date.split('T')[0] : new Date(a.booking_date).toISOString().split('T')[0]
+    const dateB = typeof b.booking_date === 'string' ? b.booking_date.split('T')[0] : new Date(b.booking_date).toISOString().split('T')[0]
     if (dateA === dateB) {
       return a.start_time.localeCompare(b.start_time)
     }
-    return dateA - dateB
+    return dateA.localeCompare(dateB)
   })
 
   const proximasMostradas = showAllProximas ? proximasReservas : proximasReservas.slice(0, 3)
@@ -368,6 +370,17 @@ export default function ReservasView() {
         </button>
       </div>
 
+      {/* Toast de feedback */}
+      {toastMessage && (
+        <div className={`fixed bottom-6 right-6 z-50 px-5 py-3 rounded-xl shadow-2xl text-sm font-bold animate-in slide-in-from-bottom-4 duration-300 ${
+          toastMessage.type === 'success' 
+            ? 'bg-green-500/90 text-white border border-green-400/30' 
+            : 'bg-red-500/90 text-white border border-red-400/30'
+        }`}>
+          {toastMessage.type === 'success' ? '✓' : '✗'} {toastMessage.text}
+        </div>
+      )}
+
       {/* TARJETAS DE ESTADÍSTICAS */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <div className="bg-card/40 backdrop-blur-xl border border-border/60 rounded-2xl p-5 shadow-sm hover:border-accent/30 transition-all">
@@ -377,7 +390,7 @@ export default function ReservasView() {
               <CalendarDays size={16} className="text-[#ccff00]" />
             </div>
           </div>
-          <p className="text-3xl font-black text-foreground">{reservas.filter(r => { const d = new Date(r.booking_date); const today = new Date(); return d.toDateString() === today.toDateString() && r.status !== 'Cancelled' && r.status !== 'No_show'; }).length}</p>
+          <p className="text-3xl font-black text-foreground">{reservas.filter(r => { const d = (r.booking_date || '').split('T')[0]; const today = new Date().toISOString().split('T')[0]; return d === today && r.status !== 'Cancelled' && r.status !== 'No_show'; }).length}</p>
           <p className="text-xs text-muted-foreground mt-1">Reservas activas para hoy</p>
         </div>
         <div className="bg-card/40 backdrop-blur-xl border border-border/60 rounded-2xl p-5 shadow-sm hover:border-yellow-500/30 transition-all">

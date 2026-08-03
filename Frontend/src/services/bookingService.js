@@ -18,7 +18,7 @@ export const bookingService = {
    * @returns {Promise<object>} Respuesta con el listado en `.data`.
    */
   getByDate: async (date) => {
-    return api.get(`/bookings/date/${date}`);
+    return api.get(`/bookings/by-date/${date}`);
   },
 
   /**

@@ -1,21 +1,16 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { LogIn, Mail, Lock, Dumbbell, Calendar, Users, UserPlus, KeyRound, ArrowLeft, CheckCircle, Eye, EyeOff, Sparkles, Shield, Zap, Award } from 'lucide-react'
+import { LogIn, Mail, Lock, Dumbbell, Calendar, Users, KeyRound, ArrowLeft, CheckCircle, Eye, EyeOff, Shield, Zap } from 'lucide-react'
 
 interface LoginViewProps {
   onLogin: (token: string, user: any) => void
 }
 
 export default function LoginView({ onLogin }: LoginViewProps) {
-  const [activeTab, setActiveTab] = useState<'login' | 'register' | 'forgot' | 'reset'>('login')
+  const [activeTab, setActiveTab] = useState<'login' | 'forgot' | 'reset'>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [name, setName] = useState('')
-  const [lastName, setLastName] = useState('')
-  const [phone, setPhone] = useState('')
-  const [username, setUsername] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -53,39 +48,6 @@ export default function LoginView({ onLogin }: LoginViewProps) {
       onLogin(data.token, data.user)
     } catch (err: any) {
       setError(err.message || 'Credenciales inválidas')
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    if (!name || !lastName || !email || !phone || !password || !username) {
-      setError('Por favor completa todos los campos')
-      return
-    }
-    if (password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres')
-      return
-    }
-    if (password !== confirmPassword) {
-      setError('Las contraseñas no coinciden')
-      return
-    }
-    setIsSubmitting(true)
-    try {
-      const { authService } = await import('@/services/authService')
-      const data = await authService.register({
-        first_name: name, last_name: lastName, email, phone, password, username
-      })
-      if (data.success) {
-        setSuccess('Registro exitoso. Tu cuenta debe ser aprobada por un administrador antes de iniciar sesión.')
-        setActiveTab('login')
-        setEmail(username)
-      }
-    } catch (err: any) {
-      setError(err.message || 'Error al registrarse')
     } finally {
       setIsSubmitting(false)
     }
@@ -150,7 +112,7 @@ export default function LoginView({ onLogin }: LoginViewProps) {
     }
   }
 
-  const switchTab = (tab: 'login' | 'register' | 'forgot' | 'reset') => {
+  const switchTab = (tab: 'login' | 'forgot' | 'reset') => {
     setActiveTab(tab)
     setError('')
     setSuccess('')
@@ -261,7 +223,6 @@ export default function LoginView({ onLogin }: LoginViewProps) {
               <div className="relative flex bg-white/[0.03] rounded-xl p-1 mb-8 border border-white/[0.06]">
                 {[
                   { id: 'login' as const, label: 'Iniciar Sesión', icon: LogIn },
-                  { id: 'register' as const, label: 'Registrarse', icon: UserPlus },
                   { id: 'forgot' as const, label: 'Recuperar', icon: KeyRound },
                 ].map((tab) => {
                   const Icon = tab.icon
@@ -340,89 +301,6 @@ export default function LoginView({ onLogin }: LoginViewProps) {
                     <span className="text-[#ccff00]">password123</span>
                   </div>
                 </div>
-              </form>
-            )}
-
-            {/* Register */}
-            {activeTab === 'register' && (
-              <form onSubmit={handleRegister} className="space-y-4">
-                <div className="text-center mb-6">
-                  <div className="flex justify-center mb-5">
-                    <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[#ccff00]/20 to-[#ccff00]/5 border border-[#ccff00]/20 text-[#ccff00]"><UserPlus size={28} /></div>
-                  </div>
-                  <h1 className="text-3xl font-black text-white mb-2 tracking-tight">Crear <span className="bg-gradient-to-r from-[#ccff00] to-[#a6e000] bg-clip-text text-transparent">Cuenta</span></h1>
-                  <p className="text-zinc-500 text-sm font-medium">Regístrate para acceder al sistema</p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="group">
-                    <label className="block text-xs font-bold text-zinc-400 mb-2 tracking-wide uppercase group-focus-within:text-[#ccff00] transition-colors">Nombre</label>
-                    <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Juan"
-                      className="w-full px-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white placeholder-zinc-600 focus:outline-none focus:border-[#ccff00]/50 focus:bg-white/[0.05] transition-all text-sm" />
-                  </div>
-                  <div className="group">
-                    <label className="block text-xs font-bold text-zinc-400 mb-2 tracking-wide uppercase group-focus-within:text-[#ccff00] transition-colors">Apellido</label>
-                    <input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Pérez"
-                      className="w-full px-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white placeholder-zinc-600 focus:outline-none focus:border-[#ccff00]/50 focus:bg-white/[0.05] transition-all text-sm" />
-                  </div>
-                </div>
-
-                <div className="group">
-                  <label className="block text-xs font-bold text-zinc-400 mb-2 tracking-wide uppercase group-focus-within:text-[#ccff00] transition-colors">Nombre de Usuario</label>
-                  <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="juan.perez"
-                    className="w-full px-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white placeholder-zinc-600 focus:outline-none focus:border-[#ccff00]/50 focus:bg-white/[0.05] transition-all text-sm" />
-                </div>
-
-                <div className="group">
-                  <label className="block text-xs font-bold text-zinc-400 mb-2 tracking-wide uppercase group-focus-within:text-[#ccff00] transition-colors">Correo Electrónico</label>
-                  <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-[#ccff00] transition-colors" size={18} />
-                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="correo@ejemplo.com"
-                      className="w-full pl-11 pr-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white placeholder-zinc-600 focus:outline-none focus:border-[#ccff00]/50 focus:bg-white/[0.05] transition-all text-sm" />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="group">
-                    <label className="block text-xs font-bold text-zinc-400 mb-2 tracking-wide uppercase group-focus-within:text-[#ccff00] transition-colors">Teléfono</label>
-                    <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+58 412 123 4567"
-                      className="w-full px-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white placeholder-zinc-600 focus:outline-none focus:border-[#ccff00]/50 focus:bg-white/[0.05] transition-all text-sm" />
-                  </div>
-                  <div className="group">
-                    <label className="block text-xs font-bold text-zinc-400 mb-2 tracking-wide uppercase group-focus-within:text-[#ccff00] transition-colors">Contraseña</label>
-                    <div className="relative">
-                      <input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••"
-                        className="w-full px-4 pr-12 py-3 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white placeholder-zinc-600 focus:outline-none focus:border-[#ccff00]/50 focus:bg-white/[0.05] transition-all text-sm" />
-                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white">{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="group">
-                  <label className="block text-xs font-bold text-zinc-400 mb-2 tracking-wide uppercase group-focus-within:text-[#ccff00] transition-colors">Confirmar Contraseña</label>
-                  <div className="relative">
-                    <input type={showConfirmPassword ? 'text' : 'password'} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••"
-                      className="w-full px-4 pr-12 py-3 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white placeholder-zinc-600 focus:outline-none focus:border-[#ccff00]/50 focus:bg-white/[0.05] transition-all text-sm" />
-                    <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white">{showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>
-                  </div>
-                </div>
-
-                {error && (
-                  <div className="px-4 py-3.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold flex items-center gap-2 animate-in slide-in-from-top-2 fade-in">
-                    <div className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0 animate-pulse" /> {error}
-                  </div>
-                )}
-                {success && (
-                  <div className="px-4 py-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold flex items-center gap-2 animate-in slide-in-from-top-2 fade-in">
-                    <CheckCircle size={16} className="shrink-0" /> {success}
-                  </div>
-                )}
-
-                <button type="submit" disabled={isSubmitting}
-                  className="relative w-full px-4 py-3.5 rounded-xl bg-gradient-to-r from-[#ccff00] to-[#a6e000] text-[#060a1a] font-black uppercase tracking-wider hover:brightness-110 transition-all flex items-center justify-center gap-2 mt-2 text-sm shadow-[0_0_25px_rgba(204,255,0,0.15)] hover:shadow-[0_0_35px_rgba(204,255,0,0.25)] disabled:opacity-50 disabled:cursor-not-allowed group overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                  {isSubmitting ? <div className="animate-spin rounded-full h-5 w-5 border-2 border-[#060a1a] border-t-transparent" /> : <><UserPlus size={18} /> Crear Cuenta</>}
-                </button>
               </form>
             )}
 
