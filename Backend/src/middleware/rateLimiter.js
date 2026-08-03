@@ -25,6 +25,17 @@ const loginLimiter = rateLimit({
   }
 });
 
+const apiLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minuto
+  max: 100, // 100 peticiones por minuto por IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: 'Demasiadas solicitudes. Inténtalo de nuevo en un minuto.'
+  }
+});
+
 module.exports = {
-  loginLimiter
+  loginLimiter,
+  apiLimiter
 };

@@ -17,6 +17,7 @@ const io = new Server(server, {
   cors: {
     origin: [
       'https://rococo-malasada-e1ce07.netlify.app',
+      'https://aplicationfrontend.netlify.app',
       'http://localhost:5173',
       'http://localhost:5174',
       'http://localhost:4000'

@@ -1,0 +1,1093 @@
+{
+  "info": {
+    "name": "Gestor Canchas API Tests - Completo con Zod",
+    "_postman_id": "9d90f375-d8f5-4a3c-bd6c-9e06fbc4f8a7",
+    "description": "Colección completa con GET, POST, PUT, DELETE para todas las entidades. Incluye validaciones Zod, datos reales de DB y rutas adicionales.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Autenticación",
+      "item": [
+        {
+          "name": "Register User - tc_user",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"tc_user_test\",\n  \"password\": \"password123\",\n  \"full_name\": \"Test Client\",\n  \"email\": \"test.client@example.com\",\n  \"role_id\": 2,\n  \"status\": \"Activated\"\n}"
+            },
+            "url": {
+              "raw": "{{baseURL}}/auth/register",
+              "host": ["{{baseURL}}"],
+              "path": ["auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login - tc_user",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"tc_user\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseURL}}/auth/login",
+              "host": ["{{baseURL}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login status code is 200', function () { pm.response.to.have.status(200); });",
+                  "const data = pm.response.json();",
+                  "pm.environment.set('token', data.token);",
+                  "pm.test('Token is returned', function () { pm.expect(data.token).to.be.a('string'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Forgot Password - anderson_admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"andersoncontreras@gmail.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseURL}}/auth/forgot-password",
+              "host": ["{{baseURL}}"],
+              "path": ["auth", "forgot-password"]
+            }
+          }
+        },
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/profile",
+              "host": ["{{baseURL}}"],
+              "path": ["profile"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('GET /profile status is 200', function () { pm.response.to.have.status(200); });",
+                  "const data = pm.response.json();",
+                  "pm.test('Response has id or user object', function () { pm.expect(data.id || data.user).to.exist; });"
+                ]
+              }
+            }
+          ]
+        }
+        ,
+        {
+          "name": "Update Profile - self",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"{{test_new_full_name}}\",\n  \"email\": \"{{test_user_email}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseURL}}/profile_update",
+              "host": ["{{baseURL}}"],
+              "path": ["profile_update"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('PUT /profile_update status is 200', function () { pm.response.to.have.status(200); });",
+                  "const res = pm.response.json();",
+                  "const name = res.user ? res.user.full_name : res.full_name || res.fullName || null;",
+                  "pm.test('Full name updated', function () { pm.expect(name).to.eql(pm.environment.get('test_new_full_name')); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Usuarios",
+      "item": [
+        {
+          "name": "Get All Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/users",
+              "host": ["{{baseURL}}"],
+              "path": ["users"]
+            }
+          }
+        },
+        {
+          "name": "Get User by ID - 7",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/users/7",
+              "host": ["{{baseURL}}"],
+              "path": ["users", "7"]
+            }
+          }
+        },
+        {
+          "name": "Create User",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/users",
+              "host": ["{{baseURL}}"],
+              "path": ["users"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"new_user_zod\",\n  \"password\": \"password123\",\n  \"full_name\": \"New User Zod\",\n  \"email\": \"new.zod@example.com\",\n  \"role_id\": 2,\n  \"status\": \"Activated\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update User - 7",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/users/7",
+              "host": ["{{baseURL}}"],
+              "path": ["users", "7"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"updated.anderson@example.com\",\n  \"password\": \"newpassword123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete User - 19 (tc_user)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/users/19",
+              "host": ["{{baseURL}}"],
+              "path": ["users", "19"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Clientes",
+      "item": [
+        {
+          "name": "Get All Customers",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/customers",
+              "host": ["{{baseURL}}"],
+              "path": ["customers"]
+            }
+          }
+        },
+        {
+          "name": "Get Customer by ID - 1",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/customers/1",
+              "host": ["{{baseURL}}"],
+              "path": ["customers", "1"]
+            }
+          }
+        },
+        {
+          "name": "Get Customer Bookings - 1",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/customers/1/bookings",
+              "host": ["{{baseURL}}"],
+              "path": ["customers", "1", "bookings"]
+            }
+          }
+        },
+        {
+          "name": "Create Customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/customers",
+              "host": ["{{baseURL}}"],
+              "path": ["customers"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tax_id\": \"V-12345678\",\n  \"full_name\": \"Cliente Zod Test\",\n  \"phone_number\": \"+541112345678\",\n  \"member_since\": \"2024-01-01\",\n  \"credit_limit\": 1000.0,\n  \"outstanding_balance\": 0.0\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Customer - 1",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/customers/1",
+              "host": ["{{baseURL}}"],
+              "path": ["customers", "1"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone_number\": \"+541198765432\",\n  \"credit_limit\": 1500.0\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Customer - 5",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/customers/5",
+              "host": ["{{baseURL}}"],
+              "path": ["customers", "5"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Canchas",
+      "item": [
+        {
+          "name": "Get All Courts",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/courts",
+              "host": ["{{baseURL}}"],
+              "path": ["courts"]
+            }
+          }
+        },
+        {
+          "name": "Get Court by ID - 1",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/courts/1",
+              "host": ["{{baseURL}}"],
+              "path": ["courts", "1"]
+            }
+          }
+        },
+        {
+          "name": "Get Available Courts - 2026-05-10",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/courts/available?booking_date=2026-05-10&start_time=14:00:00&end_time=16:00:00",
+              "host": ["{{baseURL}}"],
+              "path": ["courts", "available"],
+              "query": [
+                { "key": "booking_date", "value": "2026-05-10" },
+                { "key": "start_time", "value": "14:00:00" },
+                { "key": "end_time", "value": "16:00:00" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Court Availability - Court 1",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/courts/1/availability?booking_date=2026-05-10&start_time=14:00:00&end_time=16:00:00",
+              "host": ["{{baseURL}}"],
+              "path": ["courts", "1", "availability"],
+              "query": [
+                { "key": "booking_date", "value": "2026-05-10" },
+                { "key": "start_time", "value": "14:00:00" },
+                { "key": "end_time", "value": "16:00:00" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Court",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/courts",
+              "host": ["{{baseURL}}"],
+              "path": ["courts"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"court_name\": \"Cancha Zod Test\",\n  \"sport_type\": \"Fútbol\",\n  \"hourly_rate\": 30.0,\n  \"status\": \"Available\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Court - 1",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/courts/1",
+              "host": ["{{baseURL}}"],
+              "path": ["courts", "1"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"Maintenance\",\n  \"hourly_rate\": 26.0\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Court - 3",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/courts/3",
+              "host": ["{{baseURL}}"],
+              "path": ["courts", "3"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reservas",
+      "item": [
+        {
+          "name": "Get All Bookings",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/bookings",
+              "host": ["{{baseURL}}"],
+              "path": ["bookings"]
+            }
+          }
+        },
+        {
+          "name": "Get Booking by ID - 1",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/bookings/1",
+              "host": ["{{baseURL}}"],
+              "path": ["bookings", "1"]
+            }
+          }
+        },
+        {
+          "name": "Get Bookings by Date - 2026-04-16",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/bookings/by-date/2026-04-16",
+              "host": ["{{baseURL}}"],
+              "path": ["bookings", "by-date", "2026-04-16"]
+            }
+          }
+        },
+        {
+          "name": "Create Booking",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/bookings",
+              "host": ["{{baseURL}}"],
+              "path": ["bookings"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer_id\": 1,\n  \"court_id\": 2,\n  \"user_id\": 7,\n  \"booking_date\": \"2026-05-15\",\n  \"start_time\": \"16:00:00\",\n  \"end_time\": \"18:00:00\",\n  \"total_amount\": 50.0,\n  \"payment_status\": \"Pending\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Booking - 1",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/bookings/1",
+              "host": ["{{baseURL}}"],
+              "path": ["bookings", "1"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"payment_status\": \"Paid\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Booking - 5",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/bookings/5",
+              "host": ["{{baseURL}}"],
+              "path": ["bookings", "5"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Facturación",
+      "item": [
+        {
+          "name": "Get All Billings",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/billings",
+              "host": ["{{baseURL}}"],
+              "path": ["billings"]
+            }
+          }
+        },
+        {
+          "name": "Get Billing by ID - 1",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/billings/1",
+              "host": ["{{baseURL}}"],
+              "path": ["billings", "1"]
+            }
+          }
+        },
+        {
+          "name": "Create Billing",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/billings",
+              "host": ["{{baseURL}}"],
+              "path": ["billings"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer_id\": 1,\n  \"user_id\": 7,\n  \"booking_id\": 1,\n  \"payment_method_id\": 1,\n  \"total_paid\": 25.0,\n  \"payment_status\": \"Paid\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Billing - 1",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/billings/1",
+              "host": ["{{baseURL}}"],
+              "path": ["billings", "1"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"payment_status\": \"Pending\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Billing - 1",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/billings/1",
+              "host": ["{{baseURL}}"],
+              "path": ["billings", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Productos",
+      "item": [
+        {
+          "name": "Get All Products",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/products",
+              "host": ["{{baseURL}}"],
+              "path": ["products"]
+            }
+          }
+        },
+        {
+          "name": "Get Product by ID - 1",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/products/1",
+              "host": ["{{baseURL}}"],
+              "path": ["products", "1"]
+            }
+          }
+        },
+        {
+          "name": "Create Product",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/products",
+              "host": ["{{baseURL}}"],
+              "path": ["products"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"product_name\": \"Pelota Oficial Zod\",\n  \"current_stock\": 10,\n  \"sale_price\": 2500.0,\n  \"purcharse_price\": 1800.0\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Product - 1",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/products/1",
+              "host": ["{{baseURL}}"],
+              "path": ["products", "1"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"current_stock\": 15,\n  \"sale_price\": 2600.0\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Product - 1",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/products/1",
+              "host": ["{{baseURL}}"],
+              "path": ["products", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Roles",
+      "item": [
+        {
+          "name": "Get All Roles",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/roles",
+              "host": ["{{baseURL}}"],
+              "path": ["roles"]
+            }
+          }
+        },
+        {
+          "name": "Get Role by ID - 1",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/roles/1",
+              "host": ["{{baseURL}}"],
+              "path": ["roles", "1"]
+            }
+          }
+        },
+        {
+          "name": "Create Role",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/roles",
+              "host": ["{{baseURL}}"],
+              "path": ["roles"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role_name\": \"Supervisor\",\n  \"access_level\": 3,\n  \"description\": \"Rol con permisos intermedios\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Role - 1",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/roles/1",
+              "host": ["{{baseURL}}"],
+              "path": ["roles", "1"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Rol administrador actualizado\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Role - 3",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/roles/3",
+              "host": ["{{baseURL}}"],
+              "path": ["roles", "3"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Métodos de Pago",
+      "item": [
+        {
+          "name": "Get All Payment Methods",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/payment-methods",
+              "host": ["{{baseURL}}"],
+              "path": ["payment-methods"]
+            }
+          }
+        },
+        {
+          "name": "Get Payment Method by ID - 1",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/payment-methods/1",
+              "host": ["{{baseURL}}"],
+              "path": ["payment-methods", "1"]
+            }
+          }
+        },
+        {
+          "name": "Create Payment Method",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/payment-methods",
+              "host": ["{{baseURL}}"],
+              "path": ["payment-methods"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"method_name\": \"Transferencia Bancaria\",\n  \"is_active\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Payment Method - 1",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/payment-methods/1",
+              "host": ["{{baseURL}}"],
+              "path": ["payment-methods", "1"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"is_active\": false\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Payment Method - 2",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/payment-methods/2",
+              "host": ["{{baseURL}}"],
+              "path": ["payment-methods", "2"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cargos Pendientes",
+      "item": [
+        {
+          "name": "Get All Pending Charges",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/pending-charges",
+              "host": ["{{baseURL}}"],
+              "path": ["pending-charges"]
+            }
+          }
+        },
+        {
+          "name": "Get Pending Charge by ID - 1",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/pending-charges/1",
+              "host": ["{{baseURL}}"],
+              "path": ["pending-charges", "1"]
+            }
+          }
+        },
+        {
+          "name": "Create Pending Charge",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/pending-charges",
+              "host": ["{{baseURL}}"],
+              "path": ["pending-charges"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer_id\": 1,\n  \"product_id\": 1,\n  \"booking_id\": 1,\n  \"description\": \"Cargo por reserva de cancha\",\n  \"quanty\": 1,\n  \"unit_price\": 25.0,\n  \"subtotal\": 25.0\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Pending Charge - 1",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/pending-charges/1",
+              "host": ["{{baseURL}}"],
+              "path": ["pending-charges", "1"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quanty\": 2,\n  \"subtotal\": 50.0\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Pending Charge - 1",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/pending-charges/1",
+              "host": ["{{baseURL}}"],
+              "path": ["pending-charges", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Detalles de Venta",
+      "item": [
+        {
+          "name": "Get All Sale Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/sale-details",
+              "host": ["{{baseURL}}"],
+              "path": ["sale-details"]
+            }
+          }
+        },
+        {
+          "name": "Get Sale Detail by ID - 1",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/sale-details/1",
+              "host": ["{{baseURL}}"],
+              "path": ["sale-details", "1"]
+            }
+          }
+        },
+        {
+          "name": "Create Sale Detail",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/sale-details",
+              "host": ["{{baseURL}}"],
+              "path": ["sale-details"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"billing_id\": 1,\n  \"products_id\": 1,\n  \"quantity\": 1,\n  \"unit_price_at_sale\": 2500.0,\n  \"subtotal\": 2500.0\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Sale Detail - 1",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/sale-details/1",
+              "host": ["{{baseURL}}"],
+              "path": ["sale-details", "1"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 2,\n  \"subtotal\": 5000.0\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Sale Detail - 1",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/sale-details/1",
+              "host": ["{{baseURL}}"],
+              "path": ["sale-details", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Logs de Auditoría",
+      "item": [
+        {
+          "name": "Get All Audit Logs",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/audit-logs",
+              "host": ["{{baseURL}}"],
+              "path": ["audit-logs"]
+            }
+          }
+        },
+        {
+          "name": "Get Audit Log by ID - 1",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/audit-logs/1",
+              "host": ["{{baseURL}}"],
+              "path": ["audit-logs", "1"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

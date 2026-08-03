@@ -29,7 +29,7 @@ const SocketContext = createContext<SocketContextType>({
   clearAllNotifications: () => {},
 })
 
-const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3000'
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'https://aplication-backend-production-82c0.up.railway.app'
 
 export function SocketProvider({ children }: { children: React.ReactNode }) {
   const [socket, setSocket] = useState<Socket | null>(null)
