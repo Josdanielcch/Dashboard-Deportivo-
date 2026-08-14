@@ -38,9 +38,11 @@ app.use(cors({
     'https://aplicationfrontend.netlify.app',
     'http://localhost:5173',
     'http://localhost:5174',
-    'http://localhost:4000'
+    'http://localhost:4000',
+    'http://localhost:8080',
+    'http://panel.localhost:8080'
   ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
   credentials: true
 }));

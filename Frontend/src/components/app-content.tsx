@@ -65,7 +65,18 @@ export default function AppContent() {
   }
 
   if (!mounted) {
-    return null
+    return (
+      <div className="flex min-h-screen bg-[#060a1a] items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#ccff00]/20 to-[#ccff00]/5 border border-[#ccff00]/20 flex items-center justify-center">
+              <div className="w-5 h-5 border-2 border-[#ccff00] border-t-transparent rounded-full animate-spin" />
+            </div>
+          </div>
+          <span className="text-xs text-zinc-600 font-mono tracking-widest uppercase">Cargando...</span>
+        </div>
+      </div>
+    )
   }
 
   if (!isAuthenticated) {

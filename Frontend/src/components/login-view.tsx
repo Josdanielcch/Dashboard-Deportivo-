@@ -293,14 +293,6 @@ export default function LoginView({ onLogin }: LoginViewProps) {
                   {isSubmitting ? <div className="animate-spin rounded-full h-5 w-5 border-2 border-[#060a1a] border-t-transparent" /> : <><LogIn size={18} /> Iniciar Sesión</>}
                 </button>
 
-                <div className="mt-6 p-4 rounded-xl bg-white/[0.02] border border-white/[0.06] text-center">
-                  <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-2">Credenciales de prueba</p>
-                  <div className="flex items-center justify-center gap-3 text-[11px] font-mono font-medium">
-                    <span className="text-[#ccff00]">demo@example.com</span>
-                    <span className="text-zinc-600">/</span>
-                    <span className="text-[#ccff00]">password123</span>
-                  </div>
-                </div>
               </form>
             )}
 
