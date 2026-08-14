@@ -3,12 +3,15 @@
   "version": "1.0.0",
   "description": "Root orchestrator for SportSpaces OS",
   "scripts": {
-    "dev": "concurrently \"npm run dev --prefix Backend\" \"npm run dev --prefix Frontend\"",
+    "dev": "concurrently --names \"PROXY,BACKEND,WEBSITE,PANEL\" --prefix-colors \"cyan,yellow,green,magenta\" \"node proxy/server.js\" \"npm run dev --prefix Backend\" \"npm run dev --prefix Website\" \"npm run dev --prefix Frontend\"",
+    "proxy": "node proxy/server.js",
     "backend": "npm run dev --prefix Backend",
-    "frontend": "npm run dev --prefix Frontend",
-    "install-all": "npm install --prefix Backend && npm install --prefix Frontend"
+    "website": "npm run dev --prefix Website",
+    "panel": "npm run dev --prefix Frontend",
+    "install-all": "npm install && npm install --prefix Backend && npm install --prefix Website && npm install --prefix Frontend"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "http-proxy": "^1.18.1"
   }
 }

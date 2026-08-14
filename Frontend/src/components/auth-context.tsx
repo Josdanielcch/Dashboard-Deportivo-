@@ -69,7 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   if (!mounted) {
-    return <>{children}</>
+    return <div style={{ minHeight: '100vh', background: '#060a1a' }} />
   }
 
   return (

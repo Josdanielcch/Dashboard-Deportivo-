@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -7,10 +7,79 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <title>CourtManager</title>
+    <title>CourtManager — Panel Administrativo</title>
+    <style>
+      /* Evita el pantallazo blanco antes de que React tome el control */
+      html, body {
+        margin: 0;
+        padding: 0;
+        background-color: #060a1a;
+        min-height: 100vh;
+      }
+      #root {
+        min-height: 100vh;
+        background-color: #060a1a;
+      }
+      /* Spinner visible mientras JS carga */
+      #initial-loader {
+        display: flex;
+        min-height: 100vh;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 16px;
+        background: #060a1a;
+      }
+      #initial-loader .spinner {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, rgba(204,255,0,0.15), rgba(204,255,0,0.03));
+        border: 1px solid rgba(204,255,0,0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      #initial-loader .ring {
+        width: 20px;
+        height: 20px;
+        border: 2px solid #ccff00;
+        border-top-color: transparent;
+        border-radius: 50%;
+        animation: spin 0.75s linear infinite;
+      }
+      #initial-loader p {
+        font-family: ui-monospace, monospace;
+        font-size: 10px;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        color: #3f4456;
+        margin: 0;
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+    </style>
   </head>
   <body>
+    <!-- Loader visible antes de que React hidrate -->
+    <div id="initial-loader">
+      <div class="spinner"><div class="ring"></div></div>
+      <p>Cargando...</p>
+    </div>
     <div id="root"></div>
+    <script>
+      // Ocultar el loader inicial en cuanto React monte el árbol
+      const observer = new MutationObserver(() => {
+        const root = document.getElementById('root');
+        if (root && root.children.length > 0) {
+          const loader = document.getElementById('initial-loader');
+          if (loader) loader.style.display = 'none';
+          observer.disconnect();
+        }
+      });
+      observer.observe(document.getElementById('root'), { childList: true });
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
