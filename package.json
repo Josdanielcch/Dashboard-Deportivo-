@@ -8,6 +8,7 @@
     "backend": "npm run dev --prefix Backend",
     "website": "npm run dev --prefix Website",
     "panel": "npm run dev --prefix Frontend",
+    "build": "npm run build --prefix Website && npm run build --prefix Frontend && node -e \"const fs=require('fs'); fs.mkdirSync('Website/dist/panel', {recursive: true}); fs.cpSync('Frontend/dist', 'Website/dist/panel', {recursive: true});\"",
     "install-all": "npm install && npm install --prefix Backend && npm install --prefix Website && npm install --prefix Frontend"
   },
   "devDependencies": {
