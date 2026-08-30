@@ -1,24 +1,37 @@
-import { useState, useEffect } from 'react'
-import { Menu } from 'lucide-react'
+import { useState, useEffect, Suspense, lazy } from 'react'
 import { useAuth } from '@/components/auth-context'
 import { SocketProvider } from '@/contexts/socket-context'
 import LoginView from '@/components/login-view'
 import Sidebar from '@/components/sidebar'
 import NotificationBell from '@/components/notification-bell'
-import DashboardView from '@/components/dashboard-view'
-import CanchasView from '@/components/canchas-view'
-import DeportesView from '@/components/deportes-view'
-import ReservasView from '@/components/reservas-view'
-import ClientesView from '@/components/clientes-view'
-import ProductosView from '@/components/productos-view'
-import VentasView from '@/components/ventas-view'
-import ComprasView from '@/components/compras-view'
-import CxcView from '@/components/cxc-view'
-import CxpView from '@/components/cxp-view'
-import UsuariosView from '@/components/usuarios-view'
-import AuditoriaView from '@/components/auditoria-view'
-import ProveedoresView from '@/components/proveedores-view'
-import ConfiguracionView from '@/components/configuracion-view'
+
+const DashboardView = lazy(() => import('@/components/dashboard-view'))
+const CanchasView = lazy(() => import('@/components/canchas-view'))
+const DeportesView = lazy(() => import('@/components/deportes-view'))
+const ReservasView = lazy(() => import('@/components/reservas-view'))
+const ClientesView = lazy(() => import('@/components/clientes-view'))
+const ProductosView = lazy(() => import('@/components/productos-view'))
+const VentasView = lazy(() => import('@/components/ventas-view'))
+const ComprasView = lazy(() => import('@/components/compras-view'))
+const CxcView = lazy(() => import('@/components/cxc-view'))
+const CxpView = lazy(() => import('@/components/cxp-view'))
+const UsuariosView = lazy(() => import('@/components/usuarios-view'))
+const AuditoriaView = lazy(() => import('@/components/auditoria-view'))
+const ProveedoresView = lazy(() => import('@/components/proveedores-view'))
+const ConfiguracionView = lazy(() => import('@/components/configuracion-view'))
+
+function ModuleLoader() {
+  return (
+    <div className="flex min-h-[60vh] items-center justify-center">
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-10 h-10 rounded-xl border border-[#ccff00]/20 flex items-center justify-center">
+          <div className="w-4 h-4 border-2 border-[#ccff00] border-t-transparent rounded-full animate-spin" />
+        </div>
+        <span className="text-xs text-zinc-600 font-mono tracking-widest uppercase">Cargando...</span>
+      </div>
+    </div>
+  )
+}
 
 export default function AppContent() {
   const { isAuthenticated, login, user } = useAuth()
@@ -123,7 +136,9 @@ export default function AppContent() {
         </div>
 
         <div className="flex-1 w-full max-w-[2200px] mx-auto overflow-x-hidden relative z-10">
-          {renderView()}
+          <Suspense fallback={<ModuleLoader />}>
+            {renderView()}
+          </Suspense>
         </div>
       </main>
       </SocketProvider>

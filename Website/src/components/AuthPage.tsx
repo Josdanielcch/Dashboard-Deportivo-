@@ -220,6 +220,8 @@ export default function AuthPage({ initialMode = 'register', onModeSwitch, onLog
           alt="Branded Basketball Stadium"
           className="absolute inset-0 w-full h-full object-cover object-center opacity-40 mix-blend-overlay"
           referrerPolicy="no-referrer"
+          loading="lazy"
+          decoding="async"
         />
 
         <div className="relative z-20">
@@ -247,18 +249,24 @@ export default function AuthPage({ initialMode = 'register', onModeSwitch, onLog
                 src="/images/avatar-1.jpg"
                 alt="Player Avatar"
                 referrerPolicy="no-referrer"
+                loading="lazy"
+                decoding="async"
               />
               <img
                 className="inline-block h-10 w-10 rounded-full ring-2 ring-zinc-900 object-cover"
                 src="/images/avatar-2.jpg"
                 alt="Player Avatar"
                 referrerPolicy="no-referrer"
+                loading="lazy"
+                decoding="async"
               />
               <img
                 className="inline-block h-10 w-10 rounded-full ring-2 ring-zinc-900 object-cover"
                 src="/images/avatar-3.jpg"
                 alt="Player Avatar"
                 referrerPolicy="no-referrer"
+                loading="lazy"
+                decoding="async"
               />
             </div>
             <div>

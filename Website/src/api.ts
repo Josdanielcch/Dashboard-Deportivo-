@@ -3,7 +3,7 @@
 //const API_BASE_URL = 'http://localhost:3000/api';
 
 // Para correr en PRODUCCIÓN: Descomenta la siguiente línea y comenta la local
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://aplication-backend-production-82c0.up.railway.app/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://dashboard-deportivo.onrender.com';
 // ========================================
 
 async function request(path: string, options: RequestInit = {}) {

@@ -10,13 +10,14 @@ if (dns.setDefaultResultOrder) {
 const app = require('./src/app'); // Importa la app configurada
 
 // Forzar el puerto a 3000 para que coincida exactamente con la configuración de red de Railway
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
     origin: [
       'https://rococo-malasada-e1ce07.netlify.app',
+      'https://dashboard-deportivo.onrender.com',
       'https://aplicationfrontend.netlify.app',
       'http://localhost:5173',
       'http://localhost:5174',

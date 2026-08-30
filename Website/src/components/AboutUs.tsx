@@ -82,6 +82,8 @@ export default function AboutUs() {
             alt="Main clay court during high-precision match"
             className="w-full h-full object-cover"
             referrerPolicy="no-referrer"
+            loading="lazy"
+            decoding="async"
           />
           <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent p-5 text-white">
             <div className="text-xs font-black font-headline text-[#c0ff00] uppercase tracking-wider">INSTALACIONES PREMIUM</div>

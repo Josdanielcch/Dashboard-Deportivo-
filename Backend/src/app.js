@@ -34,6 +34,7 @@ const cors = require('cors');
 app.use(cors({
   origin: [
     'https://rococo-malasada-e1ce07.netlify.app',
+    'https://dashboard-deportivo.onrender.com',
     'https://websitecourtconnect.netlify.app',
     'https://aplicationfrontend.netlify.app',
     'http://localhost:5173',

@@ -15,11 +15,26 @@ export default defineConfig({
     },
   },
   server: {
+    warmup: {
+      clientFiles: [
+        './src/main.jsx',
+        './src/App.jsx',
+        './src/index.css',
+        './src/components/app-content.tsx',
+        './src/components/login-view.tsx',
+        './src/components/sidebar.tsx',
+        './src/components/auth-context.tsx',
+        './src/components/dashboard-view.tsx',
+      ],
+    },
     proxy: {
       '/api': {
         target: 'http://localhost:3000',
         changeOrigin: true,
       },
     },
+  },
+  optimizeDeps: {
+    include: ['react', 'react-dom/client', 'lucide-react', 'socket.io-client'],
   },
 })

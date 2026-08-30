@@ -139,6 +139,8 @@ export default function Filters({
           alt="Tennis Pro Tip Coach"
           className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           referrerPolicy="no-referrer"
+          loading="lazy"
+          decoding="async"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/45 to-transparent flex flex-col justify-end p-5">
           <span className="text-black bg-[#c0ff00] px-2 py-0.5 rounded text-[9px] font-black w-fit mb-2 shadow uppercase tracking-wider font-mono">
