@@ -16,6 +16,21 @@ export default defineConfig(() => {
       allowedHosts: true,
       hmr: process.env.DISABLE_HMR !== 'true',
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
+      warmup: {
+        clientFiles: [
+          './src/main.tsx',
+          './src/App.tsx',
+          './src/index.css',
+          './src/components/Header.tsx',
+          './src/components/Hero.tsx',
+          './src/components/FeaturedSports.tsx',
+          './src/components/CourtCard.tsx',
+          './src/components/Footer.tsx',
+        ],
+      },
+    },
+    optimizeDeps: {
+      include: ['react', 'react-dom/client', 'lucide-react', 'socket.io-client', 'motion', '@react-oauth/google'],
     },
   };
 });

@@ -106,6 +106,8 @@ export default function MyBookings({ bookings, onCancelBooking, setCurrentTab }:
                   alt={booking.courtName}
                   className="w-20 h-20 rounded-xl object-cover shrink-0 border border-white/10"
                   referrerPolicy="no-referrer"
+                  loading="lazy"
+                  decoding="async"
                   onError={(e) => { (e.target as HTMLImageElement).src = '/images/court-2.jpg'; }}
                 />
                 

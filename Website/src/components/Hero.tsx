@@ -25,6 +25,8 @@ export default function Hero({ onExploreClick, onHowItWorksClick, onQuickSearch 
         alt="Padel Court Background"
         className="absolute inset-0 w-full h-full object-cover object-center scale-100"
         referrerPolicy="no-referrer"
+        fetchPriority="high"
+        decoding="async"
       />
 
       {/* Hero Content */}

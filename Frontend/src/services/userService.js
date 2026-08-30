@@ -14,15 +14,6 @@ export const userService = {
   },
 
   /**
-   * Obtiene los detalles de un usuario específico.
-   * @param {string|number} id - ID del usuario.
-   * @returns {Promise<object>} Respuesta con los datos del usuario.
-   */
-  getById: async (id) => {
-    return api.get(`/users/${id}`);
-  },
-
-  /**
    * Registra un nuevo usuario en el sistema.
    * @param {object} userData - Datos del usuario.
    * @param {string} userData.username - Nombre de usuario (mínimo 3 caracteres).
@@ -44,25 +35,6 @@ export const userService = {
    */
   update: async (id, userData) => {
     return api.put(`/users/${id}`, userData);
-  },
-
-  /**
-   * Actualiza el estado de un usuario (Activated / Disabled).
-   * @param {string|number} id - ID del usuario.
-   * @param {string} status - Nuevo estado ('Activated' o 'Disabled').
-   * @returns {Promise<object>} Respuesta con los datos actualizados.
-   */
-  updateStatus: async (id, status) => {
-    return api.patch(`/users/${id}/status`, { status });
-  },
-
-  /**
-   * Deshabilita (soft delete) un usuario del sistema.
-   * @param {string|number} id - ID del usuario.
-   * @returns {Promise<object>} Respuesta confirmando la deshabilitación.
-   */
-  delete: async (id) => {
-    return api.delete(`/users/${id}`);
   },
 
   /**

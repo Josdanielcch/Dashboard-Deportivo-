@@ -1,20 +1,33 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import Hero from './components/Hero';
 import FeaturedSports from './components/FeaturedSports';
 import Filters from './components/Filters';
 import CourtCard from './components/CourtCard';
-import BookingModal from './components/BookingModal';
-import AuthPage from './components/AuthPage';
-import MyBookings from './components/MyBookings';
 import HowItWorks from './components/HowItWorks';
 import AboutUs from './components/AboutUs';
+
+// Carga diferida: no están visibles en el primer pantallazo
+const BookingModal = lazy(() => import('./components/BookingModal'));
+const AuthPage = lazy(() => import('./components/AuthPage'));
+const MyBookings = lazy(() => import('./components/MyBookings'));
 
 import { INITIAL_COURTS, ADS_IMAGE_PRO_TIP } from './data';
 import { Court, Booking, User, SportType } from './types';
 import { Search, MapPin, Calendar, Award, ChevronLeft, ChevronRight, Trophy, Sparkles } from 'lucide-react';
 import { io } from 'socket.io-client';
+
+function ViewLoader() {
+  return (
+    <div className="flex min-h-[50vh] items-center justify-center">
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-9 h-9 rounded-full border-2 border-[#c0ff00] border-t-transparent animate-spin" />
+        <span className="text-xs text-zinc-500 font-mono tracking-widest uppercase">Cargando...</span>
+      </div>
+    </div>
+  );
+}
 
 export default function App() {
   // Navigation State
@@ -602,21 +615,25 @@ export default function App() {
 
         {/* VIEW: MY BOOKINGS SCREEN */}
         {currentTab === 'my-bookings' && (
-          <MyBookings
-            bookings={bookings}
-            onCancelBooking={handleCancelBooking}
-            setCurrentTab={setCurrentTab}
-          />
+          <Suspense fallback={<ViewLoader />}>
+            <MyBookings
+              bookings={bookings}
+              onCancelBooking={handleCancelBooking}
+              setCurrentTab={setCurrentTab}
+            />
+          </Suspense>
         )}
 
         {/* VIEW: AUTHENTICATION SHEET SCREEN (Split registration) */}
         {currentTab === 'auth' && (
-          <AuthPage
-            initialMode={authMode}
-            onModeSwitch={setAuthMode}
-            onLoginSuccess={handleLoginSuccess}
-            onCancel={() => setCurrentTab('explore')}
-          />
+          <Suspense fallback={<ViewLoader />}>
+            <AuthPage
+              initialMode={authMode}
+              onModeSwitch={setAuthMode}
+              onLoginSuccess={handleLoginSuccess}
+              onCancel={() => setCurrentTab('explore')}
+            />
+          </Suspense>
         )}
 
       </main>
@@ -626,14 +643,16 @@ export default function App() {
 
       {/* BOOKING MODAL (Drives slot select and validation) */}
       {selectedCourtForBooking && (
-        <BookingModal
-          court={selectedCourtForBooking}
-          currentUser={currentUser}
-          selectedDate={selectedDate}
-          onClose={() => setSelectedCourtForBooking(null)}
-          onAddBooking={handleAddBooking}
-          onOpenAuth={() => setCurrentTab('auth')}
-        />
+        <Suspense fallback={null}>
+          <BookingModal
+            court={selectedCourtForBooking}
+            currentUser={currentUser}
+            selectedDate={selectedDate}
+            onClose={() => setSelectedCourtForBooking(null)}
+            onAddBooking={handleAddBooking}
+            onOpenAuth={() => setCurrentTab('auth')}
+          />
+        </Suspense>
       )}
     </div>
   );

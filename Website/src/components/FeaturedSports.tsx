@@ -40,6 +40,8 @@ export default function FeaturedSports({ onSportSelect, dynamicSports = [] }: Fe
               alt={cat.name}
               className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
               referrerPolicy="no-referrer"
+              loading="lazy"
+              decoding="async"
             />
 
             {/* Content overlay */}

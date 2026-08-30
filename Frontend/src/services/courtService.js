@@ -13,15 +13,6 @@ export const courtService = {
   },
 
   /**
-   * Obtiene los detalles de una cancha específica por ID.
-   * @param {string|number} id - ID de la cancha.
-   * @returns {Promise<object>} Respuesta con los datos de la cancha en `.data`.
-   */
-  getById: async (id) => {
-    return api.get(`/courts/${id}`);
-  },
-
-  /**
    * Crea una nueva cancha (Solo Administradores).
    * @param {string} courtName - Nombre de la cancha (ej: "Cancha de Fútbol 7").
    * @param {string} [status='Available'] - Estado inicial.
@@ -39,16 +30,6 @@ export const courtService = {
    */
   update: async (id, data) => {
     return api.put(`/courts/${id}`, data);
-  },
-
-  /**
-   * Actualiza el estado de una cancha específica (Solo Administradores).
-   * @param {string|number} id - ID de la cancha.
-   * @param {string} status - Nuevo estado ('Available', 'Occupied', 'Maintenance', 'Out_of_service').
-   * @returns {Promise<object>} Respuesta con los datos de la cancha actualizada.
-   */
-  updateStatus: async (id, status) => {
-    return api.put(`/courts/${id}/status`, { status });
   },
   /**
    * Elimina una cancha.

@@ -23,15 +23,5 @@ export const auditService = {
 
     const queryString = params.toString();
     return api.get(`/audit${queryString ? `?${queryString}` : ''}`);
-  },
-
-  /**
-   * Obtiene el historial de auditoría de un registro específico.
-   * @param {string} tableName - Nombre de la tabla.
-   * @param {string|number} recordId - ID del registro.
-   * @returns {Promise<object>} Respuesta con los logs del registro.
-   */
-  getByRecord: async (tableName, recordId) => {
-    return api.get(`/audit/${tableName}/${recordId}`);
   }
 };

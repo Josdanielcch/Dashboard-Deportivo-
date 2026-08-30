@@ -13,15 +13,6 @@ export const productService = {
   },
 
   /**
-   * Obtiene los detalles de un producto específico.
-   * @param {string|number} id - ID del producto.
-   * @returns {Promise<object>} Respuesta con los datos del producto.
-   */
-  getById: async (id) => {
-    return api.get(`/products/${id}`);
-  },
-
-  /**
    * Registra un nuevo producto.
    * @param {object} productData - Datos del producto.
    * @param {string} productData.product_name - Nombre del producto.
@@ -41,15 +32,5 @@ export const productService = {
    */
   update: async (id, productData) => {
     return api.put(`/products/${id}`, productData);
-  },
-
-  /**
-   * Ajusta el stock de un producto (sumar o restar).
-   * @param {string|number} id - ID del producto.
-   * @param {number} quantity - Cantidad a ajustar (positivo para sumar, negativo para restar).
-   * @returns {Promise<object>} Respuesta con los datos actualizados.
-   */
-  updateStock: async (id, quantity) => {
-    return api.patch(`/products/${id}/stock`, { quantity });
   }
 };

@@ -29,7 +29,7 @@ const SocketContext = createContext<SocketContextType>({
   clearAllNotifications: () => {},
 })
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'https://aplication-backend-production-82c0.up.railway.app'
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'https://dashboard-deportivo.onrender.com'
 
 export function SocketProvider({ children }: { children: React.ReactNode }) {
   const [socket, setSocket] = useState<Socket | null>(null)

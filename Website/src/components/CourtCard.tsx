@@ -34,6 +34,8 @@ export default function CourtCard({ court, onSelectCourt }: CourtCardProps) {
           alt={court.name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
           referrerPolicy="no-referrer"
+          loading="lazy"
+          decoding="async"
         />
 
         {/* Floating Availability badges (matches image 1) */}
