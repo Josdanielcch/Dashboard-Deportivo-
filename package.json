@@ -2,6 +2,11 @@
   "name": "sportspaces-os-root",
   "version": "1.0.0",
   "description": "Root orchestrator for SportSpaces OS",
+  "workspaces": [
+    "Website",
+    "Frontend",
+    "Backend"
+  ],
   "scripts": {
     "dev": "concurrently --names \"PROXY,BACKEND,WEBSITE,PANEL\" --prefix-colors \"cyan,yellow,green,magenta\" \"node proxy/server.js\" \"npm run dev --prefix Backend\" \"npm run dev --prefix Website\" \"npm run dev --prefix Frontend\"",
     "proxy": "node proxy/server.js",
