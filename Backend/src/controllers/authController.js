@@ -390,7 +390,9 @@ const clientLogin = async (req, res) => {
 
 const clientRegister = async (req, res) => {
   try {
-    const { first_name, last_name, email, phone, password } = req.body;
+    const { first_name, last_name, email, phone, password, membership_level, membershipLevel, payment_reference, paymentReference } = req.body;
+    const finalMembership = membership_level || membershipLevel || 'standard';
+    const finalPaymentRef = payment_reference || paymentReference || null;
 
     if (!first_name || !last_name || !email || !phone || !password) {
       return res.status(400).json({ error: "Todos los campos son requeridos" });
@@ -413,9 +415,14 @@ const clientRegister = async (req, res) => {
       // Edge Case: Receptionist created customer, no password set.
       if (!customer.password_hash) {
         const updateRes = await pool.query(
-          `UPDATE customers SET password_hash = $1, first_name = COALESCE(first_name, $2), last_name = COALESCE(last_name, $3) 
-           WHERE id = $4 RETURNING *`,
-          [password_hash, first_name, last_name, customer.id]
+          `UPDATE customers 
+           SET password_hash = $1, 
+               first_name = COALESCE(first_name, $2), 
+               last_name = COALESCE(last_name, $3),
+               membership_level = COALESCE($4, membership_level, 'standard'),
+               payment_reference = COALESCE($5, payment_reference)
+           WHERE id = $6 RETURNING *`,
+          [password_hash, first_name, last_name, finalMembership, finalPaymentRef, customer.id]
         );
         customerData = updateRes.rows[0];
         customerId = customer.id;
@@ -424,9 +431,9 @@ const clientRegister = async (req, res) => {
       }
     } else {
       const insertRes = await pool.query(
-        `INSERT INTO customers (first_name, last_name, email, phone, password_hash)
-         VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-        [first_name, last_name, email.toLowerCase(), phone, password_hash]
+        `INSERT INTO customers (first_name, last_name, email, phone, password_hash, membership_level, payment_reference)
+         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+        [first_name, last_name, email.toLowerCase(), phone, password_hash, finalMembership, finalPaymentRef]
       );
       customerData = insertRes.rows[0];
       customerId = customerData.id;
@@ -450,6 +457,8 @@ const clientRegister = async (req, res) => {
         customer_id: customerId,
         phone: customerData.phone,
         email: customerData.email,
+        membership_level: customerData.membership_level || finalMembership,
+        payment_reference: customerData.payment_reference || finalPaymentRef,
       },
       customer_id: customerId,
     });

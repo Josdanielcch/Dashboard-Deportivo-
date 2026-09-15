@@ -30,6 +30,11 @@ export default function BookingModal({
   const [guestLastName, setGuestLastName] = useState(currentUser?.name?.split(' ').slice(1).join(' ') || '');
   const [guestEmail, setGuestEmail] = useState(currentUser?.email || '');
   const [guestPhone, setGuestPhone] = useState(currentUser?.phone || '');
+  // Payment state
+  const [paymentMethod, setPaymentMethod] = useState<'pago_movil' | 'zelle' | 'card' | 'cash'>('pago_movil');
+  const [paymentReference, setPaymentReference] = useState('');
+  const exchangeRate = 70.50; // Tasa de cambio de referencia Bs / USD
+
   const [formError, setFormError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
@@ -46,6 +51,7 @@ export default function BookingModal({
   const discountRate = isPro ? 0.25 : 0;
   const discountAmount = Math.round(baseCost * discountRate);
   const totalCost = baseCost - discountAmount;
+  const totalCostBs = (totalCost * exchangeRate).toFixed(2);
 
   const getEndTime = () => {
     const [h, m] = startTime.split(':').map(Number);
@@ -118,6 +124,11 @@ export default function BookingModal({
       return;
     }
 
+    if ((paymentMethod === 'pago_movil' || paymentMethod === 'zelle') && !paymentReference.trim()) {
+      setFormError(`Por favor ingresa el número de referencia del ${paymentMethod === 'pago_movil' ? 'Pago Móvil' : 'Zelle'}.`);
+      return;
+    }
+
     if (!/\S+@\S+\.\S+/.test(finalEmail)) {
       setFormError('Por favor ingresa un correo electrónico válido.');
       return;
@@ -177,6 +188,8 @@ export default function BookingModal({
         userName: finalName,
         userEmail: finalEmail,
         userPhone: finalPhone,
+        paymentMethod: paymentMethod,
+        paymentReference: paymentReference.trim() || 'N/A',
         createdAt: new Date().toISOString(),
       };
 
@@ -273,8 +286,18 @@ export default function BookingModal({
                 <span className="font-bold text-white">{createdBooking.userName}</span>
               </div>
 
+              {createdBooking.paymentMethod && (
+                <div className="flex justify-between text-xs">
+                  <span className="text-zinc-500 font-semibold">Método de Pago:</span>
+                  <span className="font-bold text-white uppercase text-[10px] font-mono bg-white/5 px-2 py-0.5 rounded">
+                    {createdBooking.paymentMethod === 'pago_movil' ? '📲 Pago Móvil' : createdBooking.paymentMethod === 'zelle' ? '💵 Zelle' : createdBooking.paymentMethod === 'card' ? '💳 Tarjeta' : '🏢 Taquilla'}
+                    {createdBooking.paymentReference && createdBooking.paymentReference !== 'N/A' ? ` (Ref: ${createdBooking.paymentReference})` : ''}
+                  </span>
+                </div>
+              )}
+
               <div className="flex justify-between text-sm font-bold text-white border-t border-white/10 pt-3">
-                <span>Total pagado:</span>
+                <span>Total a pagar:</span>
                 <span className="text-[#c0ff00] font-black">${createdBooking.price} USD</span>
               </div>
             </div>
@@ -475,6 +498,161 @@ export default function BookingModal({
               )}
             </div>
 
+            {/* Multicurrency Payment Method Selector */}
+            <div>
+              <h4 className="text-[10px] uppercase tracking-widest font-extrabold text-[#c0ff00] mb-3 flex items-center gap-1 font-mono">
+                <CreditCard className="h-4 w-4 text-[#c0ff00]" />
+                Método de Pago
+              </h4>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod('pago_movil')}
+                  className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                    paymentMethod === 'pago_movil'
+                      ? 'border-[#c0ff00] bg-[#c0ff00]/10 text-white font-bold ring-1 ring-[#c0ff00]'
+                      : 'border-white/10 bg-zinc-950/40 text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  <div className="text-xs font-black">📲 Pago Móvil</div>
+                  <div className="text-[9px] text-zinc-400 mt-0.5 font-mono">Bolívares (Bs)</div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod('zelle')}
+                  className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                    paymentMethod === 'zelle'
+                      ? 'border-[#c0ff00] bg-[#c0ff00]/10 text-white font-bold ring-1 ring-[#c0ff00]'
+                      : 'border-white/10 bg-zinc-950/40 text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  <div className="text-xs font-black">💵 Zelle</div>
+                  <div className="text-[9px] text-zinc-400 mt-0.5 font-mono">Dólares (USD)</div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod('card')}
+                  className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                    paymentMethod === 'card'
+                      ? 'border-[#c0ff00] bg-[#c0ff00]/10 text-white font-bold ring-1 ring-[#c0ff00]'
+                      : 'border-white/10 bg-zinc-950/40 text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  <div className="text-xs font-black">💳 Tarjeta</div>
+                  <div className="text-[9px] text-zinc-400 mt-0.5 font-mono">Débito / Crédito</div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod('cash')}
+                  className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                    paymentMethod === 'cash'
+                      ? 'border-[#c0ff00] bg-[#c0ff00]/10 text-white font-bold ring-1 ring-[#c0ff00]'
+                      : 'border-white/10 bg-zinc-950/40 text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  <div className="text-xs font-black">🏢 Taquilla</div>
+                  <div className="text-[9px] text-zinc-400 mt-0.5 font-mono">Efectivo en Club</div>
+                </button>
+              </div>
+
+              {/* Payment Details Box */}
+              {paymentMethod === 'pago_movil' && (
+                <div className="bg-zinc-950/60 p-4 rounded-xl border border-white/10 space-y-3">
+                  <div className="text-xs space-y-1 font-sans">
+                    <div className="flex justify-between text-zinc-300">
+                      <span>Banco: <strong className="text-white">Banco de Venezuela (0102)</strong></span>
+                      <span>RIF: <strong className="text-white">J-50123456-9</strong></span>
+                    </div>
+                    <div className="flex justify-between text-zinc-300">
+                      <span>Teléfono: <strong className="text-white">0412-3129425</strong></span>
+                      <span>Tasa Ref. BCV: <strong className="text-[#c0ff00] font-mono">{exchangeRate} Bs/USD</strong></span>
+                    </div>
+                    <div className="pt-2 border-t border-white/10 flex justify-between font-bold text-xs text-white">
+                      <span>Monto Total a Transferir (Bs):</span>
+                      <span className="text-[#c0ff00] font-mono text-sm font-black">{totalCostBs} Bs.</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest font-mono mb-1 block">
+                      Número de Referencia de Pago Móvil (Requerido)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ej. 849302 (últimos 6 dígitos)"
+                      value={paymentReference}
+                      onChange={(e) => setPaymentReference(e.target.value)}
+                      className="w-full px-3 py-2.5 rounded-xl border border-white/10 text-xs bg-zinc-950 text-white focus:border-[#c0ff00] outline-none font-semibold font-mono"
+                      required
+                    />
+                  </div>
+                </div>
+              )}
+
+              {paymentMethod === 'zelle' && (
+                <div className="bg-zinc-950/60 p-4 rounded-xl border border-white/10 space-y-3">
+                  <div className="text-xs space-y-1 font-sans">
+                    <div className="flex justify-between text-zinc-300">
+                      <span>Correo Zelle: <strong className="text-white">pagos@courtconnect.com</strong></span>
+                    </div>
+                    <div className="flex justify-between text-zinc-300">
+                      <span>Titular: <strong className="text-white">CourtConnect Sports LLC</strong></span>
+                    </div>
+                    <div className="pt-2 border-t border-white/10 flex justify-between font-bold text-xs text-white">
+                      <span>Monto Zelle a Transferir:</span>
+                      <span className="text-[#c0ff00] font-mono text-sm font-black">${totalCost} USD</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest font-mono mb-1 block">
+                      Nombre del Titular Zelle / Referencia (Requerido)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ej. Juan Pérez - Ref: Z-93821"
+                      value={paymentReference}
+                      onChange={(e) => setPaymentReference(e.target.value)}
+                      className="w-full px-3 py-2.5 rounded-xl border border-white/10 text-xs bg-zinc-950 text-white focus:border-[#c0ff00] outline-none font-semibold"
+                      required
+                    />
+                  </div>
+                </div>
+              )}
+
+              {paymentMethod === 'card' && (
+                <div className="bg-zinc-950/60 p-4 rounded-xl border border-white/10 space-y-3">
+                  <p className="text-xs text-zinc-400">
+                    💳 Tarjeta directa (Simulación de procesamiento bancario).
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <input
+                      type="text"
+                      placeholder="4242 •••• •••• 4242"
+                      className="w-full px-3 py-2.5 rounded-xl border border-white/10 text-xs bg-zinc-950 text-white font-mono"
+                    />
+                    <input
+                      type="text"
+                      placeholder="MM/AA  CVC"
+                      className="w-full px-3 py-2.5 rounded-xl border border-white/10 text-xs bg-zinc-950 text-white font-mono"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {paymentMethod === 'cash' && (
+                <div className="bg-zinc-950/60 p-4 rounded-xl border border-white/10">
+                  <p className="text-xs text-zinc-300">
+                    🏢 <strong>Pago en Taquilla:</strong> Realiza el pago directamente en recepción antes de iniciar el turno de cancha.
+                  </p>
+                </div>
+              )}
+            </div>
+
             {/* Price Calculations Card */}
             <div className="bg-zinc-950 text-white p-5 rounded-2xl relative overflow-hidden border border-white/10">
               <div className="absolute right-[-100px] bottom-[-100px] text-white/5 pointer-events-none">
@@ -520,7 +698,7 @@ export default function BookingModal({
                 <div className="flex justify-between text-sm font-black text-white pt-2.5 border-t border-white/10">
                   <span className="uppercase tracking-wide text-xs text-zinc-500">Total a pagar:</span>
                   <span className="text-lg text-[#c0ff00] font-black tracking-normal">
-                    ${totalCost} USD
+                    ${totalCost} USD {paymentMethod === 'pago_movil' && <span className="text-xs text-zinc-400 font-mono">({totalCostBs} Bs)</span>}
                   </span>
                 </div>
               </div>

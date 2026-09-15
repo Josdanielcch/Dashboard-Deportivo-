@@ -71,7 +71,7 @@ const addPayment = async (req, res) => {
     let newBalance = parseFloat(cxpRes.rows[0].balance) - parseFloat(amount);
     if (newBalance < 0) newBalance = 0;
     
-    const newStatus = newBalance === 0 ? 'Pagada' : 'Pendiente';
+    const newStatus = newBalance === 0 ? 'Pagada' : 'Parcial';
 
     await client.query(`
       UPDATE accounts_payable 

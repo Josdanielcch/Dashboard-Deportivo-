@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Lock, Mail, Phone, ShieldCheck, Globe, Trophy, Award, Check, KeyRound, ArrowLeft } from 'lucide-react';
+import { User, Lock, Mail, Phone, ShieldCheck, Globe, Trophy, Award, Check, KeyRound, ArrowLeft, CreditCard } from 'lucide-react';
 import { User as UserType } from '../types';
 import { loginUser, registerUser, recoverPassword, resetPassword, googleLoginUser } from '../api';
 import { useGoogleLogin } from '@react-oauth/google';
@@ -41,7 +41,9 @@ export default function AuthPage({ initialMode = 'register', onModeSwitch, onLog
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [membership, setMembership] = useState<'standard' | 'pro'>('pro'); // default to PRO as encouraged by screenshot 1 and 3!
+  const [membership, setMembership] = useState<'standard' | 'pro'>('standard');
+  const [membershipPaymentMethod, setMembershipPaymentMethod] = useState<'pago_movil' | 'zelle' | 'card'>('pago_movil');
+  const [membershipReference, setMembershipReference] = useState('');
   const [error, setError] = useState('');
 
   // Login form states
@@ -62,6 +64,11 @@ export default function AuthPage({ initialMode = 'register', onModeSwitch, onLog
       return;
     }
 
+    if (membership === 'pro' && (membershipPaymentMethod === 'pago_movil' || membershipPaymentMethod === 'zelle') && !membershipReference.trim()) {
+      setError(`Por favor ingresa la referencia de pago para activar la Membresía PRO ($10 USD / mes).`);
+      return;
+    }
+
     try {
       const payload = {
         username: email.trim().toLowerCase(),
@@ -78,6 +85,7 @@ export default function AuthPage({ initialMode = 'register', onModeSwitch, onLog
         email: email.trim().toLowerCase(),
         phone: phone.trim(),
         membershipLevel: membership,
+        paymentReference: membershipReference.trim() || undefined,
         customerId: response.customer_id,
       };
 
@@ -386,8 +394,8 @@ export default function AuthPage({ initialMode = 'register', onModeSwitch, onLog
             </div>
 
             {/* Premium Membership Selection Toggle */}
-            <div className="pt-2">
-              <label className="text-[10px] font-extrabold text-[#c0ff00] uppercase tracking-widest font-mono mb-2 block">
+            <div className="pt-2 space-y-3">
+              <label className="text-[10px] font-extrabold text-[#c0ff00] uppercase tracking-widest font-mono block">
                 Nivel de Membresía
               </label>
               <div className="grid grid-cols-2 gap-3">
@@ -399,8 +407,8 @@ export default function AuthPage({ initialMode = 'register', onModeSwitch, onLog
                       : 'border-white/10'
                     }`}
                 >
-                  <div className="text-xs font-bold text-white">Estándar</div>
-                  <div className="text-[10px] text-zinc-400 mt-0.5">Acceso básico a reservas</div>
+                  <div className="text-xs font-bold text-white">Estándar (Gratis)</div>
+                  <div className="text-[10px] text-zinc-400 mt-0.5">Acceso básico sin costo</div>
                   {membership === 'standard' && <Check className="h-4 w-4 text-zinc-400 absolute top-2.5 right-2.5" />}
                 </button>
 
@@ -415,10 +423,92 @@ export default function AuthPage({ initialMode = 'register', onModeSwitch, onLog
                   <div className="text-xs font-black text-[#c0ff00] flex items-center gap-1 font-mono uppercase tracking-wide">
                     <Award className="h-3.5 w-3.5 text-[#c0ff00]" /> Pro Premium
                   </div>
-                  <div className="text-[10px] text-zinc-400 mt-0.5">Ahorra 25% en reservas</div>
+                  <div className="text-[10px] text-zinc-400 mt-0.5">$10 USD/mes • 25% desc</div>
                   {membership === 'pro' && <Check className="h-4 w-4 text-[#c0ff00] absolute top-2.5 right-2.5" />}
                 </button>
               </div>
+
+              {/* Payment Details for PRO Membership */}
+              {membership === 'pro' && (
+                <div className="bg-zinc-950/80 p-4 rounded-2xl border border-[#c0ff00]/30 space-y-3 font-sans">
+                  <div className="flex items-center justify-between text-xs border-b border-white/10 pb-2">
+                    <span className="font-bold text-[#c0ff00] flex items-center gap-1">
+                      <CreditCard className="h-3.5 w-3.5" /> Suscripción PRO
+                    </span>
+                    <span className="font-mono font-black text-white">$10.00 USD / mes (705.00 Bs)</span>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setMembershipPaymentMethod('pago_movil')}
+                      className={`p-2 rounded-lg text-center text-[10px] font-bold border transition-all cursor-pointer ${
+                        membershipPaymentMethod === 'pago_movil'
+                          ? 'border-[#c0ff00] bg-[#c0ff00]/20 text-white'
+                          : 'border-white/10 bg-zinc-900 text-zinc-400'
+                      }`}
+                    >
+                      📲 Pago Móvil
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMembershipPaymentMethod('zelle')}
+                      className={`p-2 rounded-lg text-center text-[10px] font-bold border transition-all cursor-pointer ${
+                        membershipPaymentMethod === 'zelle'
+                          ? 'border-[#c0ff00] bg-[#c0ff00]/20 text-white'
+                          : 'border-white/10 bg-zinc-900 text-zinc-400'
+                      }`}
+                    >
+                      💵 Zelle
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMembershipPaymentMethod('card')}
+                      className={`p-2 rounded-lg text-center text-[10px] font-bold border transition-all cursor-pointer ${
+                        membershipPaymentMethod === 'card'
+                          ? 'border-[#c0ff00] bg-[#c0ff00]/20 text-white'
+                          : 'border-white/10 bg-zinc-900 text-zinc-400'
+                      }`}
+                    >
+                      💳 Tarjeta
+                    </button>
+                  </div>
+
+                  {membershipPaymentMethod === 'pago_movil' && (
+                    <div className="text-[11px] text-zinc-300 space-y-1.5 bg-zinc-900/80 p-3 rounded-xl border border-white/5">
+                      <div className="flex justify-between"><span>Banco: <strong>Venezuela (0102)</strong></span><span>RIF: <strong>J-50123456-9</strong></span></div>
+                      <div className="flex justify-between"><span>Telf: <strong>0412-3129425</strong></span><span>Monto: <strong className="text-[#c0ff00]">705.00 Bs.</strong></span></div>
+                      <input
+                        type="text"
+                        placeholder="N° de Referencia Pago Móvil (6-8 dígitos)"
+                        value={membershipReference}
+                        onChange={(e) => setMembershipReference(e.target.value)}
+                        className="w-full mt-2 px-3 py-2 bg-zinc-950 border border-white/10 rounded-lg text-xs font-mono text-white outline-none focus:border-[#c0ff00]"
+                      />
+                    </div>
+                  )}
+
+                  {membershipPaymentMethod === 'zelle' && (
+                    <div className="text-[11px] text-zinc-300 space-y-1.5 bg-zinc-900/80 p-3 rounded-xl border border-white/5">
+                      <div>Correo Zelle: <strong className="text-white">pagos@courtconnect.com</strong></div>
+                      <div>Titular: <strong className="text-white">CourtConnect Sports LLC</strong></div>
+                      <input
+                        type="text"
+                        placeholder="Nombre Titular Zelle / Referencia"
+                        value={membershipReference}
+                        onChange={(e) => setMembershipReference(e.target.value)}
+                        className="w-full mt-2 px-3 py-2 bg-zinc-950 border border-white/10 rounded-lg text-xs text-white outline-none focus:border-[#c0ff00]"
+                      />
+                    </div>
+                  )}
+
+                  {membershipPaymentMethod === 'card' && (
+                    <div className="text-[11px] text-zinc-400 bg-zinc-900/80 p-3 rounded-xl border border-white/5">
+                      💳 Procesamiento inmediato con tarjeta ficticia de prueba.
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {error && <p className="text-xs text-red-400 font-bold font-sans">⚠️ {error}</p>}
