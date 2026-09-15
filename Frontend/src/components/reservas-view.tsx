@@ -340,7 +340,9 @@ export default function ReservasView() {
     const term = searchTerm.toLowerCase()
     const matchesSearch = 
       reserva.customer_name?.toLowerCase().includes(term) ||
-      reserva.court_name?.toLowerCase().includes(term)
+      reserva.court_name?.toLowerCase().includes(term) ||
+      reserva.payment_reference?.toLowerCase().includes(term) ||
+      String(reserva.id).includes(term)
     
     let estadoEspanol = 'Pendiente'
     if (reserva.status === 'Confirmed') estadoEspanol = 'Confirmada'
@@ -352,6 +354,9 @@ export default function ReservasView() {
     
     return matchesSearch && matchesStatus
   })
+
+  const isFiltering = searchTerm.trim() !== '' || statusFilter !== 'Todos'
+  const displayedReservas = isFiltering ? filteredReservas : filteredReservas.slice(0, 10)
 
   return (
     <div className="p-4 md:p-8">
@@ -701,14 +706,14 @@ export default function ReservasView() {
                       </div>
                     </td>
                   </tr>
-                ) : filteredReservas.length === 0 ? (
+                ) : displayedReservas.length === 0 ? (
                   <tr>
                     <td colSpan={10} className="py-12 text-center text-muted-foreground">
                       No se encontraron reservas en el historial.
                     </td>
                   </tr>
                 ) : (
-                  filteredReservas.map((reserva) => {
+                  displayedReservas.map((reserva) => {
                     let estadoEspanol = 'Pendiente'
                     let colorClass = 'bg-yellow-500/20 text-yellow-300'
                     
@@ -801,6 +806,20 @@ export default function ReservasView() {
               </tbody>
             </table>
           </div>
+          {!isFiltering && filteredReservas.length > 10 && (
+            <div className="px-6 py-3 border-t border-border bg-secondary/50 text-center">
+              <p className="text-xs text-muted-foreground">
+                Mostrando 10 de {filteredReservas.length} reservas. Usa el buscador o filtro para ver más.
+              </p>
+            </div>
+          )}
+          {isFiltering && (
+            <div className="px-6 py-3 border-t border-border bg-secondary/50 text-center">
+              <p className="text-xs text-muted-foreground">
+                {displayedReservas.length} resultado{displayedReservas.length !== 1 ? 's' : ''} encontrado{displayedReservas.length !== 1 ? 's' : ''}
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
