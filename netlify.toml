@@ -3,6 +3,11 @@
   publish = "Website/dist"
 
 [[redirects]]
+  from = "/api/*"
+  to = "https://dashboard-deportivo.onrender.com/api/:splat"
+  status = 200
+
+[[redirects]]
   from = "/panel"
   to = "/panel/index.html"
   status = 200
