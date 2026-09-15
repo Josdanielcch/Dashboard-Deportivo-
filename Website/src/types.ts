@@ -30,6 +30,8 @@ export interface Booking {
   userName: string;
   userEmail: string;
   userPhone: string;
+  paymentMethod?: 'pago_movil' | 'zelle' | 'transfer' | 'card' | 'cash';
+  paymentReference?: string;
   createdAt: string;
 }
 
@@ -38,5 +40,6 @@ export interface User {
   email: string;
   phone: string;
   membershipLevel: 'standard' | 'pro';
+  paymentReference?: string;
   customerId?: number;
 }

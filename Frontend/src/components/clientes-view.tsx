@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Search, Filter, Mail, Phone, Edit2, Trash2, Users, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Plus, Search, Filter, Mail, Phone, Edit2, Trash2, Users, ChevronLeft, ChevronRight, Award, Sparkles } from 'lucide-react'
 import { customerService } from '@/services/customerService'
 import { Modal } from '@/components/ui/modal'
 
@@ -44,14 +44,39 @@ export default function ClientesView() {
     } catch (error) {
       console.error('Error fetching clientes:', error)
       setClientes([
-        { id: 1, full_name: 'Juan García', email: 'juan@example.com', phone: '+34 612 345 678', pending_debt: 0 },
-        { id: 2, full_name: 'María López', email: 'maria@example.com', phone: '+34 623 456 789', pending_debt: 50 },
-        { id: 3, full_name: 'Carlos Rodríguez', email: 'carlos@example.com', phone: '+34 634 567 890', pending_debt: 0 },
+        { id: 1, full_name: 'Juan García', email: 'juan@example.com', phone: '+34 612 345 678', pending_debt: 0, membership_level: 'pro' },
+        { id: 2, full_name: 'María López', email: 'maria@example.com', phone: '+34 623 456 789', pending_debt: 50, membership_level: 'standard' },
+        { id: 3, full_name: 'Carlos Rodríguez', email: 'carlos@example.com', phone: '+34 634 567 890', pending_debt: 0, membership_level: 'standard' },
       ])
     } finally {
       setLoading(false)
     }
   }
+
+  const handleToggleMembership = async (id: number, currentLevel: string, name: string) => {
+    const newLevel = currentLevel === 'pro' ? 'standard' : 'pro';
+    const actionName = newLevel === 'pro' ? 'Aprobar Membresía PRO' : 'Cambiar a Estándar';
+    if (!confirm(`¿Deseas ${actionName} para el cliente "${name}"?`)) return;
+
+    try {
+      const res = await customerService.updateMembership(id, newLevel);
+      if (res.success) {
+        setInfoModal({
+          isOpen: true,
+          title: 'Membresía Actualizada',
+          message: `La membresía de "${name}" ahora es ${newLevel.toUpperCase()}.`,
+        });
+        fetchClientes();
+      }
+    } catch (error: any) {
+      console.error('Error actualizando membresía:', error);
+      setInfoModal({
+        isOpen: true,
+        title: 'Error',
+        message: error.message || 'No se pudo actualizar la membresía.',
+      });
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -133,9 +158,12 @@ export default function ClientesView() {
       cliente.full_name?.toLowerCase().includes(term) ||
       cliente.email?.toLowerCase().includes(term) ||
       cliente.phone?.toLowerCase().includes(term) ||
-      (cliente.tax_id || cliente.identification_number)?.toLowerCase().includes(term)
+      (cliente.tax_id || cliente.identification_number)?.toLowerCase().includes(term) ||
+      cliente.payment_reference?.toLowerCase().includes(term)
 
     let matchesStatus = true
+    if (statusFilter === 'pro') matchesStatus = cliente.membership_level === 'pro'
+    if (statusFilter === 'standard') matchesStatus = cliente.membership_level !== 'pro'
     if (statusFilter === 'debt') matchesStatus = Number(cliente.pending_debt) > 0
     if (statusFilter === 'paid') matchesStatus = Number(cliente.pending_debt) === 0 || !cliente.pending_debt
 
@@ -151,7 +179,7 @@ export default function ClientesView() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-3xl md:text-4xl font-black text-white mb-1 tracking-tight">Clientes</h1>
-          <p className="text-zinc-400 text-sm font-medium">Gestiona tu base de clientes</p>
+          <p className="text-zinc-400 text-sm font-medium">Gestiona tu base de clientes y membresías PRO</p>
         </div>
         <button
           onClick={openCreateModal}
@@ -162,12 +190,61 @@ export default function ClientesView() {
         </button>
       </div>
 
+      {/* Metric KPI Cards Summary */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="bg-[#0f1533] border border-[#1a1f3a] rounded-2xl p-5 flex items-center justify-between">
+          <div>
+            <span className="text-zinc-400 text-xs font-bold uppercase tracking-wider block">Total Clientes</span>
+            <span className="text-2xl md:text-3xl font-black text-white mt-1 block">{clientes.length}</span>
+          </div>
+          <div className="h-11 w-11 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+            <Users size={22} />
+          </div>
+        </div>
+
+        <div className="bg-[#0f1533] border border-[#1a1f3a] rounded-2xl p-5 flex items-center justify-between">
+          <div>
+            <span className="text-zinc-400 text-xs font-bold uppercase tracking-wider block">Socios PRO</span>
+            <span className="text-2xl md:text-3xl font-black text-[#ccff00] mt-1 block font-mono">
+              {clientes.filter(c => c.membership_level === 'pro').length}
+            </span>
+          </div>
+          <div className="h-11 w-11 rounded-xl bg-[#ccff00]/10 border border-[#ccff00]/20 flex items-center justify-center text-[#ccff00]">
+            <Award size={22} />
+          </div>
+        </div>
+
+        <div className="bg-[#0f1533] border border-[#1a1f3a] rounded-2xl p-5 flex items-center justify-between">
+          <div>
+            <span className="text-zinc-400 text-xs font-bold uppercase tracking-wider block">Estándar</span>
+            <span className="text-2xl md:text-3xl font-black text-zinc-300 mt-1 block">
+              {clientes.filter(c => c.membership_level !== 'pro').length}
+            </span>
+          </div>
+          <div className="h-11 w-11 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+            <Users size={22} />
+          </div>
+        </div>
+
+        <div className="bg-[#0f1533] border border-[#1a1f3a] rounded-2xl p-5 flex items-center justify-between">
+          <div>
+            <span className="text-zinc-400 text-xs font-bold uppercase tracking-wider block">Con Deuda</span>
+            <span className="text-2xl md:text-3xl font-black text-red-400 mt-1 block">
+              {clientes.filter(c => Number(c.pending_debt) > 0).length}
+            </span>
+          </div>
+          <div className="h-11 w-11 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400">
+            <Filter size={22} />
+          </div>
+        </div>
+      </div>
+
       <div className="flex flex-col md:flex-row gap-4 mb-8">
         <div className="relative flex-1">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
           <input
             type="text"
-            placeholder="Buscar por nombre, correo, teléfono o cédula..."
+            placeholder="Buscar por nombre, correo, teléfono, cédula o ref de pago..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full bg-[#0f1533] border border-[#1a1f3a] rounded-xl pl-10 pr-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:border-[#ccff00]/50 transition-all text-sm"
@@ -180,9 +257,11 @@ export default function ClientesView() {
             onChange={(e) => setStatusFilter(e.target.value)}
             className="bg-transparent border-none text-white focus:outline-none cursor-pointer text-sm"
           >
-            <option value="all">Todos los estados</option>
-            <option value="debt">Con deuda</option>
-            <option value="paid">Al día</option>
+            <option value="all" className="bg-[#0f1533]">Todos los estados</option>
+            <option value="pro" className="bg-[#0f1533]">Membresía PRO</option>
+            <option value="standard" className="bg-[#0f1533]">Membresía Estándar</option>
+            <option value="debt" className="bg-[#0f1533]">Con deuda</option>
+            <option value="paid" className="bg-[#0f1533]">Al día</option>
           </select>
         </div>
       </div>
@@ -201,6 +280,7 @@ export default function ClientesView() {
                   <th className="text-left py-4 px-6 text-zinc-400 font-bold uppercase tracking-wider text-xs">Documento</th>
                   <th className="text-left py-4 px-6 text-zinc-400 font-bold uppercase tracking-wider text-xs">Email</th>
                   <th className="text-left py-4 px-6 text-zinc-400 font-bold uppercase tracking-wider text-xs">Teléfono</th>
+                  <th className="text-left py-4 px-6 text-zinc-400 font-bold uppercase tracking-wider text-xs">Membresía</th>
                   <th className="text-left py-4 px-6 text-zinc-400 font-bold uppercase tracking-wider text-xs">Deuda Pendiente</th>
                   <th className="text-left py-4 px-6 text-zinc-400 font-bold uppercase tracking-wider text-xs">Acciones</th>
                 </tr>
@@ -208,7 +288,7 @@ export default function ClientesView() {
               <tbody>
                 {paginatedClientes.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-16 text-center text-zinc-500">
+                    <td colSpan={7} className="py-16 text-center text-zinc-500">
                       <Users size={40} className="mx-auto mb-3 text-zinc-600" />
                       No se encontraron clientes que coincidan con la búsqueda.
                     </td>
@@ -236,6 +316,24 @@ export default function ClientesView() {
                         </div>
                       </td>
                       <td className="py-4 px-6">
+                        <div className="flex flex-col gap-0.5">
+                          {cliente.membership_level === 'pro' ? (
+                            <span className="bg-[#ccff00]/20 text-[#ccff00] border border-[#ccff00]/30 px-2.5 py-1 rounded-lg text-xs font-black uppercase tracking-wider inline-flex items-center gap-1 w-fit">
+                              <Award size={13} /> PRO
+                            </span>
+                          ) : (
+                            <span className="bg-zinc-800 text-zinc-400 border border-zinc-700 px-2.5 py-1 rounded-lg text-xs font-semibold uppercase tracking-wider w-fit">
+                              Estándar
+                            </span>
+                          )}
+                          {cliente.payment_reference && (
+                            <span className="text-[10px] text-zinc-400 font-mono">
+                              Ref: {cliente.payment_reference}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-4 px-6">
                         <span
                           className={`px-3 py-1.5 rounded-lg text-xs font-bold border ${
                             Number(cliente.pending_debt) > 0
@@ -249,14 +347,27 @@ export default function ClientesView() {
                       <td className="py-4 px-6">
                         <div className="flex items-center gap-2">
                           <button
+                            onClick={() => handleToggleMembership(cliente.id, cliente.membership_level || 'standard', cliente.full_name)}
+                            title={cliente.membership_level === 'pro' ? 'Cambiar a Membresía Estándar' : 'Aprobar Membresía PRO'}
+                            className={`p-2 rounded-lg transition-all ${
+                              cliente.membership_level === 'pro'
+                                ? 'bg-[#ccff00]/20 text-[#ccff00] hover:bg-red-500/20 hover:text-red-400'
+                                : 'bg-[#1a1f3a] text-zinc-400 hover:bg-[#ccff00]/20 hover:text-[#ccff00]'
+                            }`}
+                          >
+                            <Award size={15} />
+                          </button>
+                          <button
                             onClick={() => openEditModal(cliente)}
                             className="p-2 rounded-lg bg-[#1a1f3a] hover:bg-[#ccff00]/10 text-zinc-400 hover:text-[#ccff00] transition-all"
+                            title="Editar Datos"
                           >
                             <Edit2 size={15} />
                           </button>
                           <button 
                             onClick={() => handleDelete(cliente.id, cliente.full_name)}
                             className="p-2 rounded-lg bg-[#1a1f3a] hover:bg-red-500/10 text-zinc-400 hover:text-red-400 transition-all"
+                            title="Eliminar Cliente"
                           >
                             <Trash2 size={15} />
                           </button>

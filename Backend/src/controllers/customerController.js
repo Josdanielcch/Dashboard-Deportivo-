@@ -6,10 +6,13 @@ const getAllCustomers = async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT c.id, c.first_name, c.last_name, c.phone, c.email, 
+             COALESCE(c.membership_level, 'standard') as membership_level,
+             COALESCE(c.membership_status, 'active') as membership_status,
+             c.payment_reference,
              COALESCE((SELECT SUM(balance) FROM accounts_receivable WHERE customer_id = c.id AND status != 'Pagado'), 0) as pending_debt,
              c.tax_id, c.first_name || ' ' || c.last_name AS full_name
       FROM customers c
-      ORDER BY c.id
+      ORDER BY c.id DESC
     `);
     res.json({ success: true, count: result.rows.length, data: result.rows });
   } catch (error) {
@@ -166,12 +169,42 @@ const deleteCustomer = async (req, res) => {
   }
 };
 
+// Actualizar membresía de cliente (Aprobar PRO / Estándar)
+const updateCustomerMembership = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { membership_level, membership_status } = req.body;
+    
+    if (!membership_level) {
+      return res.status(400).json({ error: 'Nivel de membresía requerido' });
+    }
+
+    const result = await pool.query(`
+      UPDATE customers 
+      SET membership_level = $1,
+          membership_status = COALESCE($2, 'active')
+      WHERE id = $3
+      RETURNING *, first_name || ' ' || last_name AS full_name
+    `, [membership_level, membership_status || 'active', id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Cliente no encontrado' });
+    }
+
+    res.json({ success: true, message: 'Membresía actualizada con éxito', data: result.rows[0] });
+  } catch (error) {
+    console.error('Error al actualizar membresía:', error);
+    res.status(500).json({ error: 'Error al actualizar la membresía del cliente' });
+  }
+};
+
 module.exports = {
   getAllCustomers,
   getCustomerById,
   searchCustomers,
   createCustomer,
   updateCustomer,
+  updateCustomerMembership,
   recordPayment,
   deleteCustomer
 };

@@ -15,9 +15,12 @@ export const customerService = {
   /**
    * Registra un nuevo cliente.
    * @param {object} customerData - Datos del cliente.
-   * @param {string} customerData.full_name - Nombre completo.
-   * @param {string} customerData.phone - Teléfono de contacto.
-   * @param {string} customerData.email - Correo electrónico.
+   * @param {string} [customerData.first_name] - Nombre.
+   * @param {string} [customerData.last_name] - Apellido.
+   * @param {string} [customerData.full_name] - Nombre completo.
+   * @param {string} [customerData.phone] - Teléfono de contacto.
+   * @param {string} [customerData.email] - Correo electrónico.
+   * @param {string} [customerData.tax_id] - Cédula o RIF.
    * @param {string} [customerData.identification_number] - Cédula o número de documento.
    * @returns {Promise<object>} Respuesta con los datos del cliente creado.
    */
@@ -42,5 +45,15 @@ export const customerService = {
    */
   delete: async (id) => {
     return api.delete(`/customers/${id}`);
+  },
+
+  /**
+   * Actualiza el nivel de membresía de un cliente (PRO / Estándar).
+   * @param {string|number} id - ID del cliente.
+   * @param {string} membership_level - 'pro' | 'standard'
+   * @returns {Promise<object>}
+   */
+  updateMembership: async (id, membership_level) => {
+    return api.put(`/customers/${id}/membership`, { membership_level });
   }
 };
