@@ -53,6 +53,9 @@ export async function createBooking(payload: {
   start_time: string;
   end_time: string;
   user_id?: number;
+  payment_method?: string;
+  payment_reference?: string;
+  total_amount?: number;
 }) {
   return request('/bookings', {
     method: 'POST',

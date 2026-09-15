@@ -7,6 +7,7 @@ const getAllBookings = async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT b.id, b.booking_date, b.start_time, b.end_time, b.status, b.customer_id,
+             b.payment_method, b.payment_reference, b.total_amount,
              c.first_name || ' ' || c.last_name as customer_name, c.phone, 
              co.court_name, co.hourly_rate,
              u.username as created_by
@@ -89,7 +90,7 @@ const createBooking = async (req, res) => {
   try {
     await client.query('BEGIN');
     
-    const { customer_id, court_id, booking_date, start_time, end_time, user_id } = req.body;
+    const { customer_id, court_id, booking_date, start_time, end_time, user_id, payment_method, payment_reference, total_amount } = req.body;
     // Use provided user_id or null (user_id is nullable in bookings)
     const bookingUserId = user_id || null;
     
@@ -141,11 +142,12 @@ const createBooking = async (req, res) => {
     const hoursDiff = (new Date(`1970-01-01T${end_time}`) - new Date(`1970-01-01T${start_time}`)) / (1000 * 60 * 60);
     
     // Crear reserva
+    const initialStatus = (payment_method && payment_method !== 'cash' && payment_method !== 'card') ? 'Confirmed' : 'Pending';
     const result = await client.query(`
-      INSERT INTO bookings (customer_id, court_id, user_id, booking_date, start_time, end_time, status)
-      VALUES ($1, $2, $3, $4, $5, $6, 'Pending')
+      INSERT INTO bookings (customer_id, court_id, user_id, booking_date, start_time, end_time, status, payment_method, payment_reference, total_amount)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       RETURNING *
-    `, [customer_id, court_id, bookingUserId, booking_date, start_time, end_time]);
+    `, [customer_id, court_id, bookingUserId, booking_date, start_time, end_time, initialStatus, payment_method || null, payment_reference || null, total_amount || null]);
     
     await client.query('COMMIT');
     
@@ -181,7 +183,6 @@ const createBooking = async (req, res) => {
       message: 'Reserva creada exitosamente',
       data: {
         ...result.rows[0],
-        total_amount: null,
         hourly_rate: 0,
         hours: hoursDiff
       }

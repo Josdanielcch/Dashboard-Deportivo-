@@ -31,6 +31,13 @@ pool.connect(async (err, client, release) => {
         ALTER TABLE customers ADD COLUMN IF NOT EXISTS payment_reference VARCHAR(100);
       `);
       console.log('✅ Migración de columnas de membresía en customers verificada.');
+
+      await client.query(`
+        ALTER TABLE bookings ADD COLUMN IF NOT EXISTS payment_method VARCHAR(30);
+        ALTER TABLE bookings ADD COLUMN IF NOT EXISTS payment_reference VARCHAR(100);
+        ALTER TABLE bookings ADD COLUMN IF NOT EXISTS total_amount NUMERIC(10,2);
+      `);
+      console.log('✅ Migración de columnas de pago en bookings verificada.');
     } catch (migErr) {
       console.error('⚠️ Error verificando migración de columnas:', migErr.message);
     } finally {

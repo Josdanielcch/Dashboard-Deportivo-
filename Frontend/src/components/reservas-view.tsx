@@ -488,6 +488,22 @@ export default function ReservasView() {
                         <MapPin size={14} className="text-primary" />
                         {reserva.court_name}
                       </div>
+                      {reserva.payment_method && (
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                            reserva.payment_method === 'pago_movil' ? 'bg-blue-500/20 text-blue-300' :
+                            reserva.payment_method === 'zelle' ? 'bg-purple-500/20 text-purple-300' :
+                            'bg-emerald-500/20 text-emerald-300'
+                          }`}>
+                            {reserva.payment_method === 'pago_movil' ? 'Pago Móvil' :
+                             reserva.payment_method === 'zelle' ? 'Zelle' :
+                             reserva.payment_method === 'card' ? 'Tarjeta' : 'Efectivo'}
+                          </span>
+                          {reserva.payment_reference && (
+                            <span className="text-xs text-muted-foreground font-mono">Ref: {reserva.payment_reference}</span>
+                          )}
+                        </div>
+                      )}
                       <div className="flex gap-2 mt-3 pt-3 border-t border-border/50">
                         <button onClick={() => handleStatusChange(reserva.id, 'Confirmed')} className="flex-1 bg-green-500/20 text-green-300 py-1.5 rounded text-xs font-bold hover:bg-green-500/30 transition-colors backdrop-blur-sm">Aprobar</button>
                         <button onClick={() => handleStatusChange(reserva.id, 'Cancelled')} className="flex-1 bg-red-500/20 text-red-300 py-1.5 rounded text-xs font-bold hover:bg-red-500/30 transition-colors backdrop-blur-sm">Rechazar</button>
@@ -670,6 +686,8 @@ export default function ReservasView() {
                   <th className="text-left py-4 px-6 text-muted-foreground font-semibold">Fecha</th>
                   <th className="text-left py-4 px-6 text-muted-foreground font-semibold">Hora</th>
                   <th className="text-left py-4 px-6 text-muted-foreground font-semibold">Duración</th>
+                  <th className="text-left py-4 px-6 text-muted-foreground font-semibold">Método Pago</th>
+                  <th className="text-left py-4 px-6 text-muted-foreground font-semibold">Referencia</th>
                   <th className="text-left py-4 px-6 text-muted-foreground font-semibold">Estado</th>
                   <th className="text-left py-4 px-6 text-muted-foreground font-semibold">Acciones</th>
                 </tr>
@@ -677,7 +695,7 @@ export default function ReservasView() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={8} className="py-12 text-center">
+                    <td colSpan={10} className="py-12 text-center">
                       <div className="flex justify-center">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                       </div>
@@ -685,7 +703,7 @@ export default function ReservasView() {
                   </tr>
                 ) : filteredReservas.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-12 text-center text-muted-foreground">
+                    <td colSpan={10} className="py-12 text-center text-muted-foreground">
                       No se encontraron reservas en el historial.
                     </td>
                   </tr>
@@ -728,6 +746,27 @@ export default function ReservasView() {
                             <Clock size={14} />
                             {getDuracion(reserva.start_time, reserva.end_time)}
                           </div>
+                        </td>
+                        <td className="py-4 px-6">
+                          {reserva.payment_method ? (
+                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                              reserva.payment_method === 'pago_movil' ? 'bg-blue-500/20 text-blue-300' :
+                              reserva.payment_method === 'zelle' ? 'bg-purple-500/20 text-purple-300' :
+                              reserva.payment_method === 'card' ? 'bg-cyan-500/20 text-cyan-300' :
+                              'bg-emerald-500/20 text-emerald-300'
+                            }`}>
+                              {reserva.payment_method === 'pago_movil' ? 'Pago Móvil' :
+                               reserva.payment_method === 'zelle' ? 'Zelle' :
+                               reserva.payment_method === 'card' ? 'Tarjeta' :
+                               reserva.payment_method === 'cash' ? 'Efectivo' :
+                               reserva.payment_method}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">—</span>
+                          )}
+                        </td>
+                        <td className="py-4 px-6 text-foreground text-xs font-mono">
+                          {reserva.payment_reference || <span className="text-muted-foreground">—</span>}
                         </td>
                         <td className="py-4 px-6">
                           <span className={`px-3 py-1 rounded-full text-xs font-semibold ${colorClass}`}>
