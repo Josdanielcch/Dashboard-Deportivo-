@@ -116,7 +116,7 @@ export default function AuthPage({ initialMode = 'register', onModeSwitch, onLog
         name: response.user.full_name || response.user.username || loginEmail.trim(),
         email: response.user.email || loginEmail.trim().toLowerCase(),
         phone: response.user.phone || '',
-        membershipLevel: membership,
+        membershipLevel: response.user.membership_level || 'standard',
         customerId: response.user.customer_id,
       };
 
@@ -202,7 +202,7 @@ export default function AuthPage({ initialMode = 'register', onModeSwitch, onLog
           name: apiResponse.user.full_name,
           email: apiResponse.user.email,
           phone: apiResponse.user.phone || '',
-          membershipLevel: 'standard',
+          membershipLevel: apiResponse.user.membership_level || 'standard',
           customerId: apiResponse.user.customer_id,
         };
         localStorage.setItem('courtconnect_token', apiResponse.token);
