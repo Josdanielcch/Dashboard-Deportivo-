@@ -172,6 +172,9 @@ export default function BookingModal({
         booking_date: bookingDate,
         start_time,
         end_time,
+        payment_method: paymentMethod,
+        payment_reference: paymentReference.trim() || undefined,
+        total_amount: totalCost,
       });
 
       const bookingData = bookingResponse.data;
