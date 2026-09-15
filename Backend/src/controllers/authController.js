@@ -174,7 +174,7 @@ const getMe = async (req, res) => {
     const userQuery = "SELECT id, username, email, first_name || ' ' || last_name AS full_name, role_id, status, avatar_url FROM users WHERE id = $1";
     const userResult = await pool.query(userQuery, [req.user.id]);
     const user = userResult.rows[0] || req.user;
-    const customerQuery = "SELECT id, phone, email FROM customers WHERE email = $1";
+    const customerQuery = "SELECT id, phone, email, COALESCE(membership_level, 'standard') as membership_level FROM customers WHERE email = $1";
     const customerResult = await pool.query(customerQuery, [user.email || req.user.username]);
     const customer = customerResult.rows[0];
     res.json({
@@ -189,6 +189,7 @@ const getMe = async (req, res) => {
         phone: customer ? customer.phone : null,
         email: customer ? customer.email : user.email,
         avatar_url: user.avatar_url,
+        membership_level: customer ? customer.membership_level : 'standard',
       }
     });
   } catch (error) {
@@ -380,6 +381,7 @@ const clientLogin = async (req, res) => {
         customer_id: customer.id,
         phone: customer.phone,
         email: customer.email,
+        membership_level: customer.membership_level || 'standard',
       },
     });
   } catch (error) {
@@ -600,6 +602,7 @@ const clientGoogleLogin = async (req, res) => {
         customer_id: customer.id,
         phone: customer.phone,
         email: customer.email,
+        membership_level: customer.membership_level || 'standard',
       },
       customer_id: customer.id,
     });

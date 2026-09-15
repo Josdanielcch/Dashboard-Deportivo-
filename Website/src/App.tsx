@@ -69,7 +69,20 @@ export default function App() {
     const savedSession = localStorage.getItem('courtconnect_user_session');
     if (savedSession) {
       try {
-        setCurrentUser(JSON.parse(savedSession));
+        const parsed = JSON.parse(savedSession);
+        setCurrentUser(parsed);
+        // Refresh membership level from backend
+        if (parsed.customerId) {
+          import('./api').then(({ getMyProfile }) => {
+            getMyProfile().then((res) => {
+              if (res?.success && res?.user?.membership_level) {
+                const refreshed = { ...parsed, membershipLevel: res.user.membership_level };
+                localStorage.setItem('courtconnect_user_session', JSON.stringify(refreshed));
+                setCurrentUser(refreshed);
+              }
+            }).catch(() => {});
+          });
+        }
       } catch (err) {
         console.error('Failed to parse user session', err);
       }

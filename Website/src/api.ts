@@ -138,3 +138,7 @@ export async function getCourts() {
 export async function getSports() {
   return request('/sports');
 }
+
+export async function getMyProfile() {
+  return request('/auth/me');
+}
