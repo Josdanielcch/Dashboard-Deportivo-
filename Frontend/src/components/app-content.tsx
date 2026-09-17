@@ -98,7 +98,7 @@ export default function AppContent() {
   }
 
   return (
-    <div className="flex min-h-screen bg-[#060a1a] text-white">
+    <div className="flex h-screen overflow-hidden bg-[#060a1a] text-white">
       <Sidebar
         activeModule={activeModule}
         setActiveModule={(m) => {
@@ -109,7 +109,7 @@ export default function AppContent() {
         setIsMobileMenuOpen={setIsMobileMenuOpen}
       />
       <SocketProvider>
-        <main className="flex-1 flex flex-col min-w-0 relative">
+        <main className="flex-1 flex flex-col min-w-0 overflow-y-auto relative">
           {/* Background gradient */}
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
             <div className="absolute -top-40 -right-40 w-[400px] h-[400px] rounded-full bg-[#ccff00]/3 blur-[100px]" />
