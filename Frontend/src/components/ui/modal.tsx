@@ -33,7 +33,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-0">
+    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-2 sm:p-4 pt-16 sm:pt-4">
       {/* Overlay */}
       <div 
         className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
@@ -41,7 +41,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
       />
       
       {/* Contenido del Modal */}
-      <div className={`relative z-10 w-full ${sizeClasses[size]} bg-card border border-border rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]`}>
+      <div className={`relative z-10 w-full ${sizeClasses[size]} bg-card border border-border rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[calc(100vh-5rem)] sm:max-h-[90vh]`}>
         
         {/* Encabezado */}
         <div className="flex items-center justify-between p-6 border-b border-border bg-card/50">

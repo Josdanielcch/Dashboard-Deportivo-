@@ -1,6 +1,23 @@
 // src/controllers/productController.js
 const pool = require('../config/database');
 
+// Helper: ejecutar query dentro de una transacción con contexto de auditoría
+const withAuditContext = async (req, queryFn) => {
+  const client = req.dbClient || await pool.connect();
+  const releaseClient = !req.dbClient;
+  try {
+    if (!req.dbClient) await client.query('BEGIN');
+    const result = await queryFn(client);
+    if (!req.dbClient) await client.query('COMMIT');
+    return result;
+  } catch (error) {
+    if (!req.dbClient) await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    if (releaseClient) client.release();
+  }
+};
+
 const getAllProducts = async (req, res) => {
   try {
     const result = await pool.query(`
@@ -33,10 +50,12 @@ const createProduct = async (req, res) => {
     if (!product_name || price === undefined) {
       return res.status(400).json({ error: 'Nombre y precio requeridos' });
     }
-    const result = await pool.query(
-      'INSERT INTO products (product_name, price, stock) VALUES ($1, $2, $3) RETURNING *',
-      [product_name, price, stock || 0]
-    );
+    const result = await withAuditContext(req, async (client) => {
+      return client.query(
+        'INSERT INTO products (product_name, price, stock) VALUES ($1, $2, $3) RETURNING *',
+        [product_name, price, stock || 0]
+      );
+    });
     res.status(201).json({ success: true, data: result.rows[0] });
   } catch (error) {
     res.status(500).json({ error: 'Error al crear producto' });
@@ -47,14 +66,16 @@ const updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
     const { product_name, price, stock } = req.body;
-    const result = await pool.query(
-      `UPDATE products 
-       SET product_name = COALESCE($1, product_name),
-           price = COALESCE($2, price),
-           stock = COALESCE($3, stock)
-       WHERE id = $4 RETURNING *`,
-      [product_name, price, stock, id]
-    );
+    const result = await withAuditContext(req, async (client) => {
+      return client.query(
+        `UPDATE products 
+         SET product_name = COALESCE($1, product_name),
+             price = COALESCE($2, price),
+             stock = COALESCE($3, stock)
+         WHERE id = $4 RETURNING *`,
+        [product_name, price, stock, id]
+      );
+    });
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Producto no encontrado' });
     }
@@ -68,10 +89,12 @@ const updateStock = async (req, res) => {
   try {
     const { id } = req.params;
     const { quantity } = req.body;
-    const result = await pool.query(
-      'UPDATE products SET stock = stock + $1 WHERE id = $2 RETURNING *',
-      [quantity, id]
-    );
+    const result = await withAuditContext(req, async (client) => {
+      return client.query(
+        'UPDATE products SET stock = stock + $1 WHERE id = $2 RETURNING *',
+        [quantity, id]
+      );
+    });
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Producto no encontrado' });
     }

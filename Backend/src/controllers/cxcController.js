@@ -67,7 +67,8 @@ const getByCustomerId = async (req, res) => {
 };
 
 const createPayment = async (req, res) => {
-  const client = await pool.connect();
+  const client = req.dbClient || await pool.connect();
+  const releaseClient = !req.dbClient;
   try {
     await client.query('BEGIN');
     
@@ -124,7 +125,7 @@ const createPayment = async (req, res) => {
     console.error(error);
     res.status(500).json({ error: error.message || 'Error al registrar abono' });
   } finally {
-    client.release();
+    if (releaseClient) client.release();
   }
 };
 

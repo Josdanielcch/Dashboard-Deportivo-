@@ -215,7 +215,7 @@ export default function LoginView({ onLogin }: LoginViewProps) {
 
       <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-8 relative">
         <div className={`w-full max-w-md relative z-10 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'} transition-all duration-700 delay-300`}>
-          <div className="bg-white/[0.03] backdrop-blur-2xl border border-white/[0.06] rounded-3xl shadow-2xl p-8 sm:p-10 relative overflow-hidden">
+          <div className="bg-white/[0.03] backdrop-blur-2xl border border-white/[0.06] rounded-3xl shadow-2xl p-5 sm:p-8 lg:p-10 relative overflow-hidden">
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-px bg-gradient-to-r from-transparent via-[#ccff00]/30 to-transparent" />
 
             {/* Tabs */}

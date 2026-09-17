@@ -86,7 +86,8 @@ const checkAvailability = async (req, res) => {
 
 // Crear nueva reserva
 const createBooking = async (req, res) => {
-  const client = await pool.connect();
+  const client = req.dbClient || await pool.connect();
+  const releaseClient = !req.dbClient;
   try {
     await client.query('BEGIN');
     
@@ -192,13 +193,14 @@ const createBooking = async (req, res) => {
     console.error('Error createBooking:', error);
     res.status(500).json({ error: 'Error al crear reserva', detail: error.message });
   } finally {
-    client.release();
+    if (releaseClient) client.release();
   }
 };
 
 // Actualizar estado de reserva
 const updateBookingStatus = async (req, res) => {
-  const client = await pool.connect();
+  const client = req.dbClient || await pool.connect();
+  const releaseClient = !req.dbClient;
   try {
     const { id } = req.params;
     const { status } = req.body;
@@ -405,13 +407,14 @@ const updateBookingStatus = async (req, res) => {
     console.error('Error in updateBookingStatus:', error);
     res.status(500).json({ error: 'Error al actualizar estado', detail: error.message });
   } finally {
-    client.release();
+    if (releaseClient) client.release();
   }
 };
 
 // Actualizar datos de reserva (fecha, hora, cancha)
 const updateBooking = async (req, res) => {
-  const client = await pool.connect();
+  const client = req.dbClient || await pool.connect();
+  const releaseClient = !req.dbClient;
   try {
     const { id } = req.params;
     const { court_id, booking_date, start_time, end_time } = req.body;
@@ -477,7 +480,7 @@ const updateBooking = async (req, res) => {
     await client.query('ROLLBACK');
     res.status(500).json({ error: 'Error al editar la reserva' });
   } finally {
-    client.release();
+    if (releaseClient) client.release();
   }
 };
 

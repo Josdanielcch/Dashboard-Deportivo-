@@ -3,7 +3,8 @@ const pool = require('../config/database');
 
 // Crear factura (puede incluir reserva y productos)
 const createBilling = async (req, res) => {
-  const client = await pool.connect();
+  const client = req.dbClient || await pool.connect();
+  const releaseClient = !req.dbClient;
   try {
     await client.query('BEGIN');
     
@@ -74,6 +75,7 @@ const createBilling = async (req, res) => {
     const billingId = billingResult.rows[0].id;
     
     // Crear sale_details
+    const lowStockProducts = [];
     for (const detail of saleDetails) {
       await client.query(`
         INSERT INTO sale_details (billing_id, products_id, quantity, price_unit, subtotal)
@@ -81,10 +83,13 @@ const createBilling = async (req, res) => {
       `, [billingId, detail.product_id, detail.quantity, detail.unit_price_at_sale, detail.subtotal]);
       
       // Actualizar stock
-      await client.query(
-        'UPDATE products SET stock = stock - $1 WHERE id = $2',
+      const stockResult = await client.query(
+        'UPDATE products SET stock = stock - $1 WHERE id = $2 RETURNING id, product_name, stock',
         [detail.quantity, detail.product_id]
       );
+      if (stockResult.rows.length > 0 && stockResult.rows[0].stock <= 5) {
+        lowStockProducts.push(stockResult.rows[0]);
+      }
     }
     
     // Si hay reserva, actualizarla a Completed
@@ -107,7 +112,25 @@ const createBilling = async (req, res) => {
     }
     
     await client.query('COMMIT');
-    
+
+    // Emitir notificación de stock bajo
+    try {
+      const io = req.app.get('io');
+      if (io && lowStockProducts.length > 0) {
+        for (const product of lowStockProducts) {
+          io.to('dashboard').emit('low-stock', {
+            id: `stock-${product.id}-${Date.now()}`,
+            product_id: product.id,
+            product_name: product.product_name,
+            current_stock: product.stock,
+            created_at: new Date().toISOString()
+          });
+        }
+      }
+    } catch (socketError) {
+      console.error('Error emitiendo low-stock:', socketError);
+    }
+
     res.status(201).json({
       success: true,
       message: 'Factura creada exitosamente',
@@ -125,22 +148,67 @@ const createBilling = async (req, res) => {
     console.error(error);
     res.status(500).json({ error: error.message || 'Error al crear factura' });
   } finally {
-    client.release();
+    if (releaseClient) client.release();
   }
 };
 
-// Obtener todas las facturas
+// Obtener todas las facturas con paginación y filtros
 const getAllBillings = async (req, res) => {
   try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+    const search = req.query.search || '';
+    const method = req.query.method || '';
+
+    let whereClause = '';
+    const params = [];
+    let paramIndex = 1;
+
+    if (search) {
+      whereClause += ` WHERE (c.first_name || ' ' || c.last_name) ILIKE $${paramIndex} OR b.id::text = $${paramIndex}`;
+      params.push(`%${search}%`);
+      paramIndex++;
+    }
+
+    if (method) {
+      whereClause += whereClause ? ` AND pm.method_name = $${paramIndex}` : ` WHERE pm.method_name = $${paramIndex}`;
+      params.push(method);
+      paramIndex++;
+    }
+
+    const countResult = await pool.query(`
+      SELECT COUNT(*), COALESCE(SUM(b.total_amount), 0) as total_amount, COALESCE(AVG(b.total_amount), 0) as avg_amount
+      FROM billings b
+      JOIN customers c ON b.customer_id = c.id
+      JOIN payment_methods pm ON b.payment_method_id = pm.id
+      ${whereClause}
+    `, params);
+    const total = parseInt(countResult.rows[0].count);
+    const totalAmount = Number(countResult.rows[0].total_amount);
+    const avgAmount = Number(countResult.rows[0].avg_amount);
+
     const result = await pool.query(`
       SELECT b.*, c.first_name || ' ' || c.last_name as customer_name, pm.method_name,
              (SELECT COUNT(*) FROM sale_details WHERE billing_id = b.id) as product_count
       FROM billings b
       JOIN customers c ON b.customer_id = c.id
       JOIN payment_methods pm ON b.payment_method_id = pm.id
+      ${whereClause}
       ORDER BY b.payment_date DESC
-    `);
-    res.json({ success: true, count: result.rows.length, data: result.rows });
+      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+    `, [...params, limit, offset]);
+
+    res.json({
+      success: true,
+      count: result.rows.length,
+      total,
+      totalAmount,
+      avgAmount,
+      page,
+      totalPages: Math.ceil(total / limit),
+      data: result.rows
+    });
   } catch (error) {
     res.status(500).json({ error: 'Error al obtener facturas' });
   }

@@ -1,7 +1,8 @@
 const pool = require('../config/database');
 
 const createPurchase = async (req, res) => {
-  const client = await pool.connect();
+  const client = req.dbClient || await pool.connect();
+  const releaseClient = !req.dbClient;
   try {
     await client.query('BEGIN');
     const { supplier_id, user_id, invoice_number, payment_method_id, products, notes } = req.body;
@@ -56,21 +57,66 @@ const createPurchase = async (req, res) => {
     console.error(error);
     res.status(500).json({ error: 'Error al registrar compra' });
   } finally {
-    client.release();
+    if (releaseClient) client.release();
   }
 };
 
 const getAllPurchases = async (req, res) => {
   try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+    const search = req.query.search || '';
+    const method = req.query.method || '';
+
+    let whereClause = '';
+    const params = [];
+    let paramIndex = 1;
+
+    if (search) {
+      whereClause += ` WHERE (s.name ILIKE $${paramIndex} OR p.id::text = $${paramIndex} OR p.invoice_number ILIKE $${paramIndex})`;
+      params.push(`%${search}%`);
+      paramIndex++;
+    }
+
+    if (method) {
+      whereClause += whereClause ? ` AND pm.method_name = $${paramIndex}` : ` WHERE pm.method_name = $${paramIndex}`;
+      params.push(method);
+      paramIndex++;
+    }
+
+    const countResult = await pool.query(`
+      SELECT COUNT(*), COALESCE(SUM(p.total_amount), 0) as total_amount, COALESCE(AVG(p.total_amount), 0) as avg_amount
+      FROM purchases p
+      LEFT JOIN suppliers s ON p.supplier_id = s.id
+      LEFT JOIN payment_methods pm ON p.payment_method_id = pm.id
+      ${whereClause}
+    `, params);
+    const total = parseInt(countResult.rows[0].count);
+    const totalAmount = Number(countResult.rows[0].total_amount);
+    const avgAmount = Number(countResult.rows[0].avg_amount);
+
     const result = await pool.query(`
       SELECT p.*, s.name as supplier_name, pm.method_name, u.first_name || ' ' || COALESCE(u.last_name, '') as user_name
       FROM purchases p
       LEFT JOIN suppliers s ON p.supplier_id = s.id
       LEFT JOIN payment_methods pm ON p.payment_method_id = pm.id
       LEFT JOIN users u ON p.user_id = u.id
+      ${whereClause}
       ORDER BY p.purchase_date DESC
-    `);
-    res.json({ success: true, count: result.rows.length, data: result.rows });
+      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+    `, [...params, limit, offset]);
+
+    res.json({
+      success: true,
+      count: result.rows.length,
+      total,
+      totalAmount,
+      avgAmount,
+      page,
+      totalPages: Math.ceil(total / limit),
+      data: result.rows
+    });
   } catch (error) {
     res.status(500).json({ error: 'Error al obtener compras' });
   }

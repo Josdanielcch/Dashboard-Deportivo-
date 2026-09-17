@@ -3,8 +3,10 @@
 import React, { useState, useEffect } from 'react'
 import { Save, Building2, Phone, Mail, MapPin, FileText, CheckCircle } from 'lucide-react'
 import { settingsService } from '@/services/settingsService'
+import { useToast } from '@/contexts/toast-context'
 
 export default function ConfiguracionView() {
+  const { showToast } = useToast()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [successMsg, setSuccessMsg] = useState('')
@@ -54,7 +56,7 @@ export default function ConfiguracionView() {
       setSuccessMsg('¡Configuración guardada exitosamente!')
       setTimeout(() => setSuccessMsg(''), 3000)
     } else {
-      alert(res.error || 'Error al guardar la configuración')
+      showToast(res.error || 'Error al guardar la configuración', 'error')
     }
     setSaving(false)
   }

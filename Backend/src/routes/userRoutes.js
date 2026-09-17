@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { protect, authorize } = require('../middleware/authMiddleware');
+const { setAuditContext } = require('../middleware/auditContext');
 const userController = require('../controllers/userController');
 const { validate } = require('../middleware/validate');
 const { z } = require('zod');
@@ -50,6 +51,7 @@ const updateUserStatusSchema = z.object({
 
 // Rutas protegidas
 router.use(protect);
+router.use(setAuditContext);
 
 // Ruta para que el usuario actualice su propio perfil (no requiere authorize admin)
 router.put('/profile', userController.updateMyProfile);

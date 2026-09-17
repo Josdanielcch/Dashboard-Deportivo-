@@ -4,8 +4,10 @@ import { useState, useEffect } from 'react'
 import { Plus, Search, Filter, Mail, Phone, Edit2, Trash2, Users, ChevronLeft, ChevronRight, Award, Sparkles } from 'lucide-react'
 import { customerService } from '@/services/customerService'
 import { Modal } from '@/components/ui/modal'
+import { useToast } from '@/contexts/toast-context'
 
 export default function ClientesView() {
+  const { confirmAction } = useToast()
   const [clientes, setClientes] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -56,26 +58,26 @@ export default function ClientesView() {
   const handleToggleMembership = async (id: number, currentLevel: string, name: string) => {
     const newLevel = currentLevel === 'pro' ? 'standard' : 'pro';
     const actionName = newLevel === 'pro' ? 'Aprobar Membresía PRO' : 'Cambiar a Estándar';
-    if (!confirm(`¿Deseas ${actionName} para el cliente "${name}"?`)) return;
-
-    try {
-      const res = await customerService.updateMembership(id, newLevel);
-      if (res.success) {
+    confirmAction(`¿Deseas ${actionName} para el cliente "${name}"?`, async () => {
+      try {
+        const res = await customerService.updateMembership(id, newLevel);
+        if (res.success) {
+          setInfoModal({
+            isOpen: true,
+            title: 'Membresía Actualizada',
+            message: `La membresía de "${name}" ahora es ${newLevel.toUpperCase()}.`,
+          });
+          fetchClientes();
+        }
+      } catch (error: any) {
+        console.error('Error actualizando membresía:', error);
         setInfoModal({
           isOpen: true,
-          title: 'Membresía Actualizada',
-          message: `La membresía de "${name}" ahora es ${newLevel.toUpperCase()}.`,
+          title: 'Error',
+          message: error.message || 'No se pudo actualizar la membresía.',
         });
-        fetchClientes();
       }
-    } catch (error: any) {
-      console.error('Error actualizando membresía:', error);
-      setInfoModal({
-        isOpen: true,
-        title: 'Error',
-        message: error.message || 'No se pudo actualizar la membresía.',
-      });
-    }
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

@@ -5,10 +5,14 @@ import { io, Socket } from 'socket.io-client'
 
 interface Notification {
   id: any
-  customer_name: string
-  court_name: string
-  start_time: string
-  end_time: string
+  type: 'booking' | 'low-stock'
+  customer_name?: string
+  court_name?: string
+  start_time?: string
+  end_time?: string
+  product_id?: number
+  product_name?: string
+  current_stock?: number
   created_at: string
   [key: string]: any
 }
@@ -63,7 +67,16 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       setNotifications(prev => {
         const exists = prev.find(n => n.id === data.id)
         if (exists) return prev
-        return [data, ...prev].slice(0, 50)
+        return [{ ...data, type: 'booking' }, ...prev].slice(0, 50)
+      })
+    })
+
+    socketInstance.on('low-stock', (data: any) => {
+      console.log('[Socket] Stock bajo recibido:', data)
+      setNotifications(prev => {
+        const exists = prev.find(n => n.id === data.id)
+        if (exists) return prev
+        return [{ ...data, type: 'low-stock' }, ...prev].slice(0, 50)
       })
     })
 
