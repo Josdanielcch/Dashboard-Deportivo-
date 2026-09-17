@@ -5,8 +5,10 @@ import { Plus, Key, Search, Filter, UserPlus, Shield } from 'lucide-react'
 import { userService } from '@/services/userService'
 import { Modal } from '@/components/ui/modal'
 import { useAuthSafe } from './auth-context'
+import { useToast } from '@/contexts/toast-context'
 
 export default function UsuariosView() {
+  const { showToast } = useToast()
   const { user, updateContextUser } = useAuthSafe()
   const [usuarios, setUsuarios] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -63,10 +65,10 @@ export default function UsuariosView() {
           updateContextUser({ avatar_url: data.data.avatar_url });
         }
       } else {
-        alert(data.error || 'Error al subir la imagen');
+        showToast(data.error || 'Error al subir la imagen', 'error');
       }
     } catch (err) {
-      alert('Error de conexión al subir la imagen');
+      showToast('Error de conexión al subir la imagen', 'error');
     }
   };
 

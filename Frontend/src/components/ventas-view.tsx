@@ -9,12 +9,20 @@ import { bookingService } from '@/services/bookingService'
 import { Modal } from '@/components/ui/modal'
 import { SearchableSelect } from '@/components/ui/searchable-select'
 import { printInvoice } from '@/utils/printUtils'
+import { useToast } from '@/contexts/toast-context'
 
 export default function VentasView() {
+  const { showToast, confirmAction } = useToast()
   const [ventas, setVentas] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [methodFilter, setMethodFilter] = useState('Todos')
+  const [currentPage, setCurrentPage] = useState(1)
+  const ITEMS_PER_PAGE = 10
+  const [totalPagesState, setTotalPagesState] = useState(1)
+  const [totalItems, setTotalItems] = useState(0)
+  const [totalAmount, setTotalAmount] = useState(0)
+  const [avgAmount, setAvgAmount] = useState(0)
 
   const [clientes, setClientes] = useState<any[]>([])
   const [productos, setProductos] = useState<any[]>([])
@@ -40,20 +48,26 @@ export default function VentasView() {
   const [loadingInvoice, setLoadingInvoice] = useState(false)
 
   useEffect(() => {
-    fetchData()
+    fetchData(1)
   }, [])
 
-  const fetchData = async () => {
+  const fetchData = async (page = 1, search = searchTerm, method = methodFilter) => {
     setLoading(true)
     try {
       const [resVentas, resClientes, resProductos, resBookings] = await Promise.all([
-        billingService.getAll().catch(() => ({ success: false })),
+        billingService.getAll(page, ITEMS_PER_PAGE, search, method).catch(() => ({ success: false })),
         customerService.getAll().catch(() => ({ success: false })),
         productService.getAll().catch(() => ({ success: false })),
         bookingService.getAll().catch(() => ({ success: false }))
       ])
 
-      if (resVentas.success) setVentas(resVentas.data || [])
+      if (resVentas.success) {
+        setVentas(resVentas.data || [])
+        setTotalPagesState(resVentas.totalPages || 1)
+        setTotalItems(resVentas.total || 0)
+        setTotalAmount(resVentas.totalAmount || 0)
+        setAvgAmount(resVentas.avgAmount || 0)
+      }
       if (resClientes.success) setClientes(resClientes.data || [])
       if (resProductos.success) setProductos(resProductos.data || [])
       if (resBookings.success) setBookings(resBookings.data || [])
@@ -89,7 +103,7 @@ export default function VentasView() {
     e.preventDefault()
 
     if (cart.length === 0 && !bookingId) {
-      alert('Debes agregar al menos un producto o asociar una reserva.')
+      showToast('Debes agregar al menos un producto o asociar una reserva.', 'warning')
       return
     }
 
@@ -111,11 +125,45 @@ export default function VentasView() {
         setFormData({ customer_id: '', payment_method_id: '1' })
         setCart([])
         setBookingId('')
-        fetchData()
+        fetchData(currentPage)
+        const newId = res.data?.billing?.id || res.data?.id
+        if (newId) {
+          const invoiceRes = await billingService.getById(newId.toString()).catch(() => null)
+          if (invoiceRes?.success) {
+            confirmAction('Venta registrada exitosamente. ¿Desea imprimir la factura?', () => {
+              const inv = invoiceRes.data
+              const details = inv.details.map((d: any) => ({
+                name: d.product_name,
+                quantity: d.quantity,
+                price: Number(d.price_unit),
+                subtotal: Number(d.subtotal)
+              }))
+              if (inv.billing.booking_id) {
+                details.unshift({
+                  name: `Reserva de Cancha (#${inv.billing.booking_id})`,
+                  quantity: 1,
+                  price: Number(inv.billing.total_amount) - details.reduce((acc: number, item: any) => acc + item.subtotal, 0),
+                  subtotal: Number(inv.billing.total_amount) - details.reduce((acc: number, item: any) => acc + item.subtotal, 0)
+                })
+              }
+              printInvoice({
+                type: 'venta',
+                id: inv.billing.id,
+                date: inv.billing.payment_date,
+                entityName: inv.billing.full_name,
+                methodName: inv.billing.method_name,
+                total: Number(inv.billing.total_amount),
+                details: details
+              }, 'ticket')
+            })
+          } else {
+            showToast('Venta registrada exitosamente.', 'success')
+          }
+        }
       }
     } catch (error: any) {
       console.error('Error creando venta:', error)
-      alert(error.message || 'Hubo un error al registrar la venta. Verifica el stock.')
+      showToast(error.message || 'Hubo un error al registrar la venta. Verifica el stock.', 'error')
     } finally {
       setIsSubmitting(false)
     }
@@ -123,7 +171,7 @@ export default function VentasView() {
 
 
 
-  const handlePrintVenta = (format: 'a4' | 'ticket') => {
+  const handlePrintVenta = async (format: 'a4' | 'ticket') => {
     if (!selectedInvoice) return;
     
     // Si hay una reserva asociada, la agregamos como un detalle más
@@ -143,7 +191,7 @@ export default function VentasView() {
       });
     }
 
-    printInvoice({
+    const ok = await printInvoice({
       type: 'venta',
       id: selectedInvoice.billing.id,
       date: selectedInvoice.billing.payment_date,
@@ -152,6 +200,7 @@ export default function VentasView() {
       total: Number(selectedInvoice.billing.total_amount),
       details: details
     }, format);
+    if (!ok) showToast('Permite las ventanas emergentes (pop-ups) para imprimir.', 'warning');
   }
 
   const handleViewInvoice = async (id: number) => {
@@ -164,28 +213,15 @@ export default function VentasView() {
       }
     } catch (error) {
       console.error('Error fetching invoice:', error)
-      alert('Error al cargar la factura')
+      showToast('Error al cargar la factura', 'error')
       setIsInvoiceModalOpen(false)
     } finally {
       setLoadingInvoice(false)
     }
   }
 
-  const filteredVentas = ventas.filter((venta) => {
-    const term = searchTerm.toLowerCase()
-    const matchesSearch = 
-      venta.customer_name?.toLowerCase().includes(term) ||
-      venta.id?.toString().includes(term)
-
-    const matchesMethod = methodFilter === 'Todos' || venta.method_name === methodFilter
-
-    return matchesSearch && matchesMethod
-  })
-
-  const totalVentasValor = filteredVentas.reduce((acc, v) => acc + Number(v.total_amount || 0), 0)
-  const totalVentas = `$${totalVentasValor.toFixed(2)}`
-  const promedioValor = filteredVentas.length > 0 ? totalVentasValor / filteredVentas.length : 0
-  const promedio = `$${promedioValor.toFixed(2)}`
+  const totalVentas = `$${totalAmount.toFixed(2)}`
+  const promedio = `$${avgAmount.toFixed(2)}`
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '-'
@@ -226,6 +262,9 @@ export default function VentasView() {
   }
 
   const grandTotal = cartTotal + selectedBookingGrandTotal
+
+  const totalPages = totalPagesState
+  const paginatedVentas = ventas
 
   return (
     <div className="min-h-screen bg-[#0a0e27] p-4 md:p-8">
@@ -269,7 +308,7 @@ export default function VentasView() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-zinc-400 text-sm mb-1">Ventas Realizadas</p>
-              <p className="text-3xl font-bold text-white">{filteredVentas.length}</p>
+              <p className="text-3xl font-bold text-white">{totalItems}</p>
             </div>
             <div className="bg-[#ccff00]/10 p-3 rounded-xl">
               <TrendingUp className="text-[#ccff00]" size={28} />
@@ -298,7 +337,7 @@ export default function VentasView() {
             type="text"
             placeholder="Buscar por cliente o ID..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); fetchData(1, e.target.value, methodFilter) }}
             className="w-full bg-[#0a0e27] border border-[#1a1f3a] rounded-xl pl-10 pr-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:border-[#ccff00]/50 transition-colors"
           />
         </div>
@@ -306,7 +345,7 @@ export default function VentasView() {
           <Filter size={18} className="text-zinc-500" />
           <select 
             value={methodFilter}
-            onChange={(e) => setMethodFilter(e.target.value)}
+            onChange={(e) => { setMethodFilter(e.target.value); setCurrentPage(1); fetchData(1, searchTerm, e.target.value) }}
             className="bg-transparent border-none text-white focus:outline-none cursor-pointer"
           >
             <option value="Todos">Todos los Métodos</option>
@@ -342,14 +381,14 @@ export default function VentasView() {
                     </div>
                   </td>
                 </tr>
-              ) : filteredVentas.length === 0 ? (
+              ) : ventas.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-16 text-center text-zinc-500">
                     No se encontraron ventas que coincidan con los filtros.
                   </td>
                 </tr>
               ) : (
-                filteredVentas.map((venta) => (
+                paginatedVentas.map((venta) => (
                   <tr key={venta.id} className="border-b border-[#1a1f3a] hover:bg-[#0a0e27]/60 transition-colors group">
                     <td className="py-4 px-6 text-white font-mono font-medium">#{venta.id}</td>
                     <td className="py-4 px-6 text-white font-medium">{venta.customer_name}</td>
@@ -375,6 +414,30 @@ export default function VentasView() {
             </tbody>
           </table>
         </div>
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-6 py-4 border-t border-[#1a1f3a]">
+            <p className="text-sm text-zinc-500">
+              Mostrando {(currentPage - 1) * ITEMS_PER_PAGE + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, totalItems)} de {totalItems}
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => { setCurrentPage(p => Math.max(1, p - 1)); fetchData(currentPage - 1) }}
+                disabled={currentPage === 1}
+                className="px-3 py-1.5 rounded-lg text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/[0.05] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              >
+                Anterior
+              </button>
+              <span className="text-sm text-zinc-500">{currentPage} / {totalPages}</span>
+              <button
+                onClick={() => { setCurrentPage(p => Math.min(totalPages, p + 1)); fetchData(currentPage + 1) }}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1.5 rounded-lg text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/[0.05] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              >
+                Siguiente
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
 

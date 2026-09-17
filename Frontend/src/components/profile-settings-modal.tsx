@@ -75,8 +75,8 @@ export default function ProfileSettingsModal({ isOpen, onClose }: ProfileSetting
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#060a1a]/80 backdrop-blur-sm px-4">
-      <div className="w-full max-w-md bg-[#0b1126] border border-white/[0.06] rounded-2xl shadow-2xl overflow-hidden relative animate-fade-in">
+    <div className="fixed inset-0 z-[100] flex items-start sm:items-center justify-center bg-[#060a1a]/80 backdrop-blur-sm px-4 pt-16 sm:pt-4">
+      <div className="w-full max-w-md bg-[#0b1126] border border-white/[0.06] rounded-2xl shadow-2xl overflow-hidden relative animate-fade-in max-h-[calc(100vh-5rem)] sm:max-h-[90vh]">
         
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06] bg-white/[0.01]">

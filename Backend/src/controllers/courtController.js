@@ -1,6 +1,23 @@
 // src/controllers/courtController.js
 const pool = require('../config/database');
 
+// Helper: ejecutar query dentro de una transacción con contexto de auditoría
+const withAuditContext = async (req, queryFn) => {
+  const client = req.dbClient || await pool.connect();
+  const releaseClient = !req.dbClient;
+  try {
+    if (!req.dbClient) await client.query('BEGIN');
+    const result = await queryFn(client);
+    if (!req.dbClient) await client.query('COMMIT');
+    return result;
+  } catch (error) {
+    if (!req.dbClient) await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    if (releaseClient) client.release();
+  }
+};
+
 const getAllCourts = async (req, res) => {
   try {
     const result = await pool.query(`
@@ -55,10 +72,12 @@ const createCourt = async (req, res) => {
       return res.status(400).json({ error: 'Ya existe una cancha con ese nombre' });
     }
     
-    const result = await pool.query(
-      'INSERT INTO courts (court_name, status, sport_id, hourly_rate) VALUES ($1, $2, $3, $4) RETURNING *',
-      [court_name, status || 'Available', sport_id || null, hourly_rate || 0]
-    );
+    const result = await withAuditContext(req, async (client) => {
+      return client.query(
+        'INSERT INTO courts (court_name, status, sport_id, hourly_rate) VALUES ($1, $2, $3, $4) RETURNING *',
+        [court_name, status || 'Available', sport_id || null, hourly_rate || 0]
+      );
+    });
     
     res.status(201).json({
       success: true,
@@ -80,10 +99,12 @@ const updateCourtStatus = async (req, res) => {
       return res.status(400).json({ error: 'Estado inválido' });
     }
     
-    const result = await pool.query(
-      'UPDATE courts SET status = $1 WHERE id = $2 RETURNING *',
-      [status, id]
-    );
+    const result = await withAuditContext(req, async (client) => {
+      return client.query(
+        'UPDATE courts SET status = $1 WHERE id = $2 RETURNING *',
+        [status, id]
+      );
+    });
     
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Cancha no encontrada' });
@@ -110,10 +131,12 @@ const updateCourt = async (req, res) => {
       return res.status(400).json({ error: 'Ya existe otra cancha con ese nombre' });
     }
     
-    const result = await pool.query(
-      'UPDATE courts SET court_name = $1, status = COALESCE($2, status), sport_id = COALESCE($3, sport_id), hourly_rate = COALESCE($4, hourly_rate) WHERE id = $5 RETURNING *',
-      [court_name, status, sport_id, hourly_rate, id]
-    );
+    const result = await withAuditContext(req, async (client) => {
+      return client.query(
+        'UPDATE courts SET court_name = $1, status = COALESCE($2, status), sport_id = COALESCE($3, sport_id), hourly_rate = COALESCE($4, hourly_rate) WHERE id = $5 RETURNING *',
+        [court_name, status, sport_id, hourly_rate, id]
+      );
+    });
     
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Cancha no encontrada' });
@@ -139,7 +162,9 @@ const deleteCourt = async (req, res) => {
       });
     }
     
-    const result = await pool.query('DELETE FROM courts WHERE id = $1 RETURNING *', [id]);
+    const result = await withAuditContext(req, async (client) => {
+      return client.query('DELETE FROM courts WHERE id = $1 RETURNING *', [id]);
+    });
     
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Cancha no encontrada' });

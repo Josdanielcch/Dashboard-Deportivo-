@@ -8,8 +8,11 @@ export const billingService = {
    * Obtiene la lista completa de facturas registradas.
    * @returns {Promise<object>} Respuesta con la lista de facturas en `.data`.
    */
-  getAll: async () => {
-    return api.get('/billings');
+  getAll: async (page = 1, limit = 10, search = '', method = '') => {
+    const params = new URLSearchParams({ page, limit });
+    if (search) params.append('search', search);
+    if (method && method !== 'Todos') params.append('method', method);
+    return api.get(`/billings?${params.toString()}`);
   },
 
   /**

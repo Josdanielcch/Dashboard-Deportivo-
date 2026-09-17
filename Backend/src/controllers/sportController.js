@@ -1,5 +1,22 @@
 const pool = require('../config/database');
 
+// Helper: ejecutar query dentro de una transacción con contexto de auditoría
+const withAuditContext = async (req, queryFn) => {
+  const client = req.dbClient || await pool.connect();
+  const releaseClient = !req.dbClient;
+  try {
+    if (!req.dbClient) await client.query('BEGIN');
+    const result = await queryFn(client);
+    if (!req.dbClient) await client.query('COMMIT');
+    return result;
+  } catch (error) {
+    if (!req.dbClient) await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    if (releaseClient) client.release();
+  }
+};
+
 const getAllSports = async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM sports ORDER BY id');
@@ -15,10 +32,12 @@ const createSport = async (req, res) => {
     const { name, image_url } = req.body;
     if (!name) return res.status(400).json({ error: 'El nombre es requerido' });
 
-    const result = await pool.query(
-      'INSERT INTO sports (name, image_url) VALUES ($1, $2) RETURNING *',
-      [name, image_url]
-    );
+    const result = await withAuditContext(req, async (client) => {
+      return client.query(
+        'INSERT INTO sports (name, image_url) VALUES ($1, $2) RETURNING *',
+        [name, image_url]
+      );
+    });
     res.status(201).json({ success: true, data: result.rows[0] });
   } catch (error) {
     if (error.code === '23505') return res.status(400).json({ error: 'El deporte ya existe' });
@@ -34,10 +53,12 @@ const updateSport = async (req, res) => {
 
     if (!name) return res.status(400).json({ error: 'El nombre es requerido' });
 
-    const result = await pool.query(
-      'UPDATE sports SET name = $1, image_url = $2 WHERE id = $3 RETURNING *',
-      [name, image_url, id]
-    );
+    const result = await withAuditContext(req, async (client) => {
+      return client.query(
+        'UPDATE sports SET name = $1, image_url = $2 WHERE id = $3 RETURNING *',
+        [name, image_url, id]
+      );
+    });
 
     if (result.rows.length === 0) return res.status(404).json({ error: 'Deporte no encontrado' });
     res.json({ success: true, data: result.rows[0] });
@@ -57,7 +78,9 @@ const deleteSport = async (req, res) => {
       return res.status(400).json({ error: 'No se puede eliminar el deporte porque hay canchas asociadas a él.' });
     }
 
-    const result = await pool.query('DELETE FROM sports WHERE id = $1 RETURNING *', [id]);
+    const result = await withAuditContext(req, async (client) => {
+      return client.query('DELETE FROM sports WHERE id = $1 RETURNING *', [id]);
+    });
     if (result.rows.length === 0) return res.status(404).json({ error: 'Deporte no encontrado' });
 
     res.json({ success: true, message: 'Deporte eliminado' });

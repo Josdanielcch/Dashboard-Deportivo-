@@ -4,6 +4,7 @@ import { SocketProvider } from '@/contexts/socket-context'
 import LoginView from '@/components/login-view'
 import Sidebar from '@/components/sidebar'
 import NotificationBell from '@/components/notification-bell'
+import { Menu } from 'lucide-react'
 
 const DashboardView = lazy(() => import('@/components/dashboard-view'))
 const CanchasView = lazy(() => import('@/components/canchas-view'))
@@ -115,8 +116,25 @@ export default function AppContent() {
             <div className="absolute -bottom-40 -left-40 w-[300px] h-[300px] rounded-full bg-[#6366f1]/3 blur-[80px]" />
           </div>
 
+        {/* Mobile Header */}
+        <div className="flex md:hidden items-center justify-between px-4 py-3 border-b border-white/[0.06] bg-[#060a1a]/60 backdrop-blur-sm sticky top-0 z-10">
+          <button
+            onClick={() => setIsMobileMenuOpen(true)}
+            className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-white/[0.06] transition-all"
+          >
+            <Menu size={22} />
+          </button>
+          <div className="flex flex-col items-center">
+            <span className="text-sm font-bold text-white capitalize">
+              Hola, {user?.full_name?.split(' ')[0] || user?.username || 'Admin'}
+            </span>
+            <span className="text-[10px] text-zinc-500">Panel de Administración</span>
+          </div>
+          <NotificationBell onNavigate={navigateTo} />
+        </div>
+
         {/* Desktop/Tablet Header Info Bar */}
-        <div className="hidden md:flex items-center justify-between px-8 py-5 border-b border-white/[0.06] bg-[#060a1a]/40 backdrop-blur-sm sticky top-0 z-30">
+        <div className="hidden md:flex items-center justify-between px-8 py-5 border-b border-white/[0.06] bg-[#060a1a]/40 backdrop-blur-sm sticky top-0 z-10">
           <div className="flex flex-col">
             <span className="text-lg font-bold text-white capitalize">¡Hola, {user?.full_name || user?.username || 'Administrador'}!</span>
             <span className="text-xs text-zinc-400">Panel de Administración</span>
@@ -135,7 +153,7 @@ export default function AppContent() {
           </div>
         </div>
 
-        <div className="flex-1 w-full max-w-[2200px] mx-auto overflow-x-hidden relative z-10">
+        <div className="flex-1 w-full max-w-[2200px] mx-auto overflow-x-auto relative z-10">
           <Suspense fallback={<ModuleLoader />}>
             {renderView()}
           </Suspense>

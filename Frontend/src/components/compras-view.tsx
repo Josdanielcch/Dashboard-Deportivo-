@@ -8,12 +8,20 @@ import { productService } from '@/services/productService'
 import { SearchableSelect } from '@/components/ui/searchable-select'
 import { Modal } from '@/components/ui/modal'
 import { printInvoice } from '@/utils/printUtils'
+import { useToast } from '@/contexts/toast-context'
 
 export default function ComprasView() {
+  const { showToast, confirmAction } = useToast()
   const [purchases, setPurchases] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [methodFilter, setMethodFilter] = useState('Todos')
+  const [currentPage, setCurrentPage] = useState(1)
+  const ITEMS_PER_PAGE = 10
+  const [totalPagesState, setTotalPagesState] = useState(1)
+  const [totalItems, setTotalItems] = useState(0)
+  const [totalAmount, setTotalAmount] = useState(0)
+  const [avgAmount, setAvgAmount] = useState(0)
 
   const [suppliers, setSuppliers] = useState<any[]>([])
   const [products, setProducts] = useState<any[]>([])
@@ -39,19 +47,25 @@ export default function ComprasView() {
   const [loadingInvoice, setLoadingInvoice] = useState(false)
 
   useEffect(() => {
-    fetchData()
+    fetchData(1)
   }, [])
 
-  const fetchData = async () => {
+  const fetchData = async (page = 1, search = searchTerm, method = methodFilter) => {
     setLoading(true)
     try {
       const [resPurchases, resSuppliers, resProducts] = await Promise.all([
-        purchaseService.getAll().catch(() => ({ success: false })),
+        purchaseService.getAll(page, ITEMS_PER_PAGE, search, method).catch(() => ({ success: false })),
         supplierService.getAll().catch(() => ({ success: false })),
         productService.getAll().catch(() => ({ success: false }))
       ])
 
-      if (resPurchases.success) setPurchases(resPurchases.data || [])
+      if (resPurchases.success) {
+        setPurchases(resPurchases.data || [])
+        setTotalPagesState(resPurchases.totalPages || 1)
+        setTotalItems(resPurchases.total || 0)
+        setTotalAmount(resPurchases.totalAmount || 0)
+        setAvgAmount(resPurchases.avgAmount || 0)
+      }
       if (resSuppliers.success) setSuppliers(resSuppliers.data || [])
       if (resProducts.success) setProducts(resProducts.data || [])
     } catch (error) {
@@ -95,7 +109,7 @@ export default function ComprasView() {
     e.preventDefault()
 
     if (cart.length === 0) {
-      alert('Debes agregar al menos un ítem a la compra.')
+      showToast('Debes agregar al menos un ítem a la compra.', 'warning')
       return
     }
 
@@ -118,11 +132,37 @@ export default function ComprasView() {
         setIsModalOpen(false)
         setFormData({ supplier_id: '', payment_method_id: '1', invoice_number: '' })
         setCart([])
-        fetchData()
+        fetchData(currentPage)
+        const newId = res.data?.id || res.data?.purchase?.id
+        if (newId) {
+          const invoiceRes = await purchaseService.getById(newId).catch(() => null)
+          if (invoiceRes?.success) {
+            confirmAction('Compra registrada exitosamente. ¿Desea imprimir la factura?', () => {
+              const inv = invoiceRes.data
+              const details = inv.details.map((d: any) => ({
+                name: d.product_name || d.description,
+                quantity: d.quantity,
+                price: Number(d.unit_cost),
+                subtotal: Number(d.subtotal)
+              }))
+              printInvoice({
+                type: 'compra',
+                id: inv.purchase.id,
+                date: inv.purchase.purchase_date,
+                entityName: inv.purchase.supplier_name,
+                methodName: inv.purchase.method_name || 'Crédito',
+                total: Number(inv.purchase.total_amount),
+                details: details
+              }, 'ticket')
+            })
+          } else {
+            showToast('Compra registrada exitosamente.', 'success')
+          }
+        }
       }
     } catch (error: any) {
       console.error('Error creando compra:', error)
-      alert(error.message || 'Hubo un error al registrar la compra.')
+      showToast(error.message || 'Hubo un error al registrar la compra.', 'error')
     } finally {
       setIsSubmitting(false)
     }
@@ -138,14 +178,14 @@ export default function ComprasView() {
       }
     } catch (error) {
       console.error('Error fetching invoice:', error)
-      alert('Error al cargar la compra')
+      showToast('Error al cargar la compra', 'error')
       setIsInvoiceModalOpen(false)
     } finally {
       setLoadingInvoice(false)
     }
   }
 
-  const handlePrintCompra = (format: 'a4' | 'ticket') => {
+  const handlePrintCompra = async (format: 'a4' | 'ticket') => {
     if (!selectedInvoice) return;
     
     const details = selectedInvoice.details.map((d: any) => ({
@@ -155,7 +195,7 @@ export default function ComprasView() {
       subtotal: Number(d.subtotal)
     }));
 
-    printInvoice({
+    const ok = await printInvoice({
       type: 'compra',
       id: selectedInvoice.purchase.id,
       date: selectedInvoice.purchase.purchase_date,
@@ -164,24 +204,11 @@ export default function ComprasView() {
       total: Number(selectedInvoice.purchase.total_amount),
       details: details
     }, format);
+    if (!ok) showToast('Permite las ventanas emergentes (pop-ups) para imprimir.', 'warning');
   }
 
-  const filteredPurchases = purchases.filter((purchase) => {
-    const term = searchTerm.toLowerCase()
-    const matchesSearch = 
-      purchase.supplier_name?.toLowerCase().includes(term) ||
-      purchase.id?.toString().includes(term) ||
-      purchase.invoice_number?.toLowerCase().includes(term)
-
-    const matchesMethod = methodFilter === 'Todos' || purchase.method_name === methodFilter
-
-    return matchesSearch && matchesMethod
-  })
-
-  const totalComprasValor = filteredPurchases.reduce((acc, p) => acc + Number(p.total_amount || 0), 0)
-  const totalCompras = `$${totalComprasValor.toFixed(2)}`
-  const promedioValor = filteredPurchases.length > 0 ? totalComprasValor / filteredPurchases.length : 0
-  const promedio = `$${promedioValor.toFixed(2)}`
+  const totalCompras = `$${totalAmount.toFixed(2)}`
+  const promedio = `$${avgAmount.toFixed(2)}`
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '-'
@@ -232,7 +259,7 @@ export default function ComprasView() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-zinc-400 text-sm mb-1">Compras Realizadas</p>
-              <p className="text-3xl font-bold text-white">{filteredPurchases.length}</p>
+              <p className="text-3xl font-bold text-white">{totalItems}</p>
             </div>
             <div className="bg-[#ccff00]/10 p-3 rounded-xl">
               <TrendingDown className="text-[#ccff00]" size={28} />
@@ -261,7 +288,7 @@ export default function ComprasView() {
             type="text"
             placeholder="Buscar por proveedor, ID o factura..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); fetchData(1, e.target.value, methodFilter) }}
             className="w-full bg-[#0a0e27] border border-[#1a1f3a] rounded-xl pl-10 pr-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:border-[#ccff00]/50 transition-colors"
           />
         </div>
@@ -269,7 +296,7 @@ export default function ComprasView() {
           <Filter size={18} className="text-zinc-500" />
           <select 
             value={methodFilter}
-            onChange={(e) => setMethodFilter(e.target.value)}
+            onChange={(e) => { setMethodFilter(e.target.value); setCurrentPage(1); fetchData(1, searchTerm, e.target.value) }}
             className="bg-transparent border-none text-white focus:outline-none cursor-pointer"
           >
             <option value="Todos">Todos los Métodos</option>
@@ -306,14 +333,14 @@ export default function ComprasView() {
                     </div>
                   </td>
                 </tr>
-              ) : filteredPurchases.length === 0 ? (
+              ) : purchases.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-16 text-center text-zinc-500">
                     No se encontraron compras que coincidan con los filtros.
                   </td>
                 </tr>
               ) : (
-                filteredPurchases.map((purchase) => (
+                purchases.map((purchase) => (
                   <tr key={purchase.id} className="border-b border-[#1a1f3a] hover:bg-[#0a0e27]/60 transition-colors group">
                     <td className="py-4 px-6 text-white font-mono font-medium">#{purchase.id}</td>
                     <td className="py-4 px-6 text-white font-medium">{purchase.supplier_name}</td>
@@ -340,6 +367,30 @@ export default function ComprasView() {
             </tbody>
           </table>
         </div>
+        {totalPagesState > 1 && (
+          <div className="flex items-center justify-between px-6 py-4 border-t border-[#1a1f3a]">
+            <p className="text-sm text-zinc-500">
+              Mostrando {(currentPage - 1) * ITEMS_PER_PAGE + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, totalItems)} de {totalItems}
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => { setCurrentPage(p => Math.max(1, p - 1)); fetchData(currentPage - 1) }}
+                disabled={currentPage === 1}
+                className="px-3 py-1.5 rounded-lg text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/[0.05] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              >
+                Anterior
+              </button>
+              <span className="text-sm text-zinc-500">{currentPage} / {totalPagesState}</span>
+              <button
+                onClick={() => { setCurrentPage(p => Math.min(totalPagesState, p + 1)); fetchData(currentPage + 1) }}
+                disabled={currentPage === totalPagesState}
+                className="px-3 py-1.5 rounded-lg text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/[0.05] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              >
+                Siguiente
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Modal Nueva Compra */}

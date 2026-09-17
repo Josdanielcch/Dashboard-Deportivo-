@@ -57,7 +57,8 @@ const getCxpById = async (req, res) => {
 };
 
 const addPayment = async (req, res) => {
-  const client = await pool.connect();
+  const client = req.dbClient || await pool.connect();
+  const releaseClient = !req.dbClient;
   try {
     await client.query('BEGIN');
     const { id } = req.params;
@@ -91,7 +92,7 @@ const addPayment = async (req, res) => {
     await client.query('ROLLBACK');
     res.status(500).json({ error: error.message || 'Error al registrar el pago' });
   } finally {
-    client.release();
+    if (releaseClient) client.release();
   }
 };
 

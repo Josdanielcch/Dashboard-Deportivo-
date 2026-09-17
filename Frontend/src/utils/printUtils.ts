@@ -15,12 +15,11 @@ interface PrintData {
   }[];
 }
 
-export const printInvoice = async (data: PrintData, format: PrintFormat) => {
+export const printInvoice = async (data: PrintData, format: PrintFormat): Promise<boolean> => {
   // Abrimos la ventana sincrónicamente para evitar el bloqueador de pop-ups del navegador
   const printWindow = window.open('', '_blank', 'width=800,height=600');
   if (!printWindow) {
-    alert('Por favor, permite las ventanas emergentes (pop-ups) para imprimir.');
-    return;
+    return false;
   }
   printWindow.document.write('<div style="font-family: sans-serif; padding: 20px;">Preparando formato de impresión...</div>');
 
@@ -198,4 +197,5 @@ export const printInvoice = async (data: PrintData, format: PrintFormat) => {
   printWindow.document.open();
   printWindow.document.write(htmlContent);
   printWindow.document.close();
+  return true;
 };

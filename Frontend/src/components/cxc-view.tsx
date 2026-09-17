@@ -4,8 +4,10 @@ import React, { useState, useEffect } from 'react'
 import { DollarSign, Search, Filter, CreditCard, CheckCircle, X } from 'lucide-react'
 import { cxcService } from '@/services/cxcService'
 import { Modal } from '@/components/ui/modal'
+import { useToast } from '@/contexts/toast-context'
 
 export default function CxcView() {
+  const { showToast } = useToast()
   const [cxcList, setCxcList] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -65,7 +67,7 @@ export default function CxcView() {
       }
     } catch (error: any) {
       console.error('Error creando abono:', error)
-      alert(error.message || 'Hubo un error al registrar el abono.')
+      showToast(error.message || 'Hubo un error al registrar el abono.', 'error')
     } finally {
       setIsSubmitting(false)
     }

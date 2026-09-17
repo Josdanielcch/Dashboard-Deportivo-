@@ -112,7 +112,7 @@ export default function Sidebar({ activeModule, setActiveModule, isMobileMenuOpe
         onClose={() => setIsSettingsOpen(false)} 
       />
 
-      <aside className={`fixed inset-y-0 left-0 z-40 bg-[#060a1a] border-r border-white/[0.06] p-3 flex flex-col h-screen transform transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] md:relative md:translate-x-0 ${isMobileMenuOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'} ${collapsed ? 'w-[72px]' : 'w-64'}`}>
+      <aside className={`fixed inset-y-0 left-0 z-40 bg-[#060a1a] border-r border-white/[0.06] p-3 flex flex-col h-screen transform transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] md:relative md:translate-x-0 ${isMobileMenuOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'} ${collapsed ? 'w-[72px]' : 'w-64'} ${!collapsed ? 'md:!w-[72px] lg:!w-64' : ''}`}>
 
         {/* Logo Header */}
         <div className={`flex items-center mb-6 ${collapsed ? 'flex-col gap-2 pt-2' : 'justify-between px-1'}`}>
@@ -129,7 +129,7 @@ export default function Sidebar({ activeModule, setActiveModule, isMobileMenuOpe
           </div>
           {!collapsed && (
             <button
-              className="p-1.5 rounded-lg text-zinc-500 hover:text-white hover:bg-white/[0.05] transition-all hidden md:block"
+              className="p-1.5 rounded-lg text-zinc-500 hover:text-white hover:bg-white/[0.05] transition-all hidden lg:block"
               onClick={() => setCollapsed(true)}
             >
               <ChevronLeft size={16} />
@@ -145,10 +145,18 @@ export default function Sidebar({ activeModule, setActiveModule, isMobileMenuOpe
 
         {collapsed && (
           <button
-            className="mb-4 p-1.5 rounded-lg text-zinc-500 hover:text-white hover:bg-white/[0.05] transition-all mx-auto"
+            className="mb-4 p-1.5 rounded-lg text-zinc-500 hover:text-white hover:bg-white/[0.05] transition-all mx-auto hidden lg:block"
             onClick={() => setCollapsed(false)}
           >
             <ChevronRight size={16} />
+          </button>
+        )}
+        {!collapsed && (
+          <button
+            className="mb-4 p-1.5 rounded-lg text-zinc-500 hover:text-white hover:bg-white/[0.05] transition-all mx-auto lg:hidden"
+            onClick={() => setCollapsed(true)}
+          >
+            <ChevronLeft size={16} />
           </button>
         )}
 

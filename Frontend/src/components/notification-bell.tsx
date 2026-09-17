@@ -1,13 +1,17 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
-import { Bell, X, Zap, Clock, User as UserIcon } from 'lucide-react'
+import { createPortal } from 'react-dom'
+import { Bell, X, Zap, Clock, User as UserIcon, Package, AlertTriangle } from 'lucide-react'
 import { useSocket } from '@/contexts/socket-context'
 
 export default function NotificationBell({ onNavigate }: { onNavigate?: (module: string) => void }) {
   const [showDropdown, setShowDropdown] = useState(false)
   const { notifications, clearNotification, clearAllNotifications, connected } = useSocket()
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const portalDropdownRef = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 })
   const [toast, setToast] = useState<any>(null)
   const toastTimer = useRef<ReturnType<typeof setTimeout>>()
   const prevCountRef = useRef(0)
@@ -26,13 +30,24 @@ export default function NotificationBell({ onNavigate }: { onNavigate?: (module:
   }, [notifications])
 
   const handleOpenDropdown = () => {
+    if (!showDropdown && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect()
+      setDropdownPos({
+        top: rect.bottom + 8,
+        right: window.innerWidth - rect.right
+      })
+    }
     setShowDropdown(v => !v)
     if (!showDropdown) setUnreadCount(0)
   }
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+      const target = e.target as Node
+      const clickedInsideWrapper = dropdownRef.current?.contains(target)
+      const clickedInsidePortal = portalDropdownRef.current?.contains(target)
+      const clickedOnButton = buttonRef.current?.contains(target)
+      if (!clickedInsideWrapper && !clickedInsidePortal && !clickedOnButton) {
         setShowDropdown(false)
       }
     }
@@ -53,16 +68,31 @@ export default function NotificationBell({ onNavigate }: { onNavigate?: (module:
       {/* Toast flotante */}
       {toast && (
         <div
-          onClick={() => { handleDismissToast(); onNavigate?.('reservas') }}
-          className="fixed bottom-6 right-6 z-50 max-w-sm w-full bg-gradient-to-br from-[#0f1533] to-[#0a0e27] border border-[#ccff00]/20 rounded-2xl shadow-2xl shadow-[#ccff00]/10 p-4 cursor-pointer animate-in slide-in-from-bottom-4 duration-300 hover:border-[#ccff00]/40 transition-all"
+          onClick={() => { handleDismissToast(); toast.type === 'low-stock' ? onNavigate?.('productos') : onNavigate?.('reservas') }}
+          className={`fixed bottom-6 right-6 z-[9999] max-w-sm w-full border rounded-2xl shadow-2xl p-4 cursor-pointer animate-in slide-in-from-bottom-4 duration-300 transition-all ${
+            toast.type === 'low-stock'
+              ? 'bg-gradient-to-br from-[#1a1207] to-[#0a0e27] border-amber-500/20 shadow-amber-500/10 hover:border-amber-500/40'
+              : 'bg-gradient-to-br from-[#0f1533] to-[#0a0e27] border-[#ccff00]/20 shadow-[#ccff00]/10 hover:border-[#ccff00]/40'
+          }`}
         >
           <div className="flex items-start gap-3">
-            <div className="h-10 w-10 rounded-xl bg-[#ccff00]/15 border border-[#ccff00]/25 flex items-center justify-center shrink-0 animate-pulse">
-              <Zap size={18} className="text-[#ccff00]" />
+            <div className={`h-10 w-10 rounded-xl border flex items-center justify-center shrink-0 animate-pulse ${
+              toast.type === 'low-stock'
+                ? 'bg-amber-500/15 border-amber-500/25'
+                : 'bg-[#ccff00]/15 border-[#ccff00]/25'
+            }`}>
+              {toast.type === 'low-stock'
+                ? <AlertTriangle size={18} className="text-amber-400" />
+                : <Zap size={18} className="text-[#ccff00]" />
+              }
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between">
-                <p className="text-xs font-bold text-[#ccff00] uppercase tracking-wider">Nueva Reserva</p>
+                <p className={`text-xs font-bold uppercase tracking-wider ${
+                  toast.type === 'low-stock' ? 'text-amber-400' : 'text-[#ccff00]'
+                }`}>
+                  {toast.type === 'low-stock' ? 'Stock Bajo' : 'Nueva Reserva'}
+                </p>
                 <button
                   onClick={(e) => { e.stopPropagation(); handleDismissToast() }}
                   className="text-zinc-500 hover:text-white transition-colors p-0.5 rounded hover:bg-white/[0.05]"
@@ -70,28 +100,47 @@ export default function NotificationBell({ onNavigate }: { onNavigate?: (module:
                   <X size={14} />
                 </button>
               </div>
-              <p className="text-white font-bold text-sm mt-0.5 truncate">{toast.customer_name}</p>
-              <div className="flex items-center gap-3 text-zinc-400 text-xs mt-1">
-                <span className="flex items-center gap-1">
-                  <UserIcon size={10} />
-                  {toast.court_name}
-                </span>
-                <span className="flex items-center gap-1">
-                  <Clock size={10} />
-                  {toast.start_time?.slice(0, 5)} - {toast.end_time?.slice(0, 5)}
-                </span>
-              </div>
+              {toast.type === 'low-stock' ? (
+                <>
+                  <p className="text-white font-bold text-sm mt-0.5 truncate">{toast.product_name}</p>
+                  <div className="flex items-center gap-1 text-zinc-400 text-xs mt-1">
+                    <Package size={10} />
+                    <span>Quedan <span className="text-amber-400 font-bold">{toast.current_stock}</span> unidades</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="text-white font-bold text-sm mt-0.5 truncate">{toast.customer_name}</p>
+                  <div className="flex items-center gap-3 text-zinc-400 text-xs mt-1">
+                    <span className="flex items-center gap-1">
+                      <UserIcon size={10} />
+                      {toast.court_name}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Clock size={10} />
+                      {toast.start_time?.slice(0, 5)} - {toast.end_time?.slice(0, 5)}
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
-            <div className="absolute top-2 right-10 h-2 w-2 rounded-full bg-[#ccff00] animate-ping" />
+            <div className={`absolute top-2 right-10 h-2 w-2 rounded-full animate-ping ${
+              toast.type === 'low-stock' ? 'bg-amber-400' : 'bg-[#ccff00]'
+            }`} />
           </div>
-          <div className="absolute bottom-0 left-4 right-4 h-0.5 rounded-full bg-[#ccff00]/30 overflow-hidden">
-            <div className="h-full w-full bg-[#ccff00] animate-[shrink_6s_linear]" />
+          <div className={`absolute bottom-0 left-4 right-4 h-0.5 rounded-full overflow-hidden ${
+            toast.type === 'low-stock' ? 'bg-amber-500/30' : 'bg-[#ccff00]/30'
+          }`}>
+            <div className={`h-full w-full animate-[shrink_6s_linear] ${
+              toast.type === 'low-stock' ? 'bg-amber-400' : 'bg-[#ccff00]'
+            }`} />
           </div>
         </div>
       )}
 
     <div className="relative" ref={dropdownRef}>
       <button
+        ref={buttonRef}
         onClick={handleOpenDropdown}
         className="relative p-2 rounded-xl hover:bg-white/[0.05] transition-colors text-zinc-400 hover:text-white group"
         title={connected ? 'Conectado en tiempo real' : 'Desconectado'}
@@ -105,8 +154,12 @@ export default function NotificationBell({ onNavigate }: { onNavigate?: (module:
         <span className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-[#060a1a] ${connected ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`} />
       </button>
 
-      {showDropdown && (
-        <div className="absolute right-0 top-full mt-2 w-80 md:w-96 bg-gradient-to-br from-[#0f1533] to-[#0a0e27] border border-[#1a1f3a] rounded-2xl shadow-2xl shadow-black/50 overflow-hidden z-50 animate-in slide-in-from-top-2 duration-200">
+      {showDropdown && createPortal(
+        <div
+          ref={portalDropdownRef}
+          className="fixed w-[calc(100vw-2rem)] sm:w-80 md:w-96 bg-gradient-to-br from-[#0f1533] to-[#0a0e27] border border-[#1a1f3a] rounded-2xl shadow-2xl shadow-black/50 overflow-hidden z-[9999] animate-in slide-in-from-top-2 duration-200"
+          style={{ top: dropdownPos.top, right: dropdownPos.right }}
+        >
           <div className="flex items-center justify-between px-4 py-3 border-b border-[#1a1f3a]">
             <div className="flex items-center gap-2">
               <h3 className="text-sm font-bold text-white">Notificaciones</h3>
@@ -136,17 +189,28 @@ export default function NotificationBell({ onNavigate }: { onNavigate?: (module:
                 <div key={n.id || i}
                   onClick={() => {
                     setShowDropdown(false)
-                    onNavigate?.('reservas')
+                    onNavigate?.(n.type === 'low-stock' ? 'productos' : 'reservas')
                   }}
                   className="px-4 py-3 hover:bg-white/[0.02] transition-colors border-b border-[#1a1f3a]/50 last:border-0 group cursor-pointer"
                 >
                   <div className="flex items-start gap-3">
-                    <div className="h-8 w-8 rounded-lg bg-[#ccff00]/10 border border-[#ccff00]/20 flex items-center justify-center shrink-0 mt-0.5">
-                      <Zap size={14} className="text-[#ccff00]" />
+                    <div className={`h-8 w-8 rounded-lg border flex items-center justify-center shrink-0 mt-0.5 ${
+                      n.type === 'low-stock'
+                        ? 'bg-amber-500/10 border-amber-500/20'
+                        : 'bg-[#ccff00]/10 border-[#ccff00]/20'
+                    }`}>
+                      {n.type === 'low-stock'
+                        ? <AlertTriangle size={14} className="text-amber-400" />
+                        : <Zap size={14} className="text-[#ccff00]" />
+                      }
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-xs font-bold text-[#ccff00] uppercase tracking-wider">Nueva Reserva</p>
+                        <p className={`text-xs font-bold uppercase tracking-wider ${
+                          n.type === 'low-stock' ? 'text-amber-400' : 'text-[#ccff00]'
+                        }`}>
+                          {n.type === 'low-stock' ? 'Stock Bajo' : 'Nueva Reserva'}
+                        </p>
                         <button
                           onClick={(e) => { e.stopPropagation(); clearNotification(n.id) }}
                           className="opacity-0 group-hover:opacity-100 text-zinc-500 hover:text-white transition-all p-0.5 rounded hover:bg-white/[0.05]"
@@ -154,17 +218,29 @@ export default function NotificationBell({ onNavigate }: { onNavigate?: (module:
                           <X size={12} />
                         </button>
                       </div>
-                      <p className="text-white font-semibold text-sm mt-0.5 truncate">{n.customer_name}</p>
-                      <div className="flex items-center gap-3 text-zinc-400 text-xs mt-1">
-                        <span className="flex items-center gap-1">
-                          <UserIcon size={10} />
-                          {n.court_name}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock size={10} />
-                          {n.start_time?.slice(0, 5)} - {n.end_time?.slice(0, 5)}
-                        </span>
-                      </div>
+                      {n.type === 'low-stock' ? (
+                        <>
+                          <p className="text-white font-semibold text-sm mt-0.5 truncate">{n.product_name}</p>
+                          <div className="flex items-center gap-1 text-zinc-400 text-xs mt-1">
+                            <Package size={10} />
+                            <span>Quedan <span className="text-amber-400 font-bold">{n.current_stock}</span> unidades</span>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-white font-semibold text-sm mt-0.5 truncate">{n.customer_name}</p>
+                          <div className="flex items-center gap-3 text-zinc-400 text-xs mt-1">
+                            <span className="flex items-center gap-1">
+                              <UserIcon size={10} />
+                              {n.court_name}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Clock size={10} />
+                              {n.start_time?.slice(0, 5)} - {n.end_time?.slice(0, 5)}
+                            </span>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -176,7 +252,8 @@ export default function NotificationBell({ onNavigate }: { onNavigate?: (module:
               </div>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
     </>

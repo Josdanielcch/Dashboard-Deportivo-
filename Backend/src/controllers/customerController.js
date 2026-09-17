@@ -1,6 +1,23 @@
 // src/controllers/customerController.js
 const pool = require('../config/database');
 
+// Helper: ejecutar query dentro de una transacción con contexto de auditoría
+const withAuditContext = async (req, queryFn) => {
+  const client = req.dbClient || await pool.connect();
+  const releaseClient = !req.dbClient;
+  try {
+    if (!req.dbClient) await client.query('BEGIN');
+    const result = await queryFn(client);
+    if (!req.dbClient) await client.query('COMMIT');
+    return result;
+  } catch (error) {
+    if (!req.dbClient) await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    if (releaseClient) client.release();
+  }
+};
+
 // Obtener todos los clientes
 const getAllCustomers = async (req, res) => {
   try {
@@ -73,11 +90,13 @@ const createCustomer = async (req, res) => {
       return res.status(400).json({ error: 'Nombre y apellido requeridos' });
     }
     
-    const result = await pool.query(`
-      INSERT INTO customers (first_name, last_name, phone, email, tax_id, outstanding_balance)
-      VALUES ($1, $2, $3, $4, $5, 0)
-      RETURNING *, first_name || ' ' || last_name AS full_name
-    `, [first_name, last_name, phone, email, tax_id]);
+    const result = await withAuditContext(req, async (client) => {
+      return client.query(`
+        INSERT INTO customers (first_name, last_name, phone, email, tax_id, outstanding_balance)
+        VALUES ($1, $2, $3, $4, $5, 0)
+        RETURNING *, first_name || ' ' || last_name AS full_name
+      `, [first_name, last_name, phone, email, tax_id]);
+    });
     
     res.status(201).json({ success: true, data: result.rows[0] });
   } catch (error) {
@@ -94,16 +113,18 @@ const updateCustomer = async (req, res) => {
     const { id } = req.params;
     const { first_name, last_name, phone, email, tax_id } = req.body;
     
-    const result = await pool.query(`
-      UPDATE customers 
-      SET first_name = COALESCE($1, first_name),
-          last_name = COALESCE($2, last_name),
-          phone = COALESCE($3, phone),
-          email = COALESCE($4, email),
-          tax_id = COALESCE($5, tax_id)
-      WHERE id = $6
-      RETURNING *, first_name || ' ' || last_name AS full_name
-    `, [first_name, last_name, phone, email, tax_id, id]);
+    const result = await withAuditContext(req, async (client) => {
+      return client.query(`
+        UPDATE customers 
+        SET first_name = COALESCE($1, first_name),
+            last_name = COALESCE($2, last_name),
+            phone = COALESCE($3, phone),
+            email = COALESCE($4, email),
+            tax_id = COALESCE($5, tax_id)
+        WHERE id = $6
+        RETURNING *, first_name || ' ' || last_name AS full_name
+      `, [first_name, last_name, phone, email, tax_id, id]);
+    });
     
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Cliente no encontrado' });
@@ -124,12 +145,14 @@ const recordPayment = async (req, res) => {
       return res.status(400).json({ error: 'Monto de pago inválido' });
     }
     
-    const result = await pool.query(`
-      UPDATE customers 
-      SET outstanding_balance = GREATEST(outstanding_balance - $1, 0)
-      WHERE id = $2
-      RETURNING id, first_name, last_name, outstanding_balance, first_name || ' ' || last_name AS full_name
-    `, [amount, id]);
+    const result = await withAuditContext(req, async (client) => {
+      return client.query(`
+        UPDATE customers 
+        SET outstanding_balance = GREATEST(outstanding_balance - $1, 0)
+        WHERE id = $2
+        RETURNING id, first_name, last_name, outstanding_balance, first_name || ' ' || last_name AS full_name
+      `, [amount, id]);
+    });
     
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Cliente no encontrado' });
@@ -151,10 +174,9 @@ const deleteCustomer = async (req, res) => {
   try {
     const { id } = req.params;
     
-    // Primero, verificamos si el cliente tiene facturas, pagos o reservas
-    // Podríamos hacer un ON DELETE CASCADE en la BD, o manejarlo con Soft Delete.
-    // Para este caso intentaremos borrarlo directamente. Si viola la FK, saltará el error.
-    const result = await pool.query('DELETE FROM customers WHERE id = $1 RETURNING id', [id]);
+    const result = await withAuditContext(req, async (client) => {
+      return client.query('DELETE FROM customers WHERE id = $1 RETURNING id', [id]);
+    });
     
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Cliente no encontrado' });
@@ -179,13 +201,15 @@ const updateCustomerMembership = async (req, res) => {
       return res.status(400).json({ error: 'Nivel de membresía requerido' });
     }
 
-    const result = await pool.query(`
-      UPDATE customers 
-      SET membership_level = $1,
-          membership_status = COALESCE($2, 'active')
-      WHERE id = $3
-      RETURNING *, first_name || ' ' || last_name AS full_name
-    `, [membership_level, membership_status || 'active', id]);
+    const result = await withAuditContext(req, async (client) => {
+      return client.query(`
+        UPDATE customers 
+        SET membership_level = $1,
+            membership_status = COALESCE($2, 'active')
+        WHERE id = $3
+        RETURNING *, first_name || ' ' || last_name AS full_name
+      `, [membership_level, membership_status || 'active', id]);
+    });
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Cliente no encontrado' });

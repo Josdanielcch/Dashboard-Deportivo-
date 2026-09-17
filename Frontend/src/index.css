@@ -140,6 +140,13 @@
     }
   }
 
+  /* Reducir tamaño de fuente en pantallas pequeñas */
+  @media (max-width: 640px) {
+    html {
+      font-size: 14px;
+    }
+  }
+
   body {
     @apply bg-background text-foreground;
   }
