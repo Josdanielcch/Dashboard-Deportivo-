@@ -19,31 +19,8 @@ if (process.env.DATABASE_URL) {
   });
 }
 
-pool.connect(async (err, client, release) => {
-  if (err) {
-    console.error('❌ Error conectando a PostgreSQL:', err.stack);
-  } else {
-    console.log('✅ Conectado a PostgreSQL (Neon.tech)');
-    try {
-      await client.query(`
-        ALTER TABLE customers ADD COLUMN IF NOT EXISTS membership_level VARCHAR(20) DEFAULT 'standard';
-        ALTER TABLE customers ADD COLUMN IF NOT EXISTS membership_status VARCHAR(20) DEFAULT 'active';
-        ALTER TABLE customers ADD COLUMN IF NOT EXISTS payment_reference VARCHAR(100);
-      `);
-      console.log('✅ Migración de columnas de membresía en customers verificada.');
-
-      await client.query(`
-        ALTER TABLE bookings ADD COLUMN IF NOT EXISTS payment_method VARCHAR(30);
-        ALTER TABLE bookings ADD COLUMN IF NOT EXISTS payment_reference VARCHAR(100);
-        ALTER TABLE bookings ADD COLUMN IF NOT EXISTS total_amount NUMERIC(10,2);
-      `);
-      console.log('✅ Migración de columnas de pago en bookings verificada.');
-    } catch (migErr) {
-      console.error('⚠️ Error verificando migración de columnas:', migErr.message);
-    } finally {
-      release();
-    }
-  }
+pool.on('error', (err) => {
+  console.error('❌ Error inesperado en el pool de PostgreSQL:', err.message);
 });
 
 module.exports = pool;

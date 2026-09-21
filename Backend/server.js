@@ -1,5 +1,13 @@
 process.env.TZ = 'America/Caracas';
 require('dotenv').config();
+
+process.on('uncaughtException', (err) => {
+  console.error('❌ Uncaught Exception:', err.message);
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('❌ Unhandled Rejection:', reason);
+});
+
 const dns = require('dns');
 const http = require('http');
 const { Server } = require('socket.io');

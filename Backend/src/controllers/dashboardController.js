@@ -5,10 +5,12 @@ const getDashboardStats = async (req, res) => {
   try {
     const statsData = {};
 
-    // 1. Reservas Hoy (Ajustado a zona horaria UTC-4 / Venezuela)
     const now = new Date();
     const localNow = new Date(now.getTime() - (4 * 60 * 60 * 1000));
     const today = localNow.toISOString().split('T')[0];
+    const firstDayOfMonth = today.substring(0, 7) + '-01';
+
+    // 1. Reservas Hoy
     const reservasHoyQuery = await pool.query(`
       SELECT COUNT(*) as count 
       FROM bookings 
@@ -16,11 +18,12 @@ const getDashboardStats = async (req, res) => {
     `, [today]);
     statsData.reservasHoy = parseInt(reservasHoyQuery.rows[0].count, 10);
 
-    // 2. Ingresos Totales
+    // 2. Ingresos del Mes (01 del mes hasta hoy)
     const ingresosQuery = await pool.query(`
       SELECT COALESCE(SUM(total_amount), 0) as total 
       FROM billings
-    `);
+      WHERE payment_date >= $1 AND payment_date < ($2::date + INTERVAL '1 day')
+    `, [firstDayOfMonth, today]);
     statsData.ingresos = parseFloat(ingresosQuery.rows[0].total);
 
     // 3. Clientes Activos
@@ -43,11 +46,12 @@ const getDashboardStats = async (req, res) => {
 
     // --- NUEVAS ESTADÍSTICAS ---
     
-    // Gastos Totales (Compras)
+    // Gastos del Mes (Compras)
     const gastosQuery = await pool.query(`
       SELECT COALESCE(SUM(total_amount), 0) as total 
       FROM purchases
-    `);
+      WHERE purchase_date >= $1 AND purchase_date < ($2::date + INTERVAL '1 day')
+    `, [firstDayOfMonth, today]);
     statsData.gastosTotales = parseFloat(gastosQuery.rows[0].total);
 
     // CxC Pendiente (Deuda de clientes)
