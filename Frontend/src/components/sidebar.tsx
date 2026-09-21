@@ -21,7 +21,8 @@ import {
   Receipt,
   LayoutGrid,
   CalendarDays,
-  ShoppingBag
+  ShoppingBag,
+  FileText
 } from 'lucide-react'
 import { useAuthSafe } from './auth-context'
 import { useState } from 'react'
@@ -70,6 +71,7 @@ export default function Sidebar({ activeModule, setActiveModule, isMobileMenuOpe
         { id: 'compras', label: 'Compras', icon: ShoppingCart },
         { id: 'cxc', label: 'CxC', icon: Receipt },
         { id: 'cxp', label: 'CxP', icon: CreditCard },
+        { id: 'informes', label: 'Informes', icon: FileText },
       ]
     },
     {

@@ -20,6 +20,7 @@ const UsuariosView = lazy(() => import('@/components/usuarios-view'))
 const AuditoriaView = lazy(() => import('@/components/auditoria-view'))
 const ProveedoresView = lazy(() => import('@/components/proveedores-view'))
 const ConfiguracionView = lazy(() => import('@/components/configuracion-view'))
+const InformesView = lazy(() => import('@/components/informes-view'))
 
 function ModuleLoader() {
   return (
@@ -74,6 +75,7 @@ export default function AppContent() {
       case 'usuarios': return <UsuariosView />
       case 'auditoria': return <AuditoriaView />
       case 'configuracion': return <ConfiguracionView />
+      case 'informes': return <InformesView />
       default: return <DashboardView onNavigate={navigateTo} />
     }
   }

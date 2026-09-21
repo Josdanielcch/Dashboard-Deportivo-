@@ -199,8 +199,8 @@ export default function DashboardView({ onNavigate }: DashboardViewProps) {
 
   const stats = [
     { label: 'Reservas Hoy', value: statsData.reservasHoy, icon: Calendar, change: '', positive: true, gradient: 'from-blue-500/10 to-blue-600/5', iconColor: 'text-blue-400', bgIcon: 'bg-blue-500/10 border-blue-500/20' },
-    { label: 'Ingresos (Ventas)', value: statsData.ingresos, icon: DollarSign, change: '', positive: true, prefix: '$', gradient: 'from-emerald-500/10 to-emerald-600/5', iconColor: 'text-emerald-400', bgIcon: 'bg-emerald-500/10 border-emerald-500/20' },
-    { label: 'Gastos (Compras)', value: statsData.gastosTotales, icon: DollarSign, change: '', positive: false, prefix: '$', gradient: 'from-rose-500/10 to-rose-600/5', iconColor: 'text-rose-400', bgIcon: 'bg-rose-500/10 border-rose-500/20' },
+    { label: 'Ingresos del Mes', value: statsData.ingresos, icon: DollarSign, change: '', positive: true, prefix: '$', gradient: 'from-emerald-500/10 to-emerald-600/5', iconColor: 'text-emerald-400', bgIcon: 'bg-emerald-500/10 border-emerald-500/20' },
+    { label: 'Gastos del Mes', value: statsData.gastosTotales, icon: DollarSign, change: '', positive: false, prefix: '$', gradient: 'from-rose-500/10 to-rose-600/5', iconColor: 'text-rose-400', bgIcon: 'bg-rose-500/10 border-rose-500/20' },
     { label: 'Por Cobrar (CxC)', value: statsData.cxcPendiente, icon: TrendingUp, change: '', positive: true, prefix: '$', gradient: 'from-amber-500/10 to-amber-600/5', iconColor: 'text-amber-400', bgIcon: 'bg-amber-500/10 border-amber-500/20' },
     { label: 'Por Pagar (CxP)', value: statsData.cxpPendiente, icon: TrendingUp, change: '', positive: false, prefix: '$', gradient: 'from-orange-500/10 to-orange-600/5', iconColor: 'text-orange-400', bgIcon: 'bg-orange-500/10 border-orange-500/20' },
     { label: 'Clientes Activos', value: statsData.clientesActivos, icon: Users, change: '', positive: true, gradient: 'from-purple-500/10 to-purple-600/5', iconColor: 'text-purple-400', bgIcon: 'bg-purple-500/10 border-purple-500/20' },

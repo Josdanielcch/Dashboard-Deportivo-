@@ -22,6 +22,7 @@ const purchaseRoutes = require('./routes/purchaseRoutes');
 const cxpRoutes = require('./routes/cxpRoutes');
 const settingsRoutes = require('./routes/settingsRoutes');
 const sportRoutes = require('./routes/sportRoutes');
+const reportRoutes = require('./routes/reportRoutes');
 
 const { apiLimiter } = require('./middleware/rateLimiter');
 
@@ -100,6 +101,7 @@ app.use('/api/purchases', purchaseRoutes);
 app.use('/api/cxp', cxpRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/sports', sportRoutes);
+app.use('/api/reports', reportRoutes);
 
 // Ruta 404
 app.use((req, res) => {

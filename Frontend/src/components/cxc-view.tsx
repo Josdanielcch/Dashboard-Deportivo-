@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { DollarSign, Search, Filter, CreditCard, CheckCircle, X } from 'lucide-react'
+import { DollarSign, Search, Filter, CreditCard, CheckCircle, X, Printer } from 'lucide-react'
 import { cxcService } from '@/services/cxcService'
 import { Modal } from '@/components/ui/modal'
 import { useToast } from '@/contexts/toast-context'
@@ -87,7 +87,70 @@ export default function CxcView() {
   })
 
   const totalBalance = filteredCxc.reduce((acc, cxc) => acc + Number(cxc.balance || 0), 0)
+  const totalOriginal = filteredCxc.reduce((acc, cxc) => acc + Number(cxc.total_amount || 0), 0)
   const totalCxC = `$${totalBalance.toFixed(2)}`
+
+  const handlePrint = () => {
+    const printWindow = window.open('', '_blank', 'width=900,height=700')
+    if (!printWindow) return
+
+    const thStyle = 'padding:8px 12px;border-bottom:2px solid #e5e7eb;color:#6b7280;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;background:#f9fafb;'
+
+    const groups: Record<string, any[]> = {}
+    filteredCxc.forEach(c => {
+      const name = c.customer_name || 'Sin cliente'
+      if (!groups[name]) groups[name] = []
+      groups[name].push(c)
+    })
+
+    let sections = ''
+    Object.keys(groups).sort().forEach(name => {
+      const items = groups[name]
+      const groupBalance = items.reduce((a, c) => a + Number(c.balance || 0), 0)
+      const groupOriginal = items.reduce((a, c) => a + Number(c.total_amount || 0), 0)
+      const rows = items.map(c => {
+        const statusColor = c.status === 'Pagado' ? '#059669' : c.status === 'Parcial' ? '#d97706' : '#dc2626'
+        const statusBg = c.status === 'Pagado' ? '#ecfdf5' : c.status === 'Parcial' ? '#fffbeb' : '#fef2f2'
+        return '<tr><td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;color:#111827;font-size:13px;font-weight:600;">#' + c.id + '</td><td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;color:#6b7280;font-size:13px;">' + formatDate(c.created_at) + '</td><td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;color:#111827;font-weight:700;text-align:right;">$' + Number(c.total_amount || 0).toFixed(2) + '</td><td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;color:#dc2626;font-weight:700;text-align:right;">$' + Number(c.balance || 0).toFixed(2) + '</td><td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:center;"><span style="background:' + statusBg + ';color:' + statusColor + ';padding:2px 8px;border-radius:12px;font-weight:600;font-size:12px;">' + c.status + '</span></td></tr>'
+      }).join('')
+
+      sections += '<div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:16px 20px;margin-bottom:20px;page-break-inside:avoid;">'
+      sections += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">'
+      sections += '<div style="display:flex;align-items:center;gap:10px;">'
+      sections += '<div style="width:36px;height:36px;border-radius:50%;background:#dcfce7;color:#16a34a;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;">' + name.charAt(0).toUpperCase() + '</div>'
+      sections += '<div><p style="margin:0;font-size:15px;font-weight:700;color:#111827;">' + name + '</p>'
+      sections += '<p style="margin:0;font-size:11px;color:#6b7280;">' + items.length + ' cuenta(s)</p></div>'
+      sections += '</div>'
+      sections += '<div style="text-align:right;">'
+      sections += '<p style="margin:0;font-size:11px;color:#6b7280;">Original: <span style="font-weight:700;color:#111827;">$' + groupOriginal.toFixed(2) + '</span></p>'
+      sections += '<p style="margin:0;font-size:13px;font-weight:800;color:#dc2626;">Pendiente: $' + groupBalance.toFixed(2) + '</p>'
+      sections += '</div></div>'
+      sections += '<table style="width:100%;border-collapse:collapse;">'
+      sections += '<thead><tr><th style="' + thStyle + 'text-align:left;">ID</th><th style="' + thStyle + 'text-align:left;">Fecha</th><th style="' + thStyle + 'text-align:right;">Monto Original</th><th style="' + thStyle + 'text-align:right;">Balance Pendiente</th><th style="' + thStyle + 'text-align:center;">Estado</th></tr></thead>'
+      sections += '<tbody>' + rows + '</tbody></table></div>'
+    })
+
+    let html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Informe CxC</title><style>'
+    html += 'body{margin:0;padding:24px 32px;background:#ffffff;color:#111827;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;}'
+    html += 'h1{font-size:22px;margin:0 0 4px;font-weight:900;color:#111827;}'
+    html += '.sub{font-size:12px;color:#6b7280;margin-bottom:20px;}'
+    html += '.kg{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:24px;}'
+    html += '.k{background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:16px;}'
+    html += '.kl{font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:0.1em;font-weight:700;}'
+    html += '.kv{font-size:24px;font-weight:900;margin-top:4px;color:#111827;}'
+    html += '.kv.a{color:#dc2626;}'
+    html += '@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}'
+    html += '</style></head><body>'
+    html += '<h1>Informe de Cuentas por Cobrar</h1>'
+    html += '<div class="sub">Generado: ' + new Date().toLocaleString('es-DO') + ' | Filtro: ' + statusFilter + '</div>'
+    html += '<div class="kg"><div class="k"><div class="kl">Deuda Total Pendiente</div><div class="kv a">$' + totalBalance.toFixed(2) + '</div></div><div class="k"><div class="kl">Total Registros</div><div class="kv">' + filteredCxc.length + '</div></div></div>'
+    html += sections
+    html += '</body></html>'
+
+    printWindow.document.write(html)
+    printWindow.document.close()
+    setTimeout(() => printWindow.print(), 500)
+  }
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '-'
@@ -103,6 +166,13 @@ export default function CxcView() {
           <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">Cuentas por Cobrar</h1>
           <p className="text-zinc-400">Gestion de deudas y abonos de clientes</p>
         </div>
+        <button
+          onClick={handlePrint}
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#ccff00]/10 border border-[#ccff00]/20 text-[#ccff00] text-xs font-bold hover:bg-[#ccff00]/20 transition-all duration-300"
+        >
+          <Printer size={15} />
+          Imprimir Informe
+        </button>
       </div>
 
       {/* Stats Cards */}
