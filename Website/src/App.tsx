@@ -63,32 +63,34 @@ export default function App() {
   // Active Overlays
   const [selectedCourtForBooking, setSelectedCourtForBooking] = useState<Court | null>(null);
 
-  // Load persistence configurations from localStorage on mount
+  // Load persistence configurations & silent refresh on mount
   useEffect(() => {
-    // 1. User Session
-    const savedSession = localStorage.getItem('courtconnect_user_session');
-    if (savedSession) {
-      try {
-        const parsed = JSON.parse(savedSession);
-        setCurrentUser(parsed);
-        // Refresh membership level from backend
-        if (parsed.customerId) {
-          import('./api').then(({ getMyProfile }) => {
-            getMyProfile().then((res) => {
-              if (res?.success && res?.user?.membership_level) {
-                const refreshed = { ...parsed, membershipLevel: res.user.membership_level };
-                localStorage.setItem('courtconnect_user_session', JSON.stringify(refreshed));
-                setCurrentUser(refreshed);
-              }
-            }).catch(() => {});
-          });
-        }
-      } catch (err) {
-        console.error('Failed to parse user session', err);
-      }
-    }
+    // 1. Clean legacy plaintext token from localStorage
+    localStorage.removeItem('courtconnect_token');
 
-    // 2. Check for recovery token
+    // 2. Silent refresh de sesión cliente mediante cookie HttpOnly
+    import('./api').then(({ refreshClientSession }) => {
+      refreshClientSession()
+        .then((res) => {
+          if (res?.success && res?.user) {
+            const userSession: User = {
+              name: res.user.full_name || res.user.username,
+              email: res.user.email,
+              phone: res.user.phone || '',
+              membershipLevel: res.user.membership_level || 'standard',
+              customerId: res.user.customer_id,
+            };
+            setCurrentUser(userSession);
+            localStorage.setItem('courtconnect_user_session', JSON.stringify(userSession));
+          }
+        })
+        .catch(() => {
+          localStorage.removeItem('courtconnect_user_session');
+          setCurrentUser(null);
+        });
+    });
+
+    // 3. Check for recovery token
     const params = new URLSearchParams(window.location.search);
     const urlToken = params.get('token');
     if (urlToken) {
@@ -276,7 +278,13 @@ export default function App() {
   };
 
   // Logout handler
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      const { logoutClient } = await import('./api');
+      await logoutClient();
+    } catch (e) {
+      console.error('Error al cerrar sesión:', e);
+    }
     localStorage.removeItem('courtconnect_user_session');
     localStorage.removeItem('courtconnect_token');
     setCurrentUser(null);

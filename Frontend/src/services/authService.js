@@ -15,6 +15,22 @@ export const authService = {
   },
 
   /**
+   * Renueva el Access Token usando la cookie HttpOnly panel_refresh_token.
+   * @returns {Promise<object>} Respuesta del servidor con nuevo token.
+   */
+  refreshToken: async () => {
+    return api.post('/auth/refresh');
+  },
+
+  /**
+   * Cierra la sesión en el servidor y limpia la cookie HttpOnly.
+   * @returns {Promise<object>} Respuesta del servidor.
+   */
+  logout: async () => {
+    return api.post('/auth/logout');
+  },
+
+  /**
    * Solicita el correo de recuperación de contraseña.
    * @param {string} email - Correo electrónico del usuario.
    * @returns {Promise<object>} Respuesta del servidor.
@@ -33,4 +49,3 @@ export const authService = {
     return api.post('/auth/reset-password', { token, password });
   },
 };
-

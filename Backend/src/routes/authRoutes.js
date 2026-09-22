@@ -5,11 +5,14 @@ const { protect } = require('../middleware/authMiddleware');
 const { loginLimiter } = require('../middleware/rateLimiter');
 const { 
   login, register, getMe, recoverPassword, resetPassword,
-  clientLogin, clientRegister, clientRecoverPassword, clientResetPassword, clientGoogleLogin
+  clientLogin, clientRegister, clientRecoverPassword, clientResetPassword, clientGoogleLogin,
+  refreshTokenHandler, clientRefreshTokenHandler, logoutHandler, clientLogoutHandler
 } = require('../controllers/authController');
 
 router.post('/register', register);
 router.post('/login', loginLimiter, login);
+router.post('/refresh', refreshTokenHandler);
+router.post('/logout', logoutHandler);
 router.get('/me', protect, getMe);
 router.post('/recover-password', recoverPassword);
 router.post('/reset-password', resetPassword);
@@ -17,6 +20,8 @@ router.post('/reset-password', resetPassword);
 // Client (Website) Routes
 router.post('/client/register', clientRegister);
 router.post('/client/login', loginLimiter, clientLogin);
+router.post('/client/refresh', clientRefreshTokenHandler);
+router.post('/client/logout', clientLogoutHandler);
 router.post('/client/recover-password', clientRecoverPassword);
 router.post('/client/reset-password', clientResetPassword);
 router.post('/client/google', loginLimiter, clientGoogleLogin);
