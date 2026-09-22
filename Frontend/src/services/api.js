@@ -21,8 +21,10 @@ const onRefreshed = (token) => {
  * Incluye interceptor automático para renovar token al recibir 401.
  */
 async function request(endpoint, options = {}) {
+  const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
+
   const headers = {
-    'Content-Type': 'application/json',
+    ...(!isFormData && { 'Content-Type': 'application/json' }),
     ...options.headers,
   };
 
@@ -36,8 +38,10 @@ async function request(endpoint, options = {}) {
     headers,
   };
 
-  if (options.body && typeof options.body === 'object') {
+  if (options.body && typeof options.body === 'object' && !isFormData) {
     config.body = JSON.stringify(options.body);
+  } else if (isFormData) {
+    config.body = options.body;
   }
 
   let response = await fetch(`${BASE_URL}${endpoint}`, config);

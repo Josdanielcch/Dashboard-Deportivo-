@@ -32,6 +32,11 @@ const { errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
 
+// Confiar en el primer proxy (necesario en Render, Railway, Nginx para cookies seguras y rate limiter por IP)
+if (process.env.NODE_ENV === 'production' || process.env.TRUST_PROXY === 'true') {
+  app.set('trust proxy', 1);
+}
+
 const cors = require('cors');
 app.use(cors({
   origin: [
@@ -59,8 +64,14 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Servir la carpeta de subidas estáticamente
-app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+// Servir la carpeta pública de avatares con cabeceras seguras (evita exponer la raíz de /uploads)
+app.use('/uploads/avatars', express.static(path.join(__dirname, '..', 'uploads', 'avatars'), {
+  dotfiles: 'ignore',
+  maxAge: '1d',
+  setHeaders: (res) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+  }
+}));
 
 // Wrapper para envolver todas las respuestas JSON en { success, data }
 app.use((req, res, next) => {

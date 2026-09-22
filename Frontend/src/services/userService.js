@@ -43,5 +43,15 @@ export const userService = {
    */
   updateMyProfile: async (userData) => {
     return api.put('/users/profile', userData);
+  },
+
+  /**
+   * Sube o actualiza la foto de avatar de un usuario.
+   * @param {string|number} id - ID del usuario.
+   * @param {FormData} formData - Objeto FormData con el archivo en la clave 'avatar'.
+   * @returns {Promise<object>} Respuesta con la URL del nuevo avatar.
+   */
+  uploadAvatar: async (id, formData) => {
+    return api.post(`/users/${id}/avatar`, formData);
   }
 };

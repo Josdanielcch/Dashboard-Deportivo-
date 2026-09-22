@@ -31,8 +31,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    // Limpiar residuos antiguos de token sensible en localStorage
+    // Limpiar residuos antiguos de tokens o datos sensibles en localStorage
     localStorage.removeItem('token')
+    localStorage.removeItem('user')
 
     let isMounted = true
 
@@ -65,16 +66,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setApiToken(newToken)
     setUser(newUser)
     setIsAuthenticated(true)
-    // El token de acceso vive únicamente en memoria (seguridad OWASP)
+    // El token y los datos del usuario viven únicamente en memoria (seguridad y privacidad OWASP)
     localStorage.removeItem('token')
-    localStorage.setItem('user', JSON.stringify(newUser))
+    localStorage.removeItem('user')
   }
 
   const updateContextUser = (updatedData: Partial<User>) => {
     if (user) {
       const newUser = { ...user, ...updatedData }
       setUser(newUser)
-      localStorage.setItem('user', JSON.stringify(newUser))
     }
   }
 

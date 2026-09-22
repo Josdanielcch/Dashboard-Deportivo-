@@ -35,7 +35,32 @@ const apiLimiter = rateLimit({
   }
 });
 
+// Limita solicitudes de recuperación de contraseñas y registro para evitar spam y abuso
+const authActionLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 5, // Máximo 5 peticiones por ventana por IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res, next, options) => {
+    const retryAfter = Math.ceil((req.rateLimit.resetTime - Date.now()) / 1000);
+    const minutes = Math.floor(retryAfter / 60);
+    const seconds = retryAfter % 60;
+
+    let timeString = '';
+    if (minutes > 0) {
+      timeString += `${minutes} minuto${minutes > 1 ? 's' : ''} y `;
+    }
+    timeString += `${seconds} segundo${seconds !== 1 ? 's' : ''}`;
+
+    res.status(options.statusCode).json({
+      error: `Has alcanzado el límite de intentos para esta acción. Por favor intenta de nuevo en ${timeString}.`
+    });
+  }
+});
+
 module.exports = {
   loginLimiter,
-  apiLimiter
+  apiLimiter,
+  authActionLimiter
 };
+
