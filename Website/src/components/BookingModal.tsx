@@ -1,8 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Court, User, Booking } from '../types';
 import { MOCK_TIME_SLOTS } from '../data';
-import { createCustomer, createBooking, checkAvailability } from '../api';
-import { X, Calendar as CalendarIcon, Clock, CreditCard, CheckCircle, Flame, Mail, Phone, User as UserIcon, Ticket, Sparkles } from 'lucide-react';
+import { 
+  createCustomer, createBooking, checkAvailability,
+  getExchangeRates, getPaymentMethods, ExchangeRate, PaymentMethodAccount
+} from '../api';
+import { 
+  X, Calendar as CalendarIcon, Clock, CreditCard, CheckCircle, Flame, Mail, Phone, 
+  User as UserIcon, Ticket, Sparkles, Smartphone, Landmark, DollarSign, Wallet
+} from 'lucide-react';
 
 interface BookingModalProps {
   court: Court;
@@ -30,10 +36,79 @@ export default function BookingModal({
   const [guestLastName, setGuestLastName] = useState(currentUser?.name?.split(' ').slice(1).join(' ') || '');
   const [guestEmail, setGuestEmail] = useState(currentUser?.email || '');
   const [guestPhone, setGuestPhone] = useState(currentUser?.phone || '');
-  // Payment state
-  const [paymentMethod, setPaymentMethod] = useState<'pago_movil' | 'zelle' | 'card' | 'cash'>('pago_movil');
+
+  // Payment & Multicurrency dynamic state
+  const [exchangeRates, setExchangeRates] = useState<ExchangeRate[]>([]);
+  const [paymentAccounts, setPaymentAccounts] = useState<PaymentMethodAccount[]>([]);
+  const [selectedAccountId, setSelectedAccountId] = useState<number | string>(1);
   const [paymentReference, setPaymentReference] = useState('');
-  const exchangeRate = 70.50; // Tasa de cambio de referencia Bs / USD
+
+  // Fallbacks de cuentas
+  const fallbackAccounts: PaymentMethodAccount[] = [
+    {
+      id: 1,
+      name: 'Pago Móvil Banco de Venezuela',
+      type: 'pago_movil',
+      currency_code: 'VES',
+      bank_name: 'Banco de Venezuela (0102)',
+      id_document: 'J-50123456-9',
+      phone: '0412-3129425',
+      instructions: 'Registrar los últimos dígitos del comprobante.'
+    },
+    {
+      id: 2,
+      name: 'Zelle Corporativo',
+      type: 'zelle',
+      currency_code: 'USD',
+      account_holder: 'CourtConnect Sports LLC',
+      email: 'pagos@courtconnect.com',
+      instructions: 'Colocar tu nombre y número de reserva en la nota.'
+    },
+    {
+      id: 3,
+      name: 'Transferencia Bancolombia / Nequi',
+      type: 'transfer_cop',
+      currency_code: 'COP',
+      bank_name: 'Bancolombia',
+      account_number: 'Ahorros 123-456789-01',
+      account_holder: 'CourtConnect Colombia SAS',
+      id_document: 'NIT: 901.234.567-8',
+      phone: '310-9876543',
+      instructions: 'Transferencia directa o vía Nequi/PSE.'
+    },
+    {
+      id: 4,
+      name: 'Efectivo en Taquilla',
+      type: 'cash',
+      currency_code: 'USD',
+      instructions: 'Cancela directamente en la recepción del complejo.'
+    }
+  ];
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const [ratesRes, accountsRes] = await Promise.all([
+          getExchangeRates().catch(() => null),
+          getPaymentMethods().catch(() => null),
+        ]);
+        if (ratesRes?.data && ratesRes.data.length > 0) {
+          setExchangeRates(ratesRes.data);
+        }
+        if (accountsRes?.data && accountsRes.data.length > 0) {
+          setPaymentAccounts(accountsRes.data);
+          setSelectedAccountId(accountsRes.data[0].id);
+        } else {
+          setPaymentAccounts(fallbackAccounts);
+          setSelectedAccountId(fallbackAccounts[0].id);
+        }
+      } catch (err) {
+        setPaymentAccounts(fallbackAccounts);
+        setSelectedAccountId(fallbackAccounts[0].id);
+      }
+    }
+    loadData();
+  }, []);
 
   const [formError, setFormError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -51,7 +126,30 @@ export default function BookingModal({
   const discountRate = isPro ? 0.25 : 0;
   const discountAmount = Math.round(baseCost * discountRate);
   const totalCost = baseCost - discountAmount;
-  const totalCostBs = (totalCost * exchangeRate).toFixed(2);
+
+  const vesRateObj = exchangeRates.find(r => r.currency_code === 'VES');
+  const copRateObj = exchangeRates.find(r => r.currency_code === 'COP');
+  const vesRate = vesRateObj ? parseFloat(String(vesRateObj.rate_to_usd)) : 70.50;
+  const copRate = copRateObj ? parseFloat(String(copRateObj.rate_to_usd)) : 4200.00;
+
+  const activeAccounts = paymentAccounts.length > 0 ? paymentAccounts : fallbackAccounts;
+  const selectedAccount = activeAccounts.find(a => a.id === selectedAccountId) || activeAccounts[0];
+
+  const getAmountForAccount = (acc: PaymentMethodAccount) => {
+    if (acc.currency_code === 'VES') {
+      return (totalCost * vesRate).toFixed(2);
+    }
+    if (acc.currency_code === 'COP') {
+      return Math.round(totalCost * copRate).toLocaleString('es-CO');
+    }
+    return totalCost.toString();
+  };
+
+  const getCurrencySymbol = (curr: string) => {
+    if (curr === 'VES') return 'Bs.';
+    if (curr === 'COP') return '$ COP';
+    return 'USD';
+  };
 
   const getEndTime = () => {
     const [h, m] = startTime.split(':').map(Number);
@@ -124,8 +222,9 @@ export default function BookingModal({
       return;
     }
 
-    if ((paymentMethod === 'pago_movil' || paymentMethod === 'zelle') && !paymentReference.trim()) {
-      setFormError(`Por favor ingresa el número de referencia del ${paymentMethod === 'pago_movil' ? 'Pago Móvil' : 'Zelle'}.`);
+    const isDirectPayment = selectedAccount.type === 'cash' || selectedAccount.type === 'card';
+    if (!isDirectPayment && !paymentReference.trim()) {
+      setFormError(`Por favor ingresa el número de referencia del comprobante de ${selectedAccount.name}.`);
       return;
     }
 
@@ -166,15 +265,24 @@ export default function BookingModal({
         }
       }
 
+      const activeCurrency = selectedAccount?.currency_code || 'USD';
+      const activeRate = activeCurrency === 'VES' ? vesRate : (activeCurrency === 'COP' ? copRate : 1.0);
+      const calculatedAmount = activeCurrency === 'VES' 
+        ? parseFloat((totalCost * vesRate).toFixed(2))
+        : (activeCurrency === 'COP' ? Math.round(totalCost * copRate) : totalCost);
+
       const bookingResponse = await createBooking({
         customer_id: customerId,
         court_id: court.backendId,
         booking_date: bookingDate,
         start_time,
         end_time,
-        payment_method: paymentMethod,
+        payment_method: selectedAccount.type,
         payment_reference: paymentReference.trim() || undefined,
         total_amount: totalCost,
+        currency_code: activeCurrency,
+        exchange_rate: activeRate,
+        amount_in_currency: calculatedAmount,
       });
 
       const bookingData = bookingResponse.data;
@@ -191,7 +299,7 @@ export default function BookingModal({
         userName: finalName,
         userEmail: finalEmail,
         userPhone: finalPhone,
-        paymentMethod: paymentMethod,
+        paymentMethod: selectedAccount.name,
         paymentReference: paymentReference.trim() || 'N/A',
         createdAt: new Date().toISOString(),
       };
@@ -501,157 +609,140 @@ export default function BookingModal({
               )}
             </div>
 
-            {/* Multicurrency Payment Method Selector */}
+            {/* Selector Dinámico Multimoneda de Métodos de Pago */}
             <div>
               <h4 className="text-[10px] uppercase tracking-widest font-extrabold text-[#c0ff00] mb-3 flex items-center gap-1 font-mono">
                 <CreditCard className="h-4 w-4 text-[#c0ff00]" />
-                Método de Pago
+                Método de Pago y Moneda
               </h4>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('pago_movil')}
-                  className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
-                    paymentMethod === 'pago_movil'
-                      ? 'border-[#c0ff00] bg-[#c0ff00]/10 text-white font-bold ring-1 ring-[#c0ff00]'
-                      : 'border-white/10 bg-zinc-950/40 text-zinc-400 hover:text-white'
-                  }`}
-                >
-                  <div className="text-xs font-black">📲 Pago Móvil</div>
-                  <div className="text-[9px] text-zinc-400 mt-0.5 font-mono">Bolívares (Bs)</div>
-                </button>
+                {activeAccounts.map((acc) => {
+                  const isSelected = selectedAccount?.id === acc.id;
+                  const getIcon = () => {
+                    if (acc.type === 'pago_movil') return '📲';
+                    if (acc.type === 'zelle') return '💵';
+                    if (acc.type === 'transfer_cop') return '🏦';
+                    if (acc.type === 'card') return '💳';
+                    return '🏢';
+                  };
 
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('zelle')}
-                  className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
-                    paymentMethod === 'zelle'
-                      ? 'border-[#c0ff00] bg-[#c0ff00]/10 text-white font-bold ring-1 ring-[#c0ff00]'
-                      : 'border-white/10 bg-zinc-950/40 text-zinc-400 hover:text-white'
-                  }`}
-                >
-                  <div className="text-xs font-black">💵 Zelle</div>
-                  <div className="text-[9px] text-zinc-400 mt-0.5 font-mono">Dólares (USD)</div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('card')}
-                  className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
-                    paymentMethod === 'card'
-                      ? 'border-[#c0ff00] bg-[#c0ff00]/10 text-white font-bold ring-1 ring-[#c0ff00]'
-                      : 'border-white/10 bg-zinc-950/40 text-zinc-400 hover:text-white'
-                  }`}
-                >
-                  <div className="text-xs font-black">💳 Tarjeta</div>
-                  <div className="text-[9px] text-zinc-400 mt-0.5 font-mono">Débito / Crédito</div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('cash')}
-                  className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
-                    paymentMethod === 'cash'
-                      ? 'border-[#c0ff00] bg-[#c0ff00]/10 text-white font-bold ring-1 ring-[#c0ff00]'
-                      : 'border-white/10 bg-zinc-950/40 text-zinc-400 hover:text-white'
-                  }`}
-                >
-                  <div className="text-xs font-black">🏢 Taquilla</div>
-                  <div className="text-[9px] text-zinc-400 mt-0.5 font-mono">Efectivo en Club</div>
-                </button>
+                  return (
+                    <button
+                      key={acc.id}
+                      type="button"
+                      onClick={() => setSelectedAccountId(acc.id)}
+                      className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                        isSelected
+                          ? 'border-[#c0ff00] bg-[#c0ff00]/10 text-white font-bold ring-1 ring-[#c0ff00]'
+                          : 'border-white/10 bg-zinc-950/40 text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      <div className="text-xs font-black truncate">{getIcon()} {acc.name}</div>
+                      <div className="text-[9px] text-[#c0ff00] mt-0.5 font-mono font-bold flex items-center gap-1">
+                        <span>{acc.currency_code}</span>
+                        <span className="text-zinc-500 font-normal">
+                          {acc.currency_code === 'VES' ? `(${vesRate} Bs/$)` : (acc.currency_code === 'COP' ? `(${copRate} $/$)` : '')}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
 
-              {/* Payment Details Box */}
-              {paymentMethod === 'pago_movil' && (
-                <div className="bg-zinc-950/60 p-4 rounded-xl border border-white/10 space-y-3">
-                  <div className="text-xs space-y-1 font-sans">
-                    <div className="flex justify-between text-zinc-300">
-                      <span>Banco: <strong className="text-white">Banco de Venezuela (0102)</strong></span>
-                      <span>RIF: <strong className="text-white">J-50123456-9</strong></span>
-                    </div>
-                    <div className="flex justify-between text-zinc-300">
-                      <span>Teléfono: <strong className="text-white">0412-3129425</strong></span>
-                      <span>Tasa Ref. BCV: <strong className="text-[#c0ff00] font-mono">{exchangeRate} Bs/USD</strong></span>
-                    </div>
-                    <div className="pt-2 border-t border-white/10 flex justify-between font-bold text-xs text-white">
-                      <span>Monto Total a Transferir (Bs):</span>
-                      <span className="text-[#c0ff00] font-mono text-sm font-black">{totalCostBs} Bs.</span>
+              {/* Caja de Datos Bancarios de la Cuenta Seleccionada */}
+              {selectedAccount && (
+                <div className="bg-zinc-950/60 p-4 rounded-xl border border-white/10 space-y-3 font-sans">
+                  <div className="text-xs space-y-1.5">
+                    {selectedAccount.bank_name && (
+                      <div className="flex justify-between text-zinc-300">
+                        <span className="text-zinc-400">Banco:</span>
+                        <strong className="text-white">{selectedAccount.bank_name}</strong>
+                      </div>
+                    )}
+                    {selectedAccount.account_holder && (
+                      <div className="flex justify-between text-zinc-300">
+                        <span className="text-zinc-400">Titular:</span>
+                        <strong className="text-white">{selectedAccount.account_holder}</strong>
+                      </div>
+                    )}
+                    {selectedAccount.id_document && (
+                      <div className="flex justify-between text-zinc-300">
+                        <span className="text-zinc-400">RIF / Cédula / NIT:</span>
+                        <strong className="text-white font-mono">{selectedAccount.id_document}</strong>
+                      </div>
+                    )}
+                    {selectedAccount.phone && (
+                      <div className="flex justify-between text-zinc-300">
+                        <span className="text-zinc-400">Teléfono:</span>
+                        <strong className="text-white font-mono">{selectedAccount.phone}</strong>
+                      </div>
+                    )}
+                    {selectedAccount.email && (
+                      <div className="flex justify-between text-zinc-300">
+                        <span className="text-zinc-400">Correo Electrónico:</span>
+                        <strong className="text-white">{selectedAccount.email}</strong>
+                      </div>
+                    )}
+                    {selectedAccount.account_number && (
+                      <div className="flex justify-between text-zinc-300">
+                        <span className="text-zinc-400">N° de Cuenta:</span>
+                        <strong className="text-white font-mono">{selectedAccount.account_number}</strong>
+                      </div>
+                    )}
+                    {selectedAccount.instructions && (
+                      <p className="text-[11px] text-zinc-400 italic pt-1 border-t border-white/5">
+                        ℹ️ {selectedAccount.instructions}
+                      </p>
+                    )}
+
+                    <div className="pt-2 border-t border-white/10 flex justify-between items-center font-bold text-xs text-white">
+                      <span>Monto Total a Cancelar ({selectedAccount.currency_code}):</span>
+                      <span className="text-[#c0ff00] font-mono text-base font-black">
+                        {getAmountForAccount(selectedAccount)} {getCurrencySymbol(selectedAccount.currency_code)}
+                      </span>
                     </div>
                   </div>
 
-                  <div>
-                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest font-mono mb-1 block">
-                      Número de Referencia de Pago Móvil (Requerido)
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Ej. 849302 (últimos 6 dígitos)"
-                      value={paymentReference}
-                      onChange={(e) => setPaymentReference(e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-xl border border-white/10 text-xs bg-zinc-950 text-white focus:border-[#c0ff00] outline-none font-semibold font-mono"
-                      required
-                    />
-                  </div>
-                </div>
-              )}
-
-              {paymentMethod === 'zelle' && (
-                <div className="bg-zinc-950/60 p-4 rounded-xl border border-white/10 space-y-3">
-                  <div className="text-xs space-y-1 font-sans">
-                    <div className="flex justify-between text-zinc-300">
-                      <span>Correo Zelle: <strong className="text-white">pagos@courtconnect.com</strong></span>
+                  {selectedAccount.type !== 'cash' && selectedAccount.type !== 'card' && (
+                    <div>
+                      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest font-mono mb-1 block">
+                        Número de Referencia / Comprobante (Requerido)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ej. 849302 (últimos dígitos del comprobante)"
+                        value={paymentReference}
+                        onChange={(e) => setPaymentReference(e.target.value)}
+                        className="w-full px-3 py-2.5 rounded-xl border border-white/10 text-xs bg-zinc-950 text-white focus:border-[#c0ff00] outline-none font-semibold font-mono"
+                        required
+                      />
                     </div>
-                    <div className="flex justify-between text-zinc-300">
-                      <span>Titular: <strong className="text-white">CourtConnect Sports LLC</strong></span>
+                  )}
+
+                  {selectedAccount.type === 'card' && (
+                    <div className="space-y-2 pt-1">
+                      <p className="text-xs text-zinc-400">💳 Procesamiento inmediato con tarjeta ficticia de prueba.</p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <input
+                          type="text"
+                          placeholder="4242 •••• •••• 4242"
+                          className="w-full px-3 py-2.5 rounded-xl border border-white/10 text-xs bg-zinc-950 text-white font-mono"
+                        />
+                        <input
+                          type="text"
+                          placeholder="MM/AA  CVC"
+                          className="w-full px-3 py-2.5 rounded-xl border border-white/10 text-xs bg-zinc-950 text-white font-mono"
+                        />
+                      </div>
                     </div>
-                    <div className="pt-2 border-t border-white/10 flex justify-between font-bold text-xs text-white">
-                      <span>Monto Zelle a Transferir:</span>
-                      <span className="text-[#c0ff00] font-mono text-sm font-black">${totalCost} USD</span>
-                    </div>
-                  </div>
+                  )}
 
-                  <div>
-                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest font-mono mb-1 block">
-                      Nombre del Titular Zelle / Referencia (Requerido)
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Ej. Juan Pérez - Ref: Z-93821"
-                      value={paymentReference}
-                      onChange={(e) => setPaymentReference(e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-xl border border-white/10 text-xs bg-zinc-950 text-white focus:border-[#c0ff00] outline-none font-semibold"
-                      required
-                    />
-                  </div>
-                </div>
-              )}
-
-              {paymentMethod === 'card' && (
-                <div className="bg-zinc-950/60 p-4 rounded-xl border border-white/10 space-y-3">
-                  <p className="text-xs text-zinc-400">
-                    💳 Tarjeta directa (Simulación de procesamiento bancario).
-                  </p>
-                  <div className="grid grid-cols-2 gap-3">
-                    <input
-                      type="text"
-                      placeholder="4242 •••• •••• 4242"
-                      className="w-full px-3 py-2.5 rounded-xl border border-white/10 text-xs bg-zinc-950 text-white font-mono"
-                    />
-                    <input
-                      type="text"
-                      placeholder="MM/AA  CVC"
-                      className="w-full px-3 py-2.5 rounded-xl border border-white/10 text-xs bg-zinc-950 text-white font-mono"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {paymentMethod === 'cash' && (
-                <div className="bg-zinc-950/60 p-4 rounded-xl border border-white/10">
-                  <p className="text-xs text-zinc-300">
-                    🏢 <strong>Pago en Taquilla:</strong> Realiza el pago directamente en recepción antes de iniciar el turno de cancha.
-                  </p>
+                  {selectedAccount.type === 'cash' && (
+                    <p className="text-xs text-zinc-300">
+                      🏢 <strong>Pago en Taquilla:</strong> Realiza el pago directamente en recepción antes de iniciar el turno de cancha.
+                    </p>
+                  )}
                 </div>
               )}
             </div>

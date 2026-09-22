@@ -8,6 +8,7 @@ const getAllBookings = async (req, res) => {
     const result = await pool.query(`
       SELECT b.id, b.booking_date, b.start_time, b.end_time, b.status, b.customer_id,
              b.payment_method, b.payment_reference, b.total_amount,
+             b.currency_code, b.exchange_rate, b.amount_in_currency,
              c.first_name || ' ' || c.last_name as customer_name, c.phone, 
              co.court_name, co.hourly_rate,
              u.username as created_by
@@ -91,7 +92,7 @@ const createBooking = async (req, res) => {
   try {
     await client.query('BEGIN');
     
-    const { customer_id, court_id, booking_date, start_time, end_time, user_id, payment_method, payment_reference, total_amount } = req.body;
+    const { customer_id, court_id, booking_date, start_time, end_time, user_id, payment_method, payment_reference, total_amount, currency_code, exchange_rate, amount_in_currency } = req.body;
     // Use provided user_id or null (user_id is nullable in bookings)
     const bookingUserId = user_id || null;
     
@@ -145,10 +146,24 @@ const createBooking = async (req, res) => {
     // Crear reserva
     const initialStatus = (payment_method && payment_method !== 'cash' && payment_method !== 'card') ? 'Confirmed' : 'Pending';
     const result = await client.query(`
-      INSERT INTO bookings (customer_id, court_id, user_id, booking_date, start_time, end_time, status, payment_method, payment_reference, total_amount)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      INSERT INTO bookings (customer_id, court_id, user_id, booking_date, start_time, end_time, status, payment_method, payment_reference, total_amount, currency_code, exchange_rate, amount_in_currency)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
       RETURNING *
-    `, [customer_id, court_id, bookingUserId, booking_date, start_time, end_time, initialStatus, payment_method || null, payment_reference || null, total_amount || null]);
+    `, [
+      customer_id,
+      court_id,
+      bookingUserId,
+      booking_date,
+      start_time,
+      end_time,
+      initialStatus,
+      payment_method || null,
+      payment_reference || null,
+      total_amount || null,
+      currency_code || 'USD',
+      exchange_rate ? parseFloat(exchange_rate) : null,
+      amount_in_currency ? parseFloat(amount_in_currency) : null
+    ]);
     
     await client.query('COMMIT');
     
