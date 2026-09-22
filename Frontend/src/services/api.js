@@ -1,22 +1,37 @@
 const BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
+let inMemoryToken = null;
+let isRefreshing = false;
+let refreshSubscribers = [];
+
+export const setToken = (token) => {
+  inMemoryToken = token;
+};
+
+export const getToken = () => inMemoryToken;
+
+const onRefreshed = (token) => {
+  refreshSubscribers.forEach((callback) => callback(token));
+  refreshSubscribers = [];
+};
+
 /**
  * Cliente API centralizado para manejar peticiones HTTP con fetch.
- * Adjunta automáticamente el token JWT si está disponible en localStorage.
+ * Utiliza token de acceso en memoria RAM y soporte de cookies HttpOnly con credentials: 'include'.
+ * Incluye interceptor automático para renovar token al recibir 401.
  */
 async function request(endpoint, options = {}) {
-  const token = localStorage.getItem('token');
-  
   const headers = {
     'Content-Type': 'application/json',
     ...options.headers,
   };
 
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+  if (inMemoryToken) {
+    headers['Authorization'] = `Bearer ${inMemoryToken}`;
   }
 
   const config = {
+    credentials: 'include',
     ...options,
     headers,
   };
@@ -25,8 +40,41 @@ async function request(endpoint, options = {}) {
     config.body = JSON.stringify(options.body);
   }
 
-  const response = await fetch(`${BASE_URL}${endpoint}`, config);
-  
+  let response = await fetch(`${BASE_URL}${endpoint}`, config);
+
+  // Manejar expiración del access token (401)
+  if (response.status === 401 && endpoint !== '/auth/login' && endpoint !== '/auth/refresh' && endpoint !== '/auth/logout') {
+    if (!isRefreshing) {
+      isRefreshing = true;
+      try {
+        const refreshResponse = await fetch(`${BASE_URL}/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+        });
+        const refreshData = await refreshResponse.json();
+        if (refreshResponse.ok && refreshData.token) {
+          setToken(refreshData.token);
+          onRefreshed(refreshData.token);
+        } else {
+          setToken(null);
+          refreshSubscribers = [];
+        }
+      } catch (err) {
+        setToken(null);
+        refreshSubscribers = [];
+      } finally {
+        isRefreshing = false;
+      }
+    }
+
+    // Reintentar la petición si obtuvimos nuevo token
+    if (inMemoryToken) {
+      config.headers['Authorization'] = `Bearer ${inMemoryToken}`;
+      response = await fetch(`${BASE_URL}${endpoint}`, config);
+    }
+  }
+
   // Manejar respuestas sin contenido (204 No Content)
   if (response.status === 204) {
     return { success: true };

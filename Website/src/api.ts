@@ -6,22 +6,71 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://dashboard-deportivo.onrender.com';
 // ========================================
 
-async function request(path: string, options: RequestInit = {}) {
+let inMemoryToken: string | null = null;
+let isRefreshing = false;
+
+export function setAuthToken(token: string | null) {
+  inMemoryToken = token;
+}
+
+export function getAuthToken(): string | null {
+  return inMemoryToken;
+}
+
+async function request(path: string, options: RequestInit = {}): Promise<any> {
   const url = `${API_BASE_URL}${path}`;
-  const token = localStorage.getItem('courtconnect_token');
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     ...(options.headers || {}),
   };
 
-  if (token) {
-    (headers as any)['Authorization'] = `Bearer ${token}`;
+  if (inMemoryToken) {
+    (headers as any)['Authorization'] = `Bearer ${inMemoryToken}`;
   }
 
-  const response = await fetch(url, {
-    headers,
+  const config: RequestInit = {
+    credentials: 'include', // Transmite y recibe cookies HttpOnly automáticamente
     ...options,
-  });
+    headers,
+  };
+
+  let response = await fetch(url, config);
+
+  // Manejo de expiración del token (401) con renovación silenciosa
+  if (
+    response.status === 401 &&
+    !path.includes('/auth/client/login') &&
+    !path.includes('/auth/client/register') &&
+    !path.includes('/auth/client/refresh') &&
+    !path.includes('/auth/client/logout')
+  ) {
+    if (!isRefreshing) {
+      isRefreshing = true;
+      try {
+        const refreshRes = await fetch(`${API_BASE_URL}/auth/client/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+        });
+        const refreshData = await refreshRes.json();
+        if (refreshRes.ok && refreshData.token) {
+          setAuthToken(refreshData.token);
+        } else {
+          setAuthToken(null);
+        }
+      } catch (err) {
+        setAuthToken(null);
+      } finally {
+        isRefreshing = false;
+      }
+    }
+
+    // Reintentar si conseguimos nuevo access token
+    if (inMemoryToken) {
+      (config.headers as any)['Authorization'] = `Bearer ${inMemoryToken}`;
+      response = await fetch(url, config);
+    }
+  }
 
   const contentType = response.headers.get('content-type');
   const body = contentType?.includes('application/json') ? await response.json() : null;
@@ -32,6 +81,26 @@ async function request(path: string, options: RequestInit = {}) {
   }
 
   return body;
+}
+
+export async function refreshClientSession() {
+  const res = await request('/auth/client/refresh', {
+    method: 'POST',
+  });
+  if (res?.token) {
+    setAuthToken(res.token);
+  }
+  return res;
+}
+
+export async function logoutClient() {
+  try {
+    await request('/auth/client/logout', {
+      method: 'POST',
+    });
+  } finally {
+    setAuthToken(null);
+  }
 }
 
 export async function createCustomer(customer: {
@@ -86,27 +155,39 @@ export async function registerUser(payload: {
   phone: string;
   password: string;
 }) {
-  return request('/auth/client/register', {
+  const res = await request('/auth/client/register', {
     method: 'POST',
     body: JSON.stringify(payload),
   });
+  if (res?.token) {
+    setAuthToken(res.token);
+  }
+  return res;
 }
 
 export async function loginUser(payload: {
   username: string;
   password: string;
 }) {
-  return request('/auth/client/login', {
+  const res = await request('/auth/client/login', {
     method: 'POST',
     body: JSON.stringify(payload),
   });
+  if (res?.token) {
+    setAuthToken(res.token);
+  }
+  return res;
 }
 
 export async function googleLoginUser(payload: { access_token: string }) {
-  return request('/auth/client/google', {
+  const res = await request('/auth/client/google', {
     method: 'POST',
     body: JSON.stringify(payload),
   });
+  if (res?.token) {
+    setAuthToken(res.token);
+  }
+  return res;
 }
 
 export async function getCustomerBookings(customerId: number) {

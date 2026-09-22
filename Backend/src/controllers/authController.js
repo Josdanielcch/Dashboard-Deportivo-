@@ -5,6 +5,29 @@ const crypto = require("crypto");
 const pool = require("../config/database");
 const mailer = require("../config/mailer");
 
+const isProduction = process.env.NODE_ENV === 'production';
+const REFRESH_SECRET = process.env.REFRESH_TOKEN_SECRET || (process.env.JWT_SECRET ? process.env.JWT_SECRET + '_refresh' : 'cc_refresh_secret');
+
+const getCookieOptions = (maxAge = 7 * 24 * 60 * 60 * 1000) => ({
+  httpOnly: true,
+  secure: isProduction,
+  sameSite: isProduction ? 'none' : 'lax',
+  path: '/',
+  maxAge,
+});
+
+const generateAccessToken = (payload) => {
+  return jwt.sign(payload, process.env.JWT_SECRET, {
+    expiresIn: process.env.ACCESS_TOKEN_EXPIRES_IN || '15m',
+  });
+};
+
+const generateRefreshToken = (payload) => {
+  return jwt.sign(payload, REFRESH_SECRET, {
+    expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || '7d',
+  });
+};
+
 const login = async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -46,11 +69,20 @@ const login = async (req, res) => {
       return res.status(401).json({ error: "Credenciales inválidas" });
     }
 
-    const token = jwt.sign(
-      { id: user.id, username: user.username, role_id: user.role_id },
-      process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN || "7d" },
-    );
+    const accessToken = generateAccessToken({
+      id: user.id,
+      username: user.username,
+      role_id: user.role_id,
+    });
+
+    const refreshToken = generateRefreshToken({
+      id: user.id,
+      username: user.username,
+      role_id: user.role_id,
+      type: 'panel',
+    });
+
+    res.cookie('panel_refresh_token', refreshToken, getCookieOptions());
 
     const customerQuery = "SELECT id, phone, email FROM customers WHERE email = $1";
     const customerResult = await pool.query(customerQuery, [user.email || user.username]);
@@ -59,7 +91,7 @@ const login = async (req, res) => {
     return res.json({
       success: true,
       message: "Login exitoso",
-      token,
+      token: accessToken,
       user: {
         id: user.id,
         username: user.username,
@@ -363,16 +395,27 @@ const clientLogin = async (req, res) => {
     }
 
     // Role 10 for Client
-    const token = jwt.sign(
-      { id: customer.id, username: customer.email, role_id: 10, is_client: true },
-      process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
-    );
+    const accessToken = generateAccessToken({
+      id: customer.id,
+      username: customer.email,
+      role_id: 10,
+      is_client: true,
+    });
+
+    const refreshToken = generateRefreshToken({
+      id: customer.id,
+      username: customer.email,
+      role_id: 10,
+      is_client: true,
+      type: 'client',
+    });
+
+    res.cookie('client_refresh_token', refreshToken, getCookieOptions());
 
     return res.json({
       success: true,
       message: "Login exitoso",
-      token,
+      token: accessToken,
       user: {
         id: customer.id,
         username: customer.email,
@@ -441,16 +484,27 @@ const clientRegister = async (req, res) => {
       customerId = customerData.id;
     }
 
-    const token = jwt.sign(
-      { id: customerId, username: email.toLowerCase(), role_id: 10, is_client: true },
-      process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
-    );
+    const accessToken = generateAccessToken({
+      id: customerId,
+      username: email.toLowerCase(),
+      role_id: 10,
+      is_client: true,
+    });
+
+    const refreshToken = generateRefreshToken({
+      id: customerId,
+      username: email.toLowerCase(),
+      role_id: 10,
+      is_client: true,
+      type: 'client',
+    });
+
+    res.cookie('client_refresh_token', refreshToken, getCookieOptions());
 
     return res.status(201).json({
       success: true,
       message: "Registro exitoso",
-      token,
+      token: accessToken,
       user: {
         id: customerId,
         username: email.toLowerCase(),
@@ -584,16 +638,27 @@ const clientGoogleLogin = async (req, res) => {
     }
 
     // Generate JWT
-    const token = jwt.sign(
-      { id: customer.id, username: customer.email, role_id: 10, is_client: true },
-      process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
-    );
+    const accessToken = generateAccessToken({
+      id: customer.id,
+      username: customer.email,
+      role_id: 10,
+      is_client: true,
+    });
+
+    const refreshToken = generateRefreshToken({
+      id: customer.id,
+      username: customer.email,
+      role_id: 10,
+      is_client: true,
+      type: 'client',
+    });
+
+    res.cookie('client_refresh_token', refreshToken, getCookieOptions());
 
     return res.json({
       success: true,
       message: "Login con Google exitoso",
-      token,
+      token: accessToken,
       user: {
         id: customer.id,
         username: customer.email,
@@ -612,7 +677,140 @@ const clientGoogleLogin = async (req, res) => {
   }
 };
 
+const refreshTokenHandler = async (req, res) => {
+  try {
+    const refreshToken = req.cookies?.panel_refresh_token;
+
+    if (!refreshToken) {
+      return res.status(401).json({ error: "Token de refresco no proporcionado" });
+    }
+
+    let decoded;
+    try {
+      decoded = jwt.verify(refreshToken, REFRESH_SECRET);
+    } catch (err) {
+      return res.status(401).json({ error: "Token de refresco inválido o expirado" });
+    }
+
+    if (decoded.type !== 'panel') {
+      return res.status(403).json({ error: "Tipo de token no válido para panel" });
+    }
+
+    const query =
+      "SELECT id, username, email, first_name, last_name, role_id, status, avatar_url, first_name || ' ' || last_name AS full_name FROM users WHERE id = $1";
+    const result = await pool.query(query, [decoded.id]);
+
+    if (result.rows.length === 0) {
+      return res.status(401).json({ error: "Usuario no encontrado" });
+    }
+
+    const user = result.rows[0];
+
+    if (user.status !== "Activated" && user.status !== "activated") {
+      return res.status(403).json({ error: "Usuario inactivo" });
+    }
+
+    const newAccessToken = generateAccessToken({
+      id: user.id,
+      username: user.username,
+      role_id: user.role_id,
+    });
+
+    return res.json({
+      success: true,
+      token: newAccessToken,
+      user: {
+        id: user.id,
+        username: user.username,
+        full_name: user.full_name,
+        role_id: user.role_id,
+        status: user.status,
+        avatar_url: user.avatar_url,
+      },
+    });
+  } catch (error) {
+    console.error("Error en refreshTokenHandler:", error);
+    return res.status(500).json({ error: "Error al refrescar token" });
+  }
+};
+
+const clientRefreshTokenHandler = async (req, res) => {
+  try {
+    const refreshToken = req.cookies?.client_refresh_token;
+
+    if (!refreshToken) {
+      return res.status(401).json({ error: "Token de refresco de cliente no proporcionado" });
+    }
+
+    let decoded;
+    try {
+      decoded = jwt.verify(refreshToken, REFRESH_SECRET);
+    } catch (err) {
+      return res.status(401).json({ error: "Token de refresco inválido o expirado" });
+    }
+
+    if (decoded.type !== 'client') {
+      return res.status(403).json({ error: "Tipo de token no válido para cliente" });
+    }
+
+    const query = "SELECT * FROM customers WHERE id = $1";
+    const result = await pool.query(query, [decoded.id]);
+
+    if (result.rows.length === 0) {
+      return res.status(401).json({ error: "Cliente no encontrado" });
+    }
+
+    const customer = result.rows[0];
+
+    const newAccessToken = generateAccessToken({
+      id: customer.id,
+      username: customer.email,
+      role_id: 10,
+      is_client: true,
+    });
+
+    return res.json({
+      success: true,
+      token: newAccessToken,
+      user: {
+        id: customer.id,
+        username: customer.email,
+        full_name: `${customer.first_name} ${customer.last_name}`,
+        role_id: 10,
+        customer_id: customer.id,
+        phone: customer.phone,
+        email: customer.email,
+        membership_level: customer.membership_level || 'standard',
+      },
+    });
+  } catch (error) {
+    console.error("Error en clientRefreshTokenHandler:", error);
+    return res.status(500).json({ error: "Error al refrescar token de cliente" });
+  }
+};
+
+const logoutHandler = async (req, res) => {
+  try {
+    res.clearCookie('panel_refresh_token', getCookieOptions(0));
+    return res.json({ success: true, message: "Sesión cerrada correctamente" });
+  } catch (error) {
+    console.error("Error en logoutHandler:", error);
+    return res.status(500).json({ error: "Error al cerrar sesión" });
+  }
+};
+
+const clientLogoutHandler = async (req, res) => {
+  try {
+    res.clearCookie('client_refresh_token', getCookieOptions(0));
+    return res.json({ success: true, message: "Sesión cerrada correctamente" });
+  } catch (error) {
+    console.error("Error en clientLogoutHandler:", error);
+    return res.status(500).json({ error: "Error al cerrar sesión" });
+  }
+};
+
 module.exports = { 
   login, register, getMe, recoverPassword, resetPassword,
-  clientLogin, clientRegister, clientRecoverPassword, clientResetPassword, clientGoogleLogin
+  clientLogin, clientRegister, clientRecoverPassword, clientResetPassword, clientGoogleLogin,
+  refreshTokenHandler, clientRefreshTokenHandler, logoutHandler, clientLogoutHandler
 };

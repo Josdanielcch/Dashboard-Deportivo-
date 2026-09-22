@@ -1,11 +1,24 @@
 import React from 'react';
-import { Share2, MessageSquare, MapPin, Trophy, Lock } from 'lucide-react';
+import { Share2, MessageSquare, MapPin, Trophy, Lock, ArrowUp } from 'lucide-react';
 
 interface FooterProps {
   setCurrentTab: (tab: string) => void;
 }
 
 export default function Footer({ setCurrentTab }: FooterProps) {
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    });
+    if (document.documentElement) {
+      document.documentElement.scrollTo({
+        top: 0,
+        behavior: 'smooth',
+      });
+    }
+  };
+
   const handleShare = (e: React.MouseEvent) => {
     e.preventDefault();
     if (navigator.share) {
@@ -28,12 +41,20 @@ export default function Footer({ setCurrentTab }: FooterProps) {
       <div className="py-12 px-6 md:px-10 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
         {/* Brand */}
         <div className="flex flex-col gap-4">
-          <div className="flex items-center gap-2 text-[#c0ff00] font-black text-xl tracking-tighter italic uppercase animate-pulse">
-            <Trophy className="h-5 w-5 fill-[#c0ff00]" />
+          <button
+            type="button"
+            onClick={scrollToTop}
+            className="flex items-center gap-2 text-[#c0ff00] font-black text-xl tracking-tighter italic uppercase hover:opacity-85 transition-opacity text-left cursor-pointer group w-fit"
+            title="Ir arriba / Inicio"
+            id="footer-brand-logo"
+          >
+            <Trophy className="h-5 w-5 fill-[#c0ff00] group-hover:scale-110 transition-transform" />
             <span>COURTCONNECT</span>
-          </div>
+          </button>
           <p className="text-sm text-zinc-400 leading-relaxed">
-            La plataforma definitiva para deportistas. Reserva, compite y mejora en un solo lugar. Conectamos clubes urbanos de alto nivel con jugadores apasionados.
+            La plataforma definitiva para deportistas. 
+            <br /> <br />
+            Reserva, compite y mejora en un solo lugar.
           </p>
           <div className="flex items-center gap-2 text-xs text-zinc-500 font-mono mt-1">
             <MapPin className="h-3 w-3" /> Tachira, Venezuela
@@ -46,16 +67,24 @@ export default function Footer({ setCurrentTab }: FooterProps) {
           <ul className="space-y-2.5">
             <li>
               <button
-                onClick={() => setCurrentTab('explore')}
-                className="text-sm text-zinc-400 hover:text-[#c0ff00] hover:underline transition-colors text-left font-semibold"
+                type="button"
+                onClick={() => {
+                  setCurrentTab('explore');
+                  scrollToTop();
+                }}
+                className="text-sm text-zinc-400 hover:text-[#c0ff00] hover:underline transition-colors text-left font-semibold cursor-pointer"
               >
                 Explorar Canchas
               </button>
             </li>
             <li>
               <button
-                onClick={() => setCurrentTab('how-it-works')}
-                className="text-sm text-zinc-400 hover:text-[#c0ff00] hover:underline transition-colors text-left font-semibold"
+                type="button"
+                onClick={() => {
+                  setCurrentTab('how-it-works');
+                  scrollToTop();
+                }}
+                className="text-sm text-zinc-400 hover:text-[#c0ff00] hover:underline transition-colors text-left font-semibold cursor-pointer"
               >
                 Cómo Funciona
               </button>
@@ -148,11 +177,22 @@ export default function Footer({ setCurrentTab }: FooterProps) {
         </div>
       </div>
 
-      {/* Barra inferior — acceso discreto al panel administrativo */}
-      <div className="border-t border-white/5 px-6 md:px-10 py-3 flex items-center justify-between">
-        <p className="text-xs text-zinc-700 font-mono">
-          CourtConnect v2.0 · SportSpaces OS
+      {/* Barra inferior — acceso discreto al panel administrativo y botón subir */}
+      <div className="border-t border-white/5 px-6 md:px-10 py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <p className="text-xs text-zinc-700 font-mono text-center sm:text-left">
+          CourtConnect v1.0 · SportSpaces OS
         </p>
+
+        <button
+          type="button"
+          onClick={scrollToTop}
+          className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-[#c0ff00] transition-colors py-1 px-3 rounded-full hover:bg-white/5 cursor-pointer group font-medium"
+          title="Volver arriba"
+        >
+          <span>Volver arriba</span>
+          <ArrowUp className="h-3.5 w-3.5 text-[#c0ff00] group-hover:-translate-y-0.5 transition-transform" />
+        </button>
+
         <a
           href={panelUrl}
           target="_blank"

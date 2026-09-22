@@ -89,7 +89,7 @@ export default function AuthPage({ initialMode = 'register', onModeSwitch, onLog
         customerId: response.customer_id,
       };
 
-      localStorage.setItem('courtconnect_token', response.token);
+      localStorage.removeItem('courtconnect_token');
       localStorage.setItem('courtconnect_user_session', JSON.stringify(userSession));
       onLoginSuccess(userSession);
     } catch (err: any) {
@@ -120,7 +120,7 @@ export default function AuthPage({ initialMode = 'register', onModeSwitch, onLog
         customerId: response.user.customer_id,
       };
 
-      localStorage.setItem('courtconnect_token', response.token);
+      localStorage.removeItem('courtconnect_token');
       localStorage.setItem('courtconnect_user_session', JSON.stringify(userSession));
       onLoginSuccess(userSession);
     } catch (err: any) {
@@ -205,7 +205,7 @@ export default function AuthPage({ initialMode = 'register', onModeSwitch, onLog
           membershipLevel: apiResponse.user.membership_level || 'standard',
           customerId: apiResponse.user.customer_id,
         };
-        localStorage.setItem('courtconnect_token', apiResponse.token);
+        localStorage.removeItem('courtconnect_token');
         localStorage.setItem('courtconnect_user_session', JSON.stringify(userSession));
         onLoginSuccess(userSession);
       } catch (err: any) {

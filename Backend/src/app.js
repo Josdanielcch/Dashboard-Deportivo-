@@ -4,6 +4,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const compression = require('compression');
 const path = require('path');
+const cookieParser = require('cookie-parser');
 
 
 // Importar rutas
@@ -56,6 +57,7 @@ app.use(compression());
 app.use(morgan('combined'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 // Servir la carpeta de subidas estáticamente
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));

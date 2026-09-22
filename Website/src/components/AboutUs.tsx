@@ -58,9 +58,9 @@ export default function AboutUs() {
             La Cancha que Sueñas, Al Alcance de tu Teléfono
           </h3>
           <p className="text-xs md:text-sm text-zinc-400 leading-relaxed font-sans font-medium">
-            Comenzamos con un pequeño nicho de amantes del pádel frustrados por los engorrosos canales de reserva de fin de semana (archivos Excel compartidos, pagos atrasados, llamadas sin contestar). 
+            Comenzamos con un pequeño nicho de amantes del Futbol frustrados por los engorrosos canales de reserva de fin de semana (archivos Excel compartidos, pagos atrasados, llamadas sin contestar). 
             <br /><br />
-            Hoy, CourtConnect representa el software aliado del deportista de alto rendimiento y el aficionado casual por igual. Ofrecemos herramientas de pago seguras, integración de códigos temporales de ingreso e invitaciones de juego cooperativo.
+            Hoy, CourtConnect representa el software aliado del deportista y el aficionado casual por igual. Ofrecemos herramientas de pago seguras, integración de códigos temporales de ingreso e invitaciones de juego cooperativo.
           </p>
           
           <ul className="space-y-2 pt-2">
