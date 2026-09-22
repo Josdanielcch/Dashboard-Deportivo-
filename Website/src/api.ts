@@ -3,8 +3,32 @@
 //const API_BASE_URL = 'http://localhost:3000/api';
 
 // Para correr en PRODUCCIÓN: Descomenta la siguiente línea y comenta la local
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://dashboard-deportivo.onrender.com';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://dashboard-deportivo.onrender.com/api';
 // ========================================
+
+export interface ExchangeRate {
+  id: number;
+  currency_code: string;
+  currency_name: string;
+  symbol: string;
+  rate_to_usd: string | number;
+  is_active: boolean;
+}
+
+export interface PaymentMethodAccount {
+  id: number;
+  name: string;
+  type: string;
+  currency_code: string;
+  bank_name?: string;
+  account_number?: string;
+  account_holder?: string;
+  id_document?: string;
+  phone?: string;
+  email?: string;
+  instructions?: string;
+  display_order?: number;
+}
 
 let inMemoryToken: string | null = null;
 let isRefreshing = false;
@@ -125,6 +149,9 @@ export async function createBooking(payload: {
   payment_method?: string;
   payment_reference?: string;
   total_amount?: number;
+  currency_code?: string;
+  exchange_rate?: number;
+  amount_in_currency?: number;
 }) {
   return request('/bookings', {
     method: 'POST',
@@ -226,3 +253,12 @@ export async function getSports() {
 export async function getMyProfile() {
   return request('/auth/me');
 }
+
+export async function getExchangeRates(): Promise<{ success: boolean; data: ExchangeRate[] }> {
+  return request('/exchange-rates');
+}
+
+export async function getPaymentMethods(): Promise<{ success: boolean; data: PaymentMethodAccount[] }> {
+  return request('/payment-methods');
+}
+

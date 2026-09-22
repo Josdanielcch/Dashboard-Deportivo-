@@ -24,6 +24,8 @@ const cxpRoutes = require('./routes/cxpRoutes');
 const settingsRoutes = require('./routes/settingsRoutes');
 const sportRoutes = require('./routes/sportRoutes');
 const reportRoutes = require('./routes/reportRoutes');
+const exchangeRateRoutes = require('./routes/exchangeRateRoutes');
+const paymentAccountRoutes = require('./routes/paymentAccountRoutes');
 
 const { apiLimiter } = require('./middleware/rateLimiter');
 
@@ -115,6 +117,9 @@ app.use('/api/cxp', cxpRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/sports', sportRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/exchange-rates', exchangeRateRoutes);
+app.use('/api/payment-methods', paymentAccountRoutes);
+app.use('/api/payment-accounts', paymentAccountRoutes);
 
 // Ruta 404
 app.use((req, res) => {
