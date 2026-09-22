@@ -8,17 +8,53 @@ const { z } = require('zod');
 const multer = require('multer');
 const path = require('path');
 
-// Configuración de multer
+// Configuración de multer con validación de tipo y tamaño (máx 2MB)
+const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
+const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp'];
+
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, path.join(__dirname, '../../uploads/avatars'));
   },
   filename: function (req, file, cb) {
+    const ext = path.extname(file.originalname).toLowerCase();
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, req.params.id + '-' + uniqueSuffix + path.extname(file.originalname));
+    cb(null, req.params.id + '-' + uniqueSuffix + ext);
   }
 });
-const upload = multer({ storage: storage });
+
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 2 * 1024 * 1024, // 2MB
+    files: 1
+  },
+  fileFilter: function (req, file, cb) {
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowedMimeTypes.includes(file.mimetype) && allowedExtensions.includes(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Solo se permiten imágenes en formato JPG, PNG o WEBP de hasta 2MB'));
+    }
+  }
+});
+
+// Middleware para capturar y responder amigablemente a errores de Multer (ej. archivo muy grande)
+const uploadAvatarMiddleware = (req, res, next) => {
+  upload.single('avatar')(req, res, (err) => {
+    if (err) {
+      if (err instanceof multer.MulterError) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return res.status(400).json({ error: 'La imagen supera el límite permitido de 2MB' });
+        }
+        return res.status(400).json({ error: `Error en subida: ${err.message}` });
+      }
+      return res.status(400).json({ error: err.message || 'Archivo no permitido' });
+    }
+    next();
+  });
+};
+
 
 // Esquema de validación para crear usuario con Zod
 const createUserSchema = z.object({
@@ -56,6 +92,16 @@ router.use(setAuditContext);
 // Ruta para que el usuario actualice su propio perfil (no requiere authorize admin)
 router.put('/profile', userController.updateMyProfile);
 
+// Permitir subir avatar si es administrador (role 1) o si es el propio usuario
+const authorizeSelfOrAdmin = (req, res, next) => {
+  const currentRole = req.user?.role_id ?? req.user?.role;
+  if (currentRole === 1 || String(req.user?.id) === String(req.params.id)) {
+    return next();
+  }
+  return res.status(403).json({ error: 'Acceso denegado: solo puedes actualizar tu propio avatar' });
+};
+router.post('/:id/avatar', authorizeSelfOrAdmin, uploadAvatarMiddleware, userController.uploadAvatar);
+
 // Las siguientes rutas son solo para administradores
 router.use(authorize(1));
 
@@ -66,7 +112,6 @@ router.get('/:id', userController.getUserById);
 router.post('/', validate(createUserSchema), userController.createUser);
 router.put('/:id', validate(updateUserSchema), userController.updateUser);
 router.patch('/:id/status', validate(updateUserStatusSchema), userController.updateUserStatus);
-router.post('/:id/avatar', upload.single('avatar'), userController.uploadAvatar);
 
 router.delete('/:id', userController.deleteUser);
 

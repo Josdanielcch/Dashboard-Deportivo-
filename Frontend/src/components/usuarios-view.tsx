@@ -42,33 +42,39 @@ export default function UsuariosView() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Validación preventiva en el cliente
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      showToast('Solo se permiten imágenes en formato JPG, PNG o WEBP', 'error');
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      showToast('La imagen supera el límite permitido de 2MB', 'error');
+      return;
+    }
+
     const formData = new FormData();
     formData.append('avatar', file);
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:3000/api/users/${userId}/avatar`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formData
-      });
+      const res: any = await userService.uploadAvatar(userId, formData);
+      const avatarUrl = res?.data?.avatar_url || res?.avatar_url;
 
-      const data = await response.json();
-      if (data.success) {
-        setUsuarios(prev => prev.map(u => u.id === userId ? { ...u, avatar_url: data.data.avatar_url } : u));
+      if (res?.success || avatarUrl) {
+        setUsuarios(prev => prev.map(u => u.id === userId ? { ...u, avatar_url: avatarUrl } : u));
         if (editingUser && editingUser.id === userId) {
-          setEditingUser({ ...editingUser, avatar_url: data.data.avatar_url });
+          setEditingUser({ ...editingUser, avatar_url: avatarUrl });
         }
         if (user && user.id === userId) {
-          updateContextUser({ avatar_url: data.data.avatar_url });
+          updateContextUser({ avatar_url: avatarUrl });
         }
+        showToast('Avatar actualizado exitosamente', 'success');
       } else {
-        showToast(data.error || 'Error al subir la imagen', 'error');
+        showToast(res?.error || 'Error al actualizar el avatar', 'error');
       }
-    } catch (err) {
-      showToast('Error de conexión al subir la imagen', 'error');
+    } catch (err: any) {
+      showToast(err?.message || 'Error al subir la imagen', 'error');
     }
   };
 
