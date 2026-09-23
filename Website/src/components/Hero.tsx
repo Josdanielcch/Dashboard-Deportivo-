@@ -20,14 +20,20 @@ export default function Hero({ onExploreClick, onHowItWorksClick, onQuickSearch 
     <div className="relative rounded-2xl md:rounded-3xl overflow-hidden mb-12 shadow-2xl border border-white/10">
       {/* Background Image Container with Gradient Overlay */}
       <div className="absolute inset-0 bg-gradient-to-r from-black via-zinc-950/95 to-zinc-950/60 z-10" />
-      <img
-        src="/images/court-1.jpg"
-        alt="Padel Court Background"
-        className="absolute inset-0 w-full h-full object-cover object-center scale-100"
-        referrerPolicy="no-referrer"
-        fetchPriority="high"
-        decoding="async"
-      />
+      <picture>
+        <source media="(max-width: 768px)" srcSet="/images/court-1-mobile.webp" type="image/webp" />
+        <source media="(min-width: 769px)" srcSet="/images/court-1.webp" type="image/webp" />
+        <img
+          src="/images/court-1.webp"
+          alt="Cancha de Pádel de Alto Rendimiento en CourtConnect"
+          className="absolute inset-0 w-full h-full object-cover object-center scale-100"
+          fetchPriority="high"
+          loading="eager"
+          decoding="async"
+          width="1440"
+          height="800"
+        />
+      </picture>
 
       {/* Hero Content */}
       <div className="relative z-20 px-6 sm:px-12 py-16 md:py-28 max-w-4xl text-white">

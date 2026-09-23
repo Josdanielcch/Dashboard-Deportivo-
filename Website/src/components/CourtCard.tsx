@@ -31,11 +31,12 @@ export default function CourtCard({ court, onSelectCourt }: CourtCardProps) {
       <div className="relative h-48 overflow-hidden shrink-0">
         <img
           src={court.imageUrl}
-          alt={court.name}
+          alt={`Cancha deportiva ${court.name}`}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-          referrerPolicy="no-referrer"
           loading="lazy"
           decoding="async"
+          width="400"
+          height="192"
         />
 
         {/* Floating Availability badges (matches image 1) */}

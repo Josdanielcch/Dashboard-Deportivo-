@@ -78,12 +78,13 @@ export default function AboutUs() {
         {/* Visual Team representation */}
         <div className="relative rounded-2xl overflow-hidden h-64 md:h-80 shadow-2xl border border-white/10">
           <img
-            src="/images/court-3.jpg"
-            alt="Main clay court during high-precision match"
+            src="/images/court-3.webp"
+            alt="Cancha principal de arcilla durante partido de alta precisión"
             className="w-full h-full object-cover"
-            referrerPolicy="no-referrer"
             loading="lazy"
             decoding="async"
+            width="600"
+            height="320"
           />
           <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent p-5 text-white">
             <div className="text-xs font-black font-headline text-[#c0ff00] uppercase tracking-wider">INSTALACIONES PREMIUM</div>

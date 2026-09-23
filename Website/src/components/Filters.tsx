@@ -135,12 +135,13 @@ export default function Filters({
       {/* Promociones / Pro-Tip Ad Space directly underneath filters (Matches image 1) */}
       <div className="relative overflow-hidden rounded-2xl h-64 shadow-xl group border border-white/10">
         <img
-          src="https://lh3.googleusercontent.com/aida-public/AB6AXuDOMZdAxBcXSJf_JwBnqwgeP1ogZ8_rVejyzCOVOxUUx0eu0imfhiJEzfdbRgIUYm7_jZ3Bm1J2N8tg2UlCFrUgc5AYdkvmxQSHd9w4kuonYCuxMCSKejRcT6SYAnKCRnXIC7JBTMLGVoezorHAUOUCLJ1MhTNB2iNdEsI2FkosqHEbNkXqkf9tkKqXdE0upcLpDtnJolSBSKPWOdiFNAtu5LGbKyRNEVShuh6OhYZ_H61AVbYk38FaqCUIxMmn0nB8444PHtBf0-M"
-          alt="Tennis Pro Tip Coach"
+          src="/images/ad-protip.webp"
+          alt="Entrenador profesional de tenis dando consejos"
           className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          referrerPolicy="no-referrer"
           loading="lazy"
           decoding="async"
+          width="320"
+          height="256"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/45 to-transparent flex flex-col justify-end p-5">
           <span className="text-black bg-[#c0ff00] px-2 py-0.5 rounded text-[9px] font-black w-fit mb-2 shadow uppercase tracking-wider font-mono">
