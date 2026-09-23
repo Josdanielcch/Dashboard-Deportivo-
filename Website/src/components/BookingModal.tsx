@@ -570,13 +570,13 @@ export default function BookingModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto">
+    <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 z-50 overflow-y-auto">
       <div 
-        className="bg-zinc-900 border border-white/10 rounded-3xl max-w-2xl w-full overflow-hidden shadow-2xl relative max-h-[90vh] flex flex-col text-white"
+        className="bg-zinc-900 border border-white/10 rounded-2xl sm:rounded-3xl max-w-2xl w-full overflow-hidden shadow-2xl relative max-h-[92vh] flex flex-col text-white my-auto"
         id="booking-modal-container"
       >
         {/* Header bar */}
-        <div className={`px-6 py-4 flex items-center justify-between shrink-0 transition-colors ${
+        <div className={`px-4 sm:px-6 py-3.5 sm:py-4 flex items-center justify-between shrink-0 transition-colors ${
           isSuccess ? 'bg-zinc-950 border-b border-white/10 text-white' : 'bg-[#c0ff00] text-black'
         }`}>
           <div>
@@ -585,7 +585,7 @@ export default function BookingModal({
             }`}>
               {isSuccess ? 'COMPROBANTE DE RESERVA' : 'CONTRATAR CANCHA'}
             </span>
-            <h2 className="text-lg md:text-xl font-black font-headline tracking-tight uppercase">
+            <h2 className="text-base sm:text-lg md:text-xl font-black font-headline tracking-tight uppercase">
               {court.name}
             </h2>
           </div>
@@ -596,27 +596,27 @@ export default function BookingModal({
             }`}
             id="close-modal-btn"
           >
-            <X className="h-6 w-6" />
+            <X className="h-5 w-5 sm:h-6 sm:w-6" />
           </button>
         </div>
 
         {/* Progress Stepper Tabs */}
         {!isSuccess && (
-          <div className="bg-zinc-950/80 border-b border-white/10 px-6 py-2.5 flex items-center justify-between shrink-0">
-            <div className="flex items-center gap-2 md:gap-4 w-full max-w-md mx-auto">
+          <div className="bg-zinc-950/80 border-b border-white/10 px-3 sm:px-6 py-2.5 flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-1.5 sm:gap-3 md:gap-4 w-full max-w-md mx-auto">
               <button
                 type="button"
                 onClick={() => {
                   setFormError('');
                   setCurrentStep(1);
                 }}
-                className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                className={`flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-2 px-2 sm:px-3 rounded-xl text-xs font-bold transition-all cursor-pointer min-w-0 ${
                   currentStep === 1
                     ? 'bg-[#c0ff00] text-black shadow-md font-black'
                     : 'bg-zinc-900 text-zinc-400 hover:text-white border border-white/5'
                 }`}
               >
-                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black ${
+                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 ${
                   currentStep === 1 ? 'bg-black text-[#c0ff00]' : 'bg-white/10 text-white'
                 }`}>
                   1
@@ -624,18 +624,18 @@ export default function BookingModal({
                 <span className="truncate">Turno y Datos</span>
               </button>
 
-              <div className="h-0.5 w-6 bg-white/10 shrink-0" />
+              <div className="h-0.5 w-4 sm:w-6 bg-white/10 shrink-0" />
 
               <button
                 type="button"
                 onClick={handleNextStep}
-                className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                className={`flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-2 px-2 sm:px-3 rounded-xl text-xs font-bold transition-all cursor-pointer min-w-0 ${
                   currentStep === 2
                     ? 'bg-[#c0ff00] text-black shadow-md font-black'
                     : 'bg-zinc-900 text-zinc-400 hover:text-white border border-white/5'
                 }`}
               >
-                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black ${
+                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 ${
                   currentStep === 2 ? 'bg-black text-[#c0ff00]' : 'bg-white/10 text-white'
                 }`}>
                   2
@@ -711,7 +711,7 @@ export default function BookingModal({
             </button>
           </div>
         ) : (
-          <form onSubmit={handleBookingSubmit} className="flex-1 overflow-y-auto p-5 md:p-6 space-y-4">
+          <form onSubmit={handleBookingSubmit} className="flex-1 overflow-y-auto p-3.5 sm:p-5 md:p-6 space-y-4">
             
             {/* SECCIÓN 1: CARACTERÍSTICAS DE LA RESERVA Y DATOS */}
             {currentStep === 1 && (
@@ -743,7 +743,7 @@ export default function BookingModal({
                 </div>
 
                 {/* Tarjeta Unificada: Fecha y Horario */}
-                <div className="bg-zinc-950/40 p-4 rounded-2xl border border-white/10 space-y-3.5">
+                <div className="bg-zinc-950/40 p-3.5 sm:p-4 rounded-2xl border border-white/10 space-y-3.5 overflow-hidden">
                   <div className="flex items-center justify-between">
                     <h4 className="text-[10px] uppercase tracking-widest font-extrabold text-[#c0ff00] flex items-center gap-1.5 font-mono">
                       <CalendarIcon className="h-3.5 w-3.5 text-[#c0ff00]" />
@@ -758,18 +758,18 @@ export default function BookingModal({
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {/* Fila 1 Col 1: Fecha */}
-                    <div>
+                    <div className="w-full min-w-0">
                       <label className="text-[10px] uppercase tracking-widest font-extrabold text-zinc-400 block font-mono mb-1.5">
                         Fecha de Reserva
                       </label>
-                      <div className="relative">
-                        <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-[#c0ff00] h-4 w-4 pointer-events-none" />
+                      <div className="relative w-full min-w-0 max-w-full">
+                        <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-[#c0ff00] h-4 w-4 pointer-events-none z-10" />
                         <input
                           type="date"
                           value={bookingDate}
                           onChange={(e) => handleDateChange(e.target.value)}
                           min={new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]}
-                          className="w-full pl-9 pr-3 py-2 rounded-xl border border-white/10 text-xs font-bold text-white bg-zinc-900/60 outline-none focus:border-[#c0ff00] transition-all cursor-pointer h-10"
+                          className="w-full max-w-full min-w-0 box-border block pl-9 pr-3 py-2 rounded-xl border border-white/10 text-xs font-bold text-white bg-zinc-900/60 outline-none focus:border-[#c0ff00] transition-all cursor-pointer h-10 appearance-none [-webkit-appearance:none]"
                         />
                       </div>
                     </div>
