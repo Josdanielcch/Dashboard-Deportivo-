@@ -41,6 +41,34 @@
   }
 }
 
+/* WebKit / iOS Safari date, time, and datetime input fixes */
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"] {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  box-sizing: border-box;
+  max-width: 100%;
+  width: 100%;
+  min-width: 0;
+  display: block;
+}
+
+input[type="date"]::-webkit-date-and-time-value {
+  text-align: left;
+  margin: 0;
+  padding: 0;
+  min-height: 1.25em;
+  display: block;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.7;
+  filter: invert(1);
+}
+
 /* Custom scrollbar styles */
 ::-webkit-scrollbar {
   width: 8px;
