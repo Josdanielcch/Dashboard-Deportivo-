@@ -85,6 +85,30 @@ const checkAvailability = async (req, res) => {
   }
 };
 
+// Obtener horarios ocupados para una cancha y fecha (usado para filtrar en Website)
+const getOccupiedSlots = async (req, res) => {
+  try {
+    const { court_id, booking_date } = req.query;
+    if (!court_id || !booking_date) {
+      return res.status(400).json({ error: 'court_id y booking_date son requeridos' });
+    }
+
+    const result = await pool.query(`
+      SELECT id, start_time, end_time, status
+      FROM bookings
+      WHERE court_id = $1
+        AND booking_date = $2
+        AND status NOT IN ('Cancelled', 'No_show')
+      ORDER BY start_time
+    `, [court_id, booking_date]);
+
+    res.json({ success: true, count: result.rows.length, data: result.rows });
+  } catch (error) {
+    console.error('Error al obtener horarios ocupados:', error);
+    res.status(500).json({ error: 'Error al obtener horarios ocupados' });
+  }
+};
+
 // Crear nueva reserva
 const createBooking = async (req, res) => {
   const client = req.dbClient || await pool.connect();
@@ -180,13 +204,20 @@ const createBooking = async (req, res) => {
         `, [result.rows[0].id]);
         
         if (newBookingData.rows.length > 0) {
+          const row = newBookingData.rows[0];
           io.to('dashboard').emit('new-booking', {
-            id: newBookingData.rows[0].id,
-            customer_name: newBookingData.rows[0].customer_name,
-            court_name: newBookingData.rows[0].court_name,
-            start_time: newBookingData.rows[0].start_time,
-            end_time: newBookingData.rows[0].end_time,
+            id: row.id,
+            customer_name: row.customer_name,
+            court_name: row.court_name,
+            court_id: row.court_id,
+            booking_date: row.booking_date,
+            start_time: row.start_time,
+            end_time: row.end_time,
             created_at: new Date().toISOString()
+          });
+          io.emit('court-schedule-updated', {
+            court_id: row.court_id,
+            booking_date: row.booking_date
           });
         }
       }
@@ -401,15 +432,27 @@ const updateBookingStatus = async (req, res) => {
         `, [id]);
         
         if (statusData.rows.length > 0) {
+          const row = statusData.rows[0];
           const payload = {
-            id: statusData.rows[0].id,
+            id: row.id,
             status,
-            customer_name: statusData.rows[0].customer_name,
-            court_name: statusData.rows[0].court_name
+            customer_name: row.customer_name,
+            court_name: row.court_name,
+            court_id: row.court_id,
+            booking_date: row.booking_date,
+            start_time: row.start_time,
+            end_time: row.end_time,
+            customer_id: row.customer_id
           };
           
           io.to('dashboard').emit('booking-status-changed', payload);
-          io.to(`customer-${statusData.rows[0].customer_id}`).emit('booking-status-changed', payload);
+          io.to(`customer-${row.customer_id}`).emit('booking-status-changed', payload);
+          // Broadcast global para sincronizar clientes web y modales abiertos
+          io.emit('booking-status-changed', payload);
+          io.emit('court-schedule-updated', {
+            court_id: row.court_id,
+            booking_date: row.booking_date
+          });
         }
       }
     } catch (socketError) {
@@ -521,6 +564,7 @@ module.exports = {
   getAllBookings,
   getBookingsByDate,
   checkAvailability,
+  getOccupiedSlots,
   createBooking,
   updateBookingStatus,
   updateBooking,

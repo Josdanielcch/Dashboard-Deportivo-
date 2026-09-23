@@ -320,10 +320,10 @@ export default function AuthPage({ initialMode = 'register', onModeSwitch, onLog
   });
 
   return (
-    <div className="max-w-[1200px] mx-auto bg-zinc-900/60 border border-white/10 rounded-3xl overflow-hidden shadow-2xl backdrop-blur-md flex flex-col md:flex-row min-h-[600px] mb-12 relative z-10 animate-fade-in text-white">
+    <div className="max-w-[1200px] mx-auto bg-zinc-900/60 border border-white/10 rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl backdrop-blur-md flex flex-col md:flex-row min-h-[500px] mb-8 md:mb-12 relative z-10 animate-fade-in text-white">
 
-      {/* LEFT COLUMN: Stadium branding and community metrics (Matches Image 3) */}
-      <div className="w-full md:w-1/2 bg-black/95 text-white p-8 md:p-12 flex flex-col justify-between relative overflow-hidden shrink-0 border-r border-white/5">
+      {/* LEFT COLUMN: Stadium branding and community metrics (Visible on desktop & tablets, hidden on mobile for instant login focus) */}
+      <div className="hidden md:flex md:w-1/2 bg-black/95 text-white p-8 md:p-12 flex-col justify-between relative overflow-hidden shrink-0 border-r border-white/5">
 
         {/* Background mesh glow and stadium image mask */}
         <div className="absolute inset-0 bg-gradient-to-t from-black via-zinc-950/70 to-zinc-950/20 z-10" />
@@ -389,18 +389,70 @@ export default function AuthPage({ initialMode = 'register', onModeSwitch, onLog
         </div>
       </div>
 
-      {/* RIGHT COLUMN: Interactive login/register sheet (Matches Image 3) */}
-      <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center">
+      {/* RIGHT COLUMN: Interactive login/register sheet */}
+      <div className="w-full md:w-1/2 p-5 sm:p-8 md:p-12 flex flex-col justify-center">
 
-        {/* Dynamic Header instead of confusing button-like box */}
-        <div className="mb-8" id="auth-header">
+        {/* Mobile top navigation helper */}
+        <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/10 md:hidden">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="flex items-center gap-1.5 text-xs font-bold text-zinc-400 hover:text-[#c0ff00] transition-colors py-1 px-2.5 rounded-lg bg-white/5 active:scale-95"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            <span>Volver</span>
+          </button>
+          <div className="flex items-center gap-1.5 text-xs font-black text-[#c0ff00] uppercase tracking-tighter italic">
+            <Trophy className="h-4 w-4 text-[#c0ff00] fill-[#c0ff00]" />
+            <span>COURTCONNECT</span>
+          </div>
+        </div>
+
+        {/* Segmented Tab Switcher (Fast thumb toggle on mobile and desktop) */}
+        {(activeTab === 'login' || activeTab === 'register') && (
+          <div className="flex p-1 bg-zinc-950/80 rounded-xl border border-white/10 mb-6">
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('login');
+                onModeSwitch?.('login');
+                setError('');
+              }}
+              className={`flex-1 py-2.5 text-xs font-black uppercase tracking-wider rounded-lg transition-all cursor-pointer ${
+                activeTab === 'login'
+                  ? 'bg-[#c0ff00] text-black shadow-md shadow-[#c0ff00]/15'
+                  : 'text-zinc-400 hover:text-white'
+              }`}
+            >
+              Iniciar Sesión
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('register');
+                onModeSwitch?.('register');
+                setError('');
+              }}
+              className={`flex-1 py-2.5 text-xs font-black uppercase tracking-wider rounded-lg transition-all cursor-pointer ${
+                activeTab === 'register'
+                  ? 'bg-[#c0ff00] text-black shadow-md shadow-[#c0ff00]/15'
+                  : 'text-zinc-400 hover:text-white'
+              }`}
+            >
+              Crear Cuenta
+            </button>
+          </div>
+        )}
+
+        {/* Dynamic Title */}
+        <div className="mb-6" id="auth-header">
           <h2 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tight font-headline">
             {activeTab === 'register' ? 'Crear ' : activeTab === 'login' ? 'Iniciar ' : activeTab === 'recover' ? 'Recuperar ' : 'Nueva '}
             <span className="text-[#c0ff00]">
               {activeTab === 'register' ? 'Cuenta' : activeTab === 'login' ? 'Sesión' : 'Contraseña'}
             </span>
           </h2>
-          <p className="text-sm text-zinc-400 mt-2 font-medium">
+          <p className="text-xs sm:text-sm text-zinc-400 mt-1 font-medium">
             {activeTab === 'register' ? 'Completa tus datos para unirte a la comunidad.' : 
              activeTab === 'login' ? 'Bienvenido de vuelta, ingresa tus credenciales.' : 
              activeTab === 'recover' ? 'Ingresa tu correo para enviarte un enlace de recuperación.' : 
@@ -423,7 +475,7 @@ export default function AuthPage({ initialMode = 'register', onModeSwitch, onLog
                     placeholder="John"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 bg-zinc-950/60 border border-white/10 rounded-xl text-sm focus:border-[#c0ff00] outline-none font-semibold text-white"
+                    className="w-full pl-10 pr-4 py-3 bg-zinc-950/60 border border-white/10 rounded-xl text-base md:text-sm focus:border-[#c0ff00] outline-none font-semibold text-white"
                     required
                   />
                 </div>
@@ -439,7 +491,7 @@ export default function AuthPage({ initialMode = 'register', onModeSwitch, onLog
                     placeholder="Doe"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 bg-zinc-950/60 border border-white/10 rounded-xl text-sm focus:border-[#c0ff00] outline-none font-semibold text-white"
+                    className="w-full pl-10 pr-4 py-3 bg-zinc-950/60 border border-white/10 rounded-xl text-base md:text-sm focus:border-[#c0ff00] outline-none font-semibold text-white"
                     required
                   />
                 </div>
@@ -457,7 +509,7 @@ export default function AuthPage({ initialMode = 'register', onModeSwitch, onLog
                   placeholder="+52 55 1234 5678"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-zinc-950/60 border border-white/10 rounded-xl text-sm focus:border-[#c0ff00] outline-none font-semibold text-white"
+                  className="w-full pl-10 pr-4 py-3 bg-zinc-950/60 border border-white/10 rounded-xl text-base md:text-sm focus:border-[#c0ff00] outline-none font-semibold text-white"
                   required
                 />
               </div>
@@ -474,7 +526,7 @@ export default function AuthPage({ initialMode = 'register', onModeSwitch, onLog
                   placeholder="nombre@ejemplo.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-zinc-950/60 border border-white/10 rounded-xl text-sm focus:border-[#c0ff00] outline-none font-semibold text-white"
+                  className="w-full pl-10 pr-4 py-3 bg-zinc-950/60 border border-white/10 rounded-xl text-base md:text-sm focus:border-[#c0ff00] outline-none font-semibold text-white"
                   required
                 />
               </div>
@@ -491,7 +543,7 @@ export default function AuthPage({ initialMode = 'register', onModeSwitch, onLog
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-zinc-950/60 border border-white/10 rounded-xl text-sm focus:border-[#c0ff00] outline-none font-semibold text-white"
+                  className="w-full pl-10 pr-4 py-3 bg-zinc-950/60 border border-white/10 rounded-xl text-base md:text-sm focus:border-[#c0ff00] outline-none font-semibold text-white"
                   required
                 />
               </div>
@@ -692,7 +744,7 @@ export default function AuthPage({ initialMode = 'register', onModeSwitch, onLog
                   placeholder="nombre@ejemplo.com"
                   value={loginEmail}
                   onChange={(e) => setLoginEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-zinc-950/60 border border-white/10 rounded-xl text-sm focus:border-[#c0ff00] outline-none font-semibold text-white"
+                  className="w-full pl-10 pr-4 py-3 bg-zinc-950/60 border border-white/10 rounded-xl text-base md:text-sm focus:border-[#c0ff00] outline-none font-semibold text-white"
                   required
                 />
               </div>
@@ -722,7 +774,7 @@ export default function AuthPage({ initialMode = 'register', onModeSwitch, onLog
                   placeholder="••••••••"
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-zinc-950/60 border border-white/10 rounded-xl text-sm focus:border-[#c0ff00] outline-none font-semibold text-white"
+                  className="w-full pl-10 pr-4 py-3 bg-zinc-950/60 border border-white/10 rounded-xl text-base md:text-sm focus:border-[#c0ff00] outline-none font-semibold text-white"
                   required
                 />
               </div>
@@ -772,7 +824,7 @@ export default function AuthPage({ initialMode = 'register', onModeSwitch, onLog
                   placeholder="nombre@ejemplo.com"
                   value={recoverEmail}
                   onChange={(e) => setRecoverEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-zinc-950/60 border border-white/10 rounded-xl text-sm focus:border-[#c0ff00] outline-none font-semibold text-white"
+                  className="w-full pl-10 pr-4 py-3 bg-zinc-950/60 border border-white/10 rounded-xl text-base md:text-sm focus:border-[#c0ff00] outline-none font-semibold text-white"
                   required
                 />
               </div>
@@ -821,7 +873,7 @@ export default function AuthPage({ initialMode = 'register', onModeSwitch, onLog
                   placeholder="Min. 6 caracteres"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-zinc-950/60 border border-white/10 rounded-xl text-sm focus:border-[#c0ff00] outline-none font-semibold text-white"
+                  className="w-full pl-10 pr-4 py-3 bg-zinc-950/60 border border-white/10 rounded-xl text-base md:text-sm focus:border-[#c0ff00] outline-none font-semibold text-white"
                   required
                 />
               </div>
@@ -838,7 +890,7 @@ export default function AuthPage({ initialMode = 'register', onModeSwitch, onLog
                   placeholder="••••••••"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-zinc-950/60 border border-white/10 rounded-xl text-sm focus:border-[#c0ff00] outline-none font-semibold text-white"
+                  className="w-full pl-10 pr-4 py-3 bg-zinc-950/60 border border-white/10 rounded-xl text-base md:text-sm focus:border-[#c0ff00] outline-none font-semibold text-white"
                   required
                 />
               </div>

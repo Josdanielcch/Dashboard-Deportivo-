@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { FileText, Calendar, DollarSign, Package, Clock, RefreshCw, Filter, Activity, LayoutGrid, Printer, Users } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
@@ -176,7 +176,7 @@ function DataTable<T extends Record<string, any>>({ columns, rows, emptyMessage 
 
 interface SummaryData { totalRevenue: number; totalBookings: number; averageTicket: number; activeCustomers: number }
 interface SalesRow { date: string; bookings: number; revenue: number; bookingRevenue: number; productRevenue: number }
-interface ProductRow { name: string; quantity: number; revenue: number }
+interface ProductRow { name: string; quantity: number; revenue: number; cost: number; profit: number; margin: number }
 interface CourtRevenueRow { court: string; revenue: number; bookings: number }
 interface BookingStatusRow { status: string; count: number }
 interface HourlyRow { hour: string; count: number }
@@ -238,7 +238,14 @@ export default function InformesView() {
       }
       if (productsRes.success && productsRes.data) {
         const raw = productsRes.data.products || []
-        setProductsData(raw.map((p: any) => ({ name: p.product_name, quantity: parseInt(p.total_sold) || 0, revenue: parseFloat(p.total_revenue) || 0 })))
+        setProductsData(raw.map((p: any) => ({ 
+          name: p.product_name, 
+          quantity: parseInt(p.total_sold) || 0, 
+          revenue: parseFloat(p.total_revenue) || 0,
+          cost: parseFloat(p.total_cost) || 0,
+          profit: parseFloat(p.gross_profit) || 0,
+          margin: parseFloat(p.profit_margin_percent) || 0,
+        })))
       }
       if (courtsRes.success && courtsRes.data) {
         const raw = courtsRes.data.courts || []
@@ -583,6 +590,19 @@ export default function InformesView() {
                   }},
                   { key: 'revenue', label: 'Ingresos', align: 'right', render: (row) => (
                     <span className="text-[#ccff00] font-bold">{'$'}{row.revenue.toLocaleString()}</span>
+                  )},
+                  { key: 'cost', label: 'Costo Total', align: 'right', render: (row) => (
+                    <span className="text-zinc-400 font-medium">{'$'}{(row.cost || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  )},
+                  { key: 'profit', label: 'Ganancia Neta', align: 'right', render: (row) => (
+                    <span className={`font-bold ${row.profit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                      {row.profit >= 0 ? '+' : ''}{'$'}{(row.profit || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  )},
+                  { key: 'margin', label: 'Margen', align: 'right', render: (row) => (
+                    <span className={`px-2 py-0.5 rounded text-xs font-bold ${row.margin >= 0 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
+                      {row.margin >= 0 ? '+' : ''}{(row.margin || 0).toFixed(1)}%
+                    </span>
                   )},
                 ]}
                 rows={productsData}

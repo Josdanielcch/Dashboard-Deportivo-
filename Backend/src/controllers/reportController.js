@@ -118,7 +118,19 @@ const topProducts = async (req, res) => {
              p.product_name,
              COALESCE(SUM(sd.quantity), 0) AS total_sold,
              COALESCE(SUM(sd.subtotal), 0) AS total_revenue,
-             COALESCE(AVG(sd.price_unit), 0) AS avg_price
+             COALESCE(AVG(sd.price_unit), 0) AS avg_price,
+             COALESCE(SUM(sd.quantity * COALESCE(sd.cost_price_at_sale, p.cost_price, 0)), 0) AS total_cost,
+             COALESCE(SUM(sd.subtotal) - SUM(sd.quantity * COALESCE(sd.cost_price_at_sale, p.cost_price, 0)), 0) AS gross_profit,
+             CASE 
+               WHEN SUM(sd.quantity * COALESCE(sd.cost_price_at_sale, p.cost_price, 0)) > 0 
+               THEN ROUND(((SUM(sd.subtotal) - SUM(sd.quantity * COALESCE(sd.cost_price_at_sale, p.cost_price, 0))) / SUM(sd.quantity * COALESCE(sd.cost_price_at_sale, p.cost_price, 0))) * 100, 2)
+               ELSE 0 
+             END AS profit_margin_percent,
+             CASE 
+               WHEN SUM(sd.subtotal) > 0 
+               THEN ROUND(((SUM(sd.subtotal) - SUM(sd.quantity * COALESCE(sd.cost_price_at_sale, p.cost_price, 0))) / SUM(sd.subtotal)) * 100, 2)
+               ELSE 0 
+             END AS margin_on_sale_percent
       FROM sale_details sd
       JOIN products p ON sd.products_id = p.id
       JOIN billings b ON sd.billing_id = b.id
@@ -129,12 +141,20 @@ const topProducts = async (req, res) => {
     `, [start_date, end_date, parseInt(limit)]);
 
     const totalSold = result.rows.reduce((acc, r) => acc + parseInt(r.total_sold), 0);
+    const totalRevenue = result.rows.reduce((acc, r) => acc + parseFloat(r.total_revenue), 0);
+    const totalCost = result.rows.reduce((acc, r) => acc + parseFloat(r.total_cost || 0), 0);
+    const totalProfit = totalRevenue - totalCost;
+    const overallMargin = totalCost > 0 ? Number(((totalProfit / totalCost) * 100).toFixed(2)) : 0;
 
     res.json({
       success: true,
       data: {
         products: result.rows,
-        totalSold
+        totalSold,
+        totalRevenue,
+        totalCost,
+        totalProfit,
+        overallMargin
       }
     });
   } catch (error) {
@@ -364,8 +384,11 @@ const summary = async (req, res) => {
 
     const products = await pool.query(`
       SELECT COALESCE(SUM(sd.subtotal), 0) AS product_revenue,
-             COALESCE(SUM(sd.quantity), 0) AS products_sold
+             COALESCE(SUM(sd.quantity), 0) AS products_sold,
+             COALESCE(SUM(sd.quantity * COALESCE(sd.cost_price_at_sale, p.cost_price, 0)), 0) AS product_cost,
+             COALESCE(SUM(sd.subtotal) - SUM(sd.quantity * COALESCE(sd.cost_price_at_sale, p.cost_price, 0)), 0) AS product_profit
       FROM sale_details sd
+      JOIN products p ON sd.products_id = p.id
       JOIN billings b ON sd.billing_id = b.id
       WHERE b.payment_date >= $1 AND b.payment_date < ($2::date + INTERVAL '1 day')
     `, [start_date, end_date]);

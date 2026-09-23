@@ -7,6 +7,7 @@ import { customerService } from '@/services/customerService'
 import { courtService } from '@/services/courtService'
 import { Modal } from '@/components/ui/modal'
 import { SearchableSelect } from '@/components/ui/searchable-select'
+import { useSocket } from '@/contexts/socket-context'
 
 export default function ReservasView() {
   const [reservas, setReservas] = useState<any[]>([])
@@ -40,9 +41,31 @@ export default function ReservasView() {
   // Estado para la Agenda Diaria
   const [scheduleDate, setScheduleDate] = useState<Date>(new Date())
 
+  const { socket } = useSocket()
+
   useEffect(() => {
     fetchData()
   }, [])
+
+  // Sincronización en tiempo real vía WebSockets:
+  // Si entra una nueva reserva o cambia el estado desde la web o el panel, refrescar automáticamente
+  useEffect(() => {
+    if (!socket) return
+
+    const handleRealtimeUpdate = () => {
+      fetchData()
+    }
+
+    socket.on('new-booking', handleRealtimeUpdate)
+    socket.on('booking-status-changed', handleRealtimeUpdate)
+    socket.on('court-schedule-updated', handleRealtimeUpdate)
+
+    return () => {
+      socket.off('new-booking', handleRealtimeUpdate)
+      socket.off('booking-status-changed', handleRealtimeUpdate)
+      socket.off('court-schedule-updated', handleRealtimeUpdate)
+    }
+  }, [socket])
 
   const fetchData = async () => {
     setLoading(true)
@@ -116,11 +139,32 @@ export default function ReservasView() {
   const handleStatusChange = async (id: number, newStatus: string) => {
     setActionError('')
     const label = newStatus === 'Confirmed' ? 'aprobada' : newStatus === 'Cancelled' ? 'rechazada' : 'actualizada'
-    setReservas(prev => prev.filter(r => r.id !== id))
+    
+    // Obtener los datos actuales de la reserva que se está modificando
+    const targetBooking = reservas.find(r => r.id === id)
+
+    // Actualización optimista: NO filtrar ni eliminar. En su lugar, actualizar el status.
+    // Al pasar a 'Confirmed', automáticamente desaparece de proximasReservas (que solo muestra Pending)
+    // y se mantiene/activa en la Agenda Diaria e Historial sin necesidad de recargar la página.
+    setReservas(prev => prev.map(r => r.id === id ? { ...r, status: newStatus } : r))
+    
+    // Si se aprueba la reserva y tiene fecha, sincronizar la fecha de la agenda para mostrarla de inmediato
+    if (newStatus === 'Confirmed' && targetBooking?.booking_date) {
+      const bDateStr = typeof targetBooking.booking_date === 'string' 
+        ? targetBooking.booking_date.split('T')[0] 
+        : new Date(targetBooking.booking_date).toISOString().split('T')[0]
+      const [by, bm, bd] = bDateStr.split('-').map(Number)
+      if (by && bm && bd) {
+        setScheduleDate(new Date(by, bm - 1, bd))
+      }
+    }
+
     setToastMessage({ type: 'success', text: `Reserva ${label} correctamente` })
     setTimeout(() => setToastMessage(null), 3000)
     try {
       await bookingService.updateStatus(id, newStatus)
+      // Refrescar datos en segundo plano para asegurar consistencia con el servidor
+      fetchData()
     } catch (error: any) {
       setActionError(error.message || 'Error al cambiar el estado')
       setToastMessage({ type: 'error', text: error.message || 'Error al cambiar el estado' })

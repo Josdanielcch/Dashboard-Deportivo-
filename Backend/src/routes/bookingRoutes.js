@@ -6,6 +6,7 @@ const bookingController = require('../controllers/bookingController');
 
 router.get('/', protect, bookingController.getAllBookings);
 router.get('/date/:date', bookingController.getBookingsByDate);
+router.get('/occupied-slots', bookingController.getOccupiedSlots);
 router.get('/check-availability', bookingController.checkAvailability);
 router.get('/customer/:customerId', protect, bookingController.getCustomerBookings);
 router.post('/', bookingController.createBooking);

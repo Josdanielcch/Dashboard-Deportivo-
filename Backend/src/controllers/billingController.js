@@ -21,7 +21,7 @@ const createBilling = async (req, res) => {
     if (products && products.length > 0) {
       for (const item of products) {
         const productResult = await client.query(
-          'SELECT price, stock FROM products WHERE id = $1',
+          'SELECT price, cost_price, stock FROM products WHERE id = $1',
           [item.product_id]
         );
         if (productResult.rows.length === 0) {
@@ -32,6 +32,7 @@ const createBilling = async (req, res) => {
           throw new Error(`Stock insuficiente para producto ${item.product_id}`);
         }
         const unitPrice = product.price;
+        const costPrice = Number(product.cost_price || 0);
         const subtotal = unitPrice * item.quantity;
         productSubtotal += subtotal;
         
@@ -39,6 +40,7 @@ const createBilling = async (req, res) => {
           product_id: item.product_id,
           quantity: item.quantity,
           unit_price_at_sale: unitPrice,
+          cost_price_at_sale: costPrice,
           subtotal
         });
       }
@@ -78,9 +80,9 @@ const createBilling = async (req, res) => {
     const lowStockProducts = [];
     for (const detail of saleDetails) {
       await client.query(`
-        INSERT INTO sale_details (billing_id, products_id, quantity, price_unit, subtotal)
-        VALUES ($1, $2, $3, $4, $5)
-      `, [billingId, detail.product_id, detail.quantity, detail.unit_price_at_sale, detail.subtotal]);
+        INSERT INTO sale_details (billing_id, products_id, quantity, price_unit, cost_price_at_sale, subtotal)
+        VALUES ($1, $2, $3, $4, $5, $6)
+      `, [billingId, detail.product_id, detail.quantity, detail.unit_price_at_sale, detail.cost_price_at_sale, detail.subtotal]);
       
       // Actualizar stock
       const stockResult = await client.query(
