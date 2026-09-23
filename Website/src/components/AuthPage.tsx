@@ -328,12 +328,13 @@ export default function AuthPage({ initialMode = 'register', onModeSwitch, onLog
         {/* Background mesh glow and stadium image mask */}
         <div className="absolute inset-0 bg-gradient-to-t from-black via-zinc-950/70 to-zinc-950/20 z-10" />
         <img
-          src="/images/court-2.jpg"
-          alt="Branded Basketball Stadium"
+          src="/images/court-2.webp"
+          alt="Estadio de baloncesto profesional"
           className="absolute inset-0 w-full h-full object-cover object-center opacity-40 mix-blend-overlay"
-          referrerPolicy="no-referrer"
           loading="lazy"
           decoding="async"
+          width="600"
+          height="600"
         />
 
         <div className="relative z-20">
@@ -358,27 +359,30 @@ export default function AuthPage({ initialMode = 'register', onModeSwitch, onLog
             <div className="flex -space-x-3.5">
               <img
                 className="inline-block h-10 w-10 rounded-full ring-2 ring-zinc-900 object-cover"
-                src="/images/avatar-1.jpg"
-                alt="Player Avatar"
-                referrerPolicy="no-referrer"
+                src="/images/avatar-1.webp"
+                alt="Jugador de tenis activo"
                 loading="lazy"
                 decoding="async"
+                width="40"
+                height="40"
               />
               <img
                 className="inline-block h-10 w-10 rounded-full ring-2 ring-zinc-900 object-cover"
-                src="/images/avatar-2.jpg"
-                alt="Player Avatar"
-                referrerPolicy="no-referrer"
+                src="/images/avatar-2.webp"
+                alt="Jugador de pádel activo"
                 loading="lazy"
                 decoding="async"
+                width="40"
+                height="40"
               />
               <img
                 className="inline-block h-10 w-10 rounded-full ring-2 ring-zinc-900 object-cover"
-                src="/images/avatar-3.jpg"
-                alt="Player Avatar"
-                referrerPolicy="no-referrer"
+                src="/images/avatar-3.webp"
+                alt="Jugador de fútbol activo"
                 loading="lazy"
                 decoding="async"
+                width="40"
+                height="40"
               />
             </div>
             <div>

@@ -11,7 +11,7 @@ export const INITIAL_COURTS: Court[] = [
     city: 'CDMX',
     score: 4.9,
     pricePerHour: 20,
-    imageUrl: '/images/court-1.jpg',
+    imageUrl: '/images/court-1.webp',
     address: 'Campos Elíseos 134, Polanco, CDMX, México',
     isAvailable: true,
   },
@@ -25,7 +25,7 @@ export const INITIAL_COURTS: Court[] = [
     city: 'CDMX',
     score: 4.7,
     pricePerHour: 25,
-    imageUrl: '/images/court-2.jpg',
+    imageUrl: '/images/court-2.webp',
     address: 'Av. Vasco de Quiroga 2000, Lomas de Santa Fe, CDMX, México',
     isAvailable: true,
     upcomingSpots: true,
@@ -40,7 +40,7 @@ export const INITIAL_COURTS: Court[] = [
     city: 'Roma Norte, CDMX',
     score: 4.8,
     pricePerHour: 30,
-    imageUrl: '/images/court-3.jpg',
+    imageUrl: '/images/court-3.webp',
     address: 'Álvaro Obregón 154, Roma Norte, CDMX, México',
     isAvailable: true,
   },
@@ -54,7 +54,7 @@ export const INITIAL_COURTS: Court[] = [
     city: 'Coyoacán, CDMX',
     score: 5.0,
     pricePerHour: 10,
-    imageUrl: '/images/court-4.jpg',
+    imageUrl: '/images/court-4.webp',
     address: 'Aguayo 23, Culhuacán, Coyoacán, CDMX, México',
     isAvailable: true,
   },
@@ -68,7 +68,7 @@ export const INITIAL_COURTS: Court[] = [
     city: 'Lomas, CDMX',
     score: 4.6,
     pricePerHour: 15,
-    imageUrl: '/images/court-5.jpg',
+    imageUrl: '/images/court-5.webp',
     address: 'Paseo de la Reforma 4000, Lomas de Vista Hermosa, CDMX, México',
     isAvailable: false,
   },
@@ -82,7 +82,7 @@ export const INITIAL_COURTS: Court[] = [
     city: 'San Ángel, CDMX',
     score: 4.9,
     pricePerHour: 25,
-    imageUrl: '/images/court-6.jpg',
+    imageUrl: '/images/court-2.webp',
     address: 'Altavista 12, San Ángel, Álvaro Obregón, CDMX, México',
     isAvailable: true,
   },
@@ -96,7 +96,7 @@ export const INITIAL_COURTS: Court[] = [
     city: 'La Condesa, CDMX',
     score: 4.9,
     pricePerHour: 35,
-    imageUrl: '/images/court-7.jpg',
+    imageUrl: '/images/court-3.webp',
     address: 'Nuevo León 230, Hipódromo Condesa, CDMX, México',
     isAvailable: true,
   },
@@ -110,7 +110,7 @@ export const INITIAL_COURTS: Court[] = [
     city: 'Naucalpan, Edomex',
     score: 4.8,
     pricePerHour: 25,
-    imageUrl: '/images/court-8.jpg',
+    imageUrl: '/images/court-8.webp',
     address: 'Circuito Novelistas 20, Ciudad Satélite, Naucalpan, Estado de México',
     isAvailable: true,
     upcomingSpots: true,
@@ -125,7 +125,7 @@ export const INITIAL_COURTS: Court[] = [
     city: 'CDMX',
     score: 4.5,
     pricePerHour: 10,
-    imageUrl: '/images/court-9.jpg',
+    imageUrl: '/images/court-4.webp',
     address: 'Eje Central Lázaro Cárdenas, Guerrero, CDMX, México',
     isAvailable: true,
   }
@@ -145,34 +145,34 @@ export const MOCK_TIME_SLOTS = [
   { id: 't11', time: '22:00 - 23:30', period: 'Madrugada' }
 ];
 
-export const ADS_IMAGE_PRO_TIP = '/images/ad-protip.jpg';
+export const ADS_IMAGE_PRO_TIP = '/images/ad-protip.webp';
 
 export const SPORT_CATEGORIES = [
   {
     id: 'padel',
     name: 'Padel Pro League',
-    image: '/images/sport-padel.jpg',
+    image: '/images/sport-padel.webp',
     tag: 'POPULAR',
     description: 'La liga de pádel más rápida y divertida de la ciudad.'
   },
   {
     id: 'futbol',
     name: 'Fútbol 5 & 7',
-    image: '/images/sport-futbol.jpg',
+    image: '/images/sport-futbol.webp',
     tag: 'SINTÉTICO',
     description: 'Pastos artificiales profesionales con iluminación nocturna.'
   },
   {
     id: 'basquet',
     name: 'Basketball',
-    image: '/images/sport-basquet.jpg',
+    image: '/images/sport-basquet.webp',
     tag: 'DUELA PRO',
     description: 'Duelas profesionales techadas para retos urbanos.'
   },
   {
     id: 'tenis',
     name: 'Tenis Classic',
-    image: '/images/court-3.jpg',
+    image: '/images/court-3.webp',
     tag: 'ARCILLA Y RÁPIDA',
     description: 'Canchas históricas con el mantenimiento perfecto.'
   }

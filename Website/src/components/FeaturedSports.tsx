@@ -37,11 +37,12 @@ export default function FeaturedSports({ onSportSelect, dynamicSports = [] }: Fe
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-black/5 group-hover:via-black/50 transition-all z-10" />
             <img
               src={cat.image}
-              alt={cat.name}
+              alt={`Deporte ${cat.name}`}
               className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-              referrerPolicy="no-referrer"
               loading="lazy"
               decoding="async"
+              width="320"
+              height="384"
             />
 
             {/* Content overlay */}
