@@ -21,7 +21,7 @@ const withAuditContext = async (req, queryFn) => {
 const getAllProducts = async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT id, product_name, price, stock
+      SELECT id, product_name, price, cost_price, stock
       FROM products
       ORDER BY id
     `);
@@ -34,7 +34,7 @@ const getAllProducts = async (req, res) => {
 const getProductById = async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await pool.query('SELECT * FROM products WHERE id = $1', [id]);
+    const result = await pool.query('SELECT id, product_name, price, cost_price, stock FROM products WHERE id = $1', [id]);
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Producto no encontrado' });
     }
@@ -46,14 +46,14 @@ const getProductById = async (req, res) => {
 
 const createProduct = async (req, res) => {
   try {
-    const { product_name, price, stock } = req.body;
+    const { product_name, price, cost_price, stock } = req.body;
     if (!product_name || price === undefined) {
       return res.status(400).json({ error: 'Nombre y precio requeridos' });
     }
     const result = await withAuditContext(req, async (client) => {
       return client.query(
-        'INSERT INTO products (product_name, price, stock) VALUES ($1, $2, $3) RETURNING *',
-        [product_name, price, stock || 0]
+        'INSERT INTO products (product_name, price, cost_price, stock) VALUES ($1, $2, $3, $4) RETURNING *',
+        [product_name, price, cost_price !== undefined ? cost_price : 0, stock || 0]
       );
     });
     res.status(201).json({ success: true, data: result.rows[0] });
@@ -65,15 +65,16 @@ const createProduct = async (req, res) => {
 const updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
-    const { product_name, price, stock } = req.body;
+    const { product_name, price, cost_price, stock } = req.body;
     const result = await withAuditContext(req, async (client) => {
       return client.query(
         `UPDATE products 
          SET product_name = COALESCE($1, product_name),
              price = COALESCE($2, price),
-             stock = COALESCE($3, stock)
-         WHERE id = $4 RETURNING *`,
-        [product_name, price, stock, id]
+             cost_price = COALESCE($3, cost_price),
+             stock = COALESCE($4, stock)
+         WHERE id = $5 RETURNING *`,
+        [product_name, price, cost_price, stock, id]
       );
     });
     if (result.rows.length === 0) {

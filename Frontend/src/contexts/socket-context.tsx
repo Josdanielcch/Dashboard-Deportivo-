@@ -33,7 +33,18 @@ const SocketContext = createContext<SocketContextType>({
   clearAllNotifications: () => {},
 })
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'https://dashboard-deportivo.onrender.com'
+const getSocketUrl = () => {
+  if (import.meta.env.VITE_SOCKET_URL) return import.meta.env.VITE_SOCKET_URL;
+  if (typeof window !== 'undefined') {
+    const { hostname } = window.location;
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.includes('localhost')) {
+      return 'http://localhost:3000';
+    }
+  }
+  return 'https://dashboard-deportivo.onrender.com';
+};
+
+const SOCKET_URL = getSocketUrl();
 
 export function SocketProvider({ children }: { children: React.ReactNode }) {
   const [socket, setSocket] = useState<Socket | null>(null)
@@ -44,7 +55,9 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     console.log('[Socket] Conectando a:', SOCKET_URL)
     const socketInstance = io(SOCKET_URL, {
+      path: '/socket.io',
       transports: ['websocket', 'polling'],
+      withCredentials: true,
     })
 
     socketInstance.on('connect', () => {

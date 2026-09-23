@@ -30,7 +30,7 @@ export interface Booking {
   userName: string;
   userEmail: string;
   userPhone: string;
-  paymentMethod?: 'pago_movil' | 'zelle' | 'transfer' | 'card' | 'cash';
+  paymentMethod?: 'pago_movil' | 'zelle' | 'transfer' | 'transfer_cop' | 'card' | 'cash' | string;
   paymentReference?: string;
   createdAt: string;
 }

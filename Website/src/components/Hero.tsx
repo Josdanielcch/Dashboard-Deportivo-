@@ -40,7 +40,7 @@ export default function Hero({ onExploreClick, onHowItWorksClick, onQuickSearch 
         </h1>
         
         <p className="text-sm sm:text-base md:text-lg text-zinc-300 font-sans mb-8 leading-relaxed max-w-2xl">
-          Encuentra y reserva las mejores canchas de tu ciudad en segundos. La plataforma definitiva para deportistas que buscan el siguiente nivel de competencia o entretenimiento.
+          Reserva en las mejores canchas de tu ciudad en segundos. La plataforma definitiva para deportistas que buscan el siguiente nivel de competencia o entretenimiento.
         </p>
 
         {/* Dynamic CTA buttons */}
@@ -67,7 +67,7 @@ export default function Hero({ onExploreClick, onHowItWorksClick, onQuickSearch 
             <Search className="h-4.5 w-4.5 text-zinc-400 shrink-0" />
             <input
               type="text"
-              placeholder="¿Qué club o zona buscas hoy? Ej: Polanco"
+              placeholder="¿Qué cancha buscas hoy? Ej: La Carlota"
               value={searchVal}
               onChange={(e) => setSearchVal(e.target.value)}
               className="bg-transparent text-white placeholder-zinc-400 text-sm focus:outline-none w-full py-2 font-semibold"

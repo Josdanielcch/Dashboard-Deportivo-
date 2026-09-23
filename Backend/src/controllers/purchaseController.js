@@ -33,7 +33,11 @@ const createPurchase = async (req, res) => {
         `, [purchaseId, item.product_id || null, item.description, item.quantity, item.unit_cost, subtotal]);
 
         if (item.product_id) {
-          await client.query('UPDATE products SET stock = stock + $1 WHERE id = $2', [item.quantity, item.product_id]);
+          if (item.unit_cost && Number(item.unit_cost) > 0) {
+            await client.query('UPDATE products SET stock = stock + $1, cost_price = $2 WHERE id = $3', [item.quantity, item.unit_cost, item.product_id]);
+          } else {
+            await client.query('UPDATE products SET stock = stock + $1 WHERE id = $2', [item.quantity, item.product_id]);
+          }
         }
       }
     }

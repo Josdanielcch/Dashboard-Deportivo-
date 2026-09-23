@@ -7,6 +7,7 @@ import Filters from './components/Filters';
 import CourtCard from './components/CourtCard';
 import HowItWorks from './components/HowItWorks';
 import AboutUs from './components/AboutUs';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Carga diferida: no están visibles en el primer pantallazo
 const BookingModal = lazy(() => import('./components/BookingModal'));
@@ -138,25 +139,122 @@ export default function App() {
     fetchCourtsData();
   }, []);
 
-  // Conexión WebSockets para actualizaciones en tiempo real
-  useEffect(() => {
-    if (!currentUser?.customerId) return;
+  // Helper para consultar reservas del usuario desde el backend
+  const fetchBookings = React.useCallback(async () => {
+    if (currentUser?.customerId) {
+      try {
+        const { getCustomerBookings } = await import('./api');
+        const response = await getCustomerBookings(currentUser.customerId);
+        if (response && response.success && Array.isArray(response.data)) {
+          const backendBookings: Booking[] = response.data.map((b: any) => {
+            const courtDetail = allCourts.find((c) => c.backendId === b.court_id) || INITIAL_COURTS.find((c) => c.backendId === b.court_id);
+            const formatAMPM = (timeStr: string) => {
+              if (!timeStr) return '';
+              const parts = timeStr.split(':');
+              if (parts.length >= 2) {
+                let h = parseInt(parts[0], 10);
+                const m = parts[1];
+                const ampm = h >= 12 ? 'PM' : 'AM';
+                h = h % 12;
+                h = h ? h : 12;
+                return `${h.toString().padStart(2, '0')}:${m} ${ampm}`;
+              }
+              return timeStr;
+            };
+            
+            const cleanStart = formatAMPM(b.start_time);
+            const cleanEnd = formatAMPM(b.end_time);
+            const cleanDate = b.booking_date ? b.booking_date.split('T')[0] : '';
+            
+            return {
+              id: `BKG-${b.id}`,
+              courtId: courtDetail?.id || `court-${b.court_id}`,
+              courtName: b.court_name || courtDetail?.name || 'Cancha',
+              courtImage: b.sport_image || courtDetail?.imageUrl || '/images/court-2.jpg',
+              sport: (b.sport_name || courtDetail?.sport || 'padel') as SportType,
+              date: cleanDate,
+              timeSlot: `${cleanStart} - ${cleanEnd}`,
+              price: parseFloat(b.total_amount || '30'),
+              status: (b.status || 'Pending').toLowerCase() as any,
+              userName: currentUser.name,
+              userEmail: currentUser.email,
+              userPhone: currentUser.phone,
+              createdAt: new Date().toISOString()
+            };
+          });
+          setBookings(backendBookings);
+          return;
+        }
+      } catch (error) {
+        console.error('Error fetching bookings from backend:', error);
+      }
+    }
+    
+    // Fallback to localStorage
+    const savedBookings = localStorage.getItem('courtconnect_bookings');
+    if (savedBookings) {
+      try {
+        setBookings(JSON.parse(savedBookings));
+        return;
+      } catch (err) {
+        console.error('Failed to parse bookings', err);
+      }
+    }
 
-    // Conectar al backend (remover /api de la URL si existe o usar localhost:3000 por defecto)
-    const baseUrl = 'http://localhost:3000';
-      
-    const socket = io(baseUrl, {
+    const defaultBookings: Booking[] = [
+      {
+        id: 'CC-A899E2',
+        courtId: 'court-1',
+        courtName: 'Cancha Central Padel 1',
+        courtImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCrK7kD9iB7twRwcrmMZeAd-AaejnMF-N5b18ei_MNi77qds9xXqzQu8Y07WfPMAg69oQz6WUHjEIWRolvq34BGGwZKtAjF1tnFAwTBR_mLa9OvGhwmAMJpYA-XHoZ_7ikUbuaVI6fTj1OUwTUMDaOoZ0Cl4BvO_08oXYSSoeRnflr47QDl1EKeXk3njkjQWj70rcMdhzbZyRbksyLrwML9fCW00AklWNpk6Kx0tkA3UkT2ei9FEmOTZ09Yvc51OFAPqBFnYTD8O2g',
+        sport: 'padel',
+        date: '2026-05-28',
+        timeSlot: '17:30 - 19:00',
+        price: 338,
+        status: 'pending',
+        userName: 'Josedaniel',
+        userEmail: 'josdanielcch@gmail.com',
+        userPhone: '+52 55 9876 5432',
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: 'CC-B110B2',
+        courtId: 'court-3',
+        courtName: 'Estadio Urbano Sky',
+        courtImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB94KbkV0VHtWs83FMAxH31xsdN-r6945eD6mEXUX_pq4vv9ZOc3Ca_SqU93EEoXnCDJJwsdKg_j9Yy7LevuebLGgLiaVqVkysZYgoLH9QZOwnbWEp5CQWPs3LtgBMLcPjsGmgpVqLHL6L14Ce-n4yQi7jhPYrAJNLv8_A4nkvVUR8E3fZoYEOTNMS5ugsPC3_FjPBG6ycZ_k0pfWexLDEt_Te-zx_JyqpZ3ohRvJ2V69V0YW-f68kZB4aYXqW0CMtw1qS69fDrCAs',
+        sport: 'futbol',
+        date: '2026-05-30',
+        timeSlot: '19:00 - 20:30',
+        price: 675,
+        status: 'pending',
+        userName: 'Josedaniel',
+        userEmail: 'josdanielcch@gmail.com',
+        userPhone: '+52 55 9876 5432',
+        createdAt: new Date(Date.now() - 3600000).toISOString()
+      }
+    ];
+    setBookings(defaultBookings);
+    localStorage.setItem('courtconnect_bookings', JSON.stringify(defaultBookings));
+  }, [currentUser, allCourts]);
+
+  // Conexión WebSockets para actualizaciones en tiempo real (Historial y Notificaciones)
+  useEffect(() => {
+    const socket = io({
+      path: '/socket.io',
+      transports: ['websocket', 'polling'],
       withCredentials: true
     });
 
     socket.on('connect', () => {
-      socket.emit('join-customer', currentUser.customerId);
+      if (currentUser?.customerId) {
+        socket.emit('join-customer', currentUser.customerId);
+      }
     });
 
     socket.on('booking-status-changed', (payload: any) => {
       setBookings(prevBookings => {
         const updated = prevBookings.map(b => {
-          if (b.id === `BKG-${payload.id}`) {
+          if (b.id === `BKG-${payload.id}` || b.id === String(payload.id)) {
             return { ...b, status: payload.status.toLowerCase() };
           }
           return b;
@@ -164,112 +262,18 @@ export default function App() {
         localStorage.setItem('courtconnect_bookings', JSON.stringify(updated));
         return updated;
       });
+      fetchBookings();
     });
 
     return () => {
       socket.disconnect();
     };
-  }, [currentUser]);
+  }, [currentUser, fetchBookings]);
 
-  // Sync bookings from backend if logged in, otherwise from localStorage
+  // Sincronizar reservas al cambiar a la pestaña de "Mis Canchas" o al actualizar dependencias
   useEffect(() => {
-    const fetchBookings = async () => {
-      if (currentUser?.customerId) {
-        try {
-          const { getCustomerBookings } = await import('./api');
-          const response = await getCustomerBookings(currentUser.customerId);
-          if (response && response.success && Array.isArray(response.data)) {
-            const backendBookings: Booking[] = response.data.map((b: any) => {
-              const courtDetail = allCourts.find((c) => c.backendId === b.court_id) || INITIAL_COURTS.find((c) => c.backendId === b.court_id);
-              const formatAMPM = (timeStr: string) => {
-                if (!timeStr) return '';
-                const parts = timeStr.split(':');
-                if (parts.length >= 2) {
-                  let h = parseInt(parts[0], 10);
-                  const m = parts[1];
-                  const ampm = h >= 12 ? 'PM' : 'AM';
-                  h = h % 12;
-                  h = h ? h : 12;
-                  return `${h.toString().padStart(2, '0')}:${m} ${ampm}`;
-                }
-                return timeStr;
-              };
-              
-              const cleanStart = formatAMPM(b.start_time);
-              const cleanEnd = formatAMPM(b.end_time);
-              const cleanDate = b.booking_date ? b.booking_date.split('T')[0] : '';
-              
-              return {
-                id: `BKG-${b.id}`,
-                courtId: courtDetail?.id || `court-${b.court_id}`,
-                courtName: b.court_name || courtDetail?.name || 'Cancha',
-                courtImage: b.sport_image || courtDetail?.imageUrl || '/images/court-2.jpg',
-                sport: (b.sport_name || courtDetail?.sport || 'padel') as SportType,
-                date: cleanDate,
-                timeSlot: `${cleanStart} - ${cleanEnd}`,
-                price: parseFloat(b.total_amount || '30'),
-                status: (b.status || 'Pending').toLowerCase() as any,
-                userName: currentUser.name,
-                userEmail: currentUser.email,
-                userPhone: currentUser.phone,
-                createdAt: new Date().toISOString()
-              };
-            });
-            setBookings(backendBookings);
-            return;
-          }
-        } catch (error) {
-          console.error('Error fetching bookings from backend:', error);
-        }
-      }
-      
-      // Fallback to localStorage
-      const savedBookings = localStorage.getItem('courtconnect_bookings');
-      if (savedBookings) {
-        try {
-          setBookings(JSON.parse(savedBookings));
-        } catch (err) {
-          console.error('Failed to parse bookings', err);
-        }
-      } else {
-        const defaultBookings: Booking[] = [
-          {
-            id: 'CC-A899E2',
-            courtId: 'court-1',
-            courtName: 'Cancha Central Padel 1',
-            courtImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCrK7kD9iB7twRwcrmMZeAd-AaejnMF-N5b18ei_MNi77qds9xXqzQu8Y07WfPMAg69oQz6WUHjEIWRolvq34BGGwZKtAjF1tnFAwTBR_mLa9OvGhwmAMJpYA-XHoZ_7ikUbuaVI6fTj1OUwTUMDaOoZ0Cl4BvO_08oXYSSoeRnflr47QDl1EKeXk3njkjQWj70rcMdhzbZyRbksyLrwML9fCW00AklWNpk6Kx0tkA3UkT2ei9FEmOTZ09Yvc51OFAPqBFnYTD8O2g',
-            sport: 'padel',
-            date: '2026-05-28',
-            timeSlot: '17:30 - 19:00',
-            price: 338,
-            status: 'pending',
-            userName: 'Josedaniel',
-            userEmail: 'josdanielcch@gmail.com',
-            userPhone: '+52 55 9876 5432',
-            createdAt: new Date().toISOString()
-          },
-          {
-            id: 'CC-B110B2',
-            courtId: 'court-3',
-            courtName: 'Estadio Urbano Sky',
-            courtImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB94KbkV0VHtWs83FMAxH31xsdN-r6945eD6mEXUX_pq4vv9ZOc3Ca_SqU93EEoXnCDJJwsdKg_j9Yy7LevuebLGgLiaVqVkysZYgoLH9QZOwnbWEp5CQWPs3LtgBMLcPjsGmgpVqLHL6L14Ce-n4yQi7jhPYrAJNLv8_A4nkvVUR8E3fZoYEOTNMS5ugsPC3_FjPBG6ycZ_k0pfWexLDEt_Te-zx_JyqpZ3ohRvJ2V69V0YW-f68kZB4aYXqW0CMtw1qS69fDrCAs',
-            sport: 'futbol',
-            date: '2026-05-30',
-            timeSlot: '19:00 - 20:30',
-            price: 675,
-            status: 'pending',
-            userName: 'Josedaniel',
-            userEmail: 'josdanielcch@gmail.com',
-            userPhone: '+52 55 9876 5432',
-            createdAt: new Date(Date.now() - 3600000).toISOString()
-          }
-        ];
-        setBookings(defaultBookings);
-        localStorage.setItem('courtconnect_bookings', JSON.stringify(defaultBookings));
-      }
-    };
     fetchBookings();
-  }, [currentUser]);
+  }, [fetchBookings, currentTab]);
 
   // Update localStorage when bookings are modified
   const updateLocalStorageBookings = (updatedBookings: Booking[]) => {
@@ -405,7 +409,7 @@ export default function App() {
   const paginatedCourts = filteredCourts.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
-    <div className="min-h-screen bg-[#050505] flex flex-col justify-between text-[#f4f4f5] font-sans relative overflow-hidden">
+    <div className="min-h-screen bg-[#050505] flex flex-col justify-between text-[#f4f4f5] font-sans relative overflow-x-hidden w-full max-w-full">
       
       {/* Background radial atmosphere glow highlights (Immersive UI aspect) */}
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden select-none">
@@ -427,7 +431,7 @@ export default function App() {
       />
 
       {/* Main Container Wrapper */}
-      <main className="max-w-[1440px] mx-auto w-full px-4 md:px-10 py-8 flex-1 relative z-10">
+      <main className="max-w-[1440px] mx-auto w-full px-3.5 sm:px-6 md:px-10 py-5 sm:py-6 md:py-8 flex-1 relative z-10">
         
         {/* VIEW: HOME / LANDING VIEW */}
         {currentTab === 'home' && (
@@ -664,16 +668,21 @@ export default function App() {
 
       {/* BOOKING MODAL (Drives slot select and validation) */}
       {selectedCourtForBooking && (
-        <Suspense fallback={null}>
-          <BookingModal
-            court={selectedCourtForBooking}
-            currentUser={currentUser}
-            selectedDate={selectedDate}
-            onClose={() => setSelectedCourtForBooking(null)}
-            onAddBooking={handleAddBooking}
-            onOpenAuth={() => setCurrentTab('auth')}
-          />
-        </Suspense>
+        <ErrorBoundary
+          fallbackMessage="No se pudo abrir el modal de reservación"
+          onReset={() => setSelectedCourtForBooking(null)}
+        >
+          <Suspense fallback={<ViewLoader />}>
+            <BookingModal
+              court={selectedCourtForBooking}
+              currentUser={currentUser}
+              selectedDate={selectedDate}
+              onClose={() => setSelectedCourtForBooking(null)}
+              onAddBooking={handleAddBooking}
+              onOpenAuth={() => setCurrentTab('auth')}
+            />
+          </Suspense>
+        </ErrorBoundary>
       )}
     </div>
   );

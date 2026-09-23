@@ -174,6 +174,18 @@ export async function checkAvailability(params: {
   return request(`/bookings/check-availability?${query}`);
 }
 
+export async function getOccupiedSlots(courtId: number, bookingDate: string): Promise<{
+  success: boolean;
+  count: number;
+  data: Array<{ id: number; start_time: string; end_time: string; status: string }>;
+}> {
+  const query = new URLSearchParams({
+    court_id: String(courtId),
+    booking_date: bookingDate,
+  }).toString();
+  return request(`/bookings/occupied-slots?${query}`);
+}
+
 export async function registerUser(payload: {
   username?: string;
   first_name: string;
