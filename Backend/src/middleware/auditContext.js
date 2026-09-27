@@ -18,7 +18,7 @@ const setAuditContext = async (req, res, next) => {
     // Persiste durante toda la vida de la conexión, incluyendo
     // transacciones BEGIN/COMMIT posteriores en el controller.
     // Se sobreescribe en cada request cuando el pool reutiliza la conexión.
-    await client.query('SET app.current_user_id = $1', [req.user.id]);
+    await client.query("SELECT set_config('app.current_user_id', $1, false)", [String(req.user.id)]);
     // Adjuntar la conexión al request para que los controladores la usen
     req.dbClient = client;
     // Liberar cuando la respuesta termine
