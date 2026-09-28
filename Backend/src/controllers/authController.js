@@ -166,11 +166,7 @@ const register = async (req, res) => {
 
       if (adminEmails.length > 0) {
         await mailer.sendMail({
-<<<<<<< HEAD
           from: process.env.SMTP_FROM || process.env.EMAIL_FROM || (process.env.SMTP_USER ? `"CourtManager" <${process.env.SMTP_USER}>` : '"CourtManager" <no-reply@courtmanager.com>'),
-=======
-from: process.env.SMTP_FROM || process.env.EMAIL_FROM || (process.env.SMTP_USER ? `"CourtManager" <${process.env.SMTP_USER}>` : '"CourtManager" <no-reply@courtmanager.com>'),
->>>>>>> e2d46ac8b8e6f76b742ddebe83c1b2cd657430a5
           to: adminEmails.join(','),
           subject: "Nueva Cuenta de Usuario Pendiente de Aprobación",
           html: `

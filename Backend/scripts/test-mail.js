@@ -1,15 +1,11 @@
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 const mailer = require('../src/config/mailer');
-<<<<<<< HEAD
-=======
-
 async function testMail() {
   if (!mailer) {
     console.error('Mailer is null. SMTP variables not loaded.');
     process.exit(1);
   }
->>>>>>> e2d46ac8b8e6f76b742ddebe83c1b2cd657430a5
 
   const targetEmail = process.argv[2] || process.env.SMTP_USER || 'admin@courtconnect.com';
   const fromEmail = process.env.SMTP_FROM || process.env.EMAIL_FROM || process.env.SMTP_USER;
