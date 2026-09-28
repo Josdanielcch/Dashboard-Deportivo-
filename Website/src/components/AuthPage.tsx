@@ -6,6 +6,7 @@ import {
   getExchangeRates, getPaymentMethods, ExchangeRate, PaymentMethodAccount
 } from '../api';
 import { useGoogleLogin } from '@react-oauth/google';
+import LegalModal, { LegalTab } from './LegalModal';
 
 interface AuthPageProps {
   initialMode?: 'login' | 'register' | 'reset';
@@ -46,6 +47,9 @@ export default function AuthPage({ initialMode = 'register', onModeSwitch, onLog
   const [password, setPassword] = useState('');
   const [membership, setMembership] = useState<'standard' | 'pro'>('standard');
   const [membershipReference, setMembershipReference] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
+  const [legalModalTab, setLegalModalTab] = useState<LegalTab>('terms');
   const [error, setError] = useState('');
 
   // Multicurrency & Payment accounts state for PRO membership
@@ -62,7 +66,7 @@ export default function AuthPage({ initialMode = 'register', onModeSwitch, onLog
       currency_code: 'VES',
       bank_name: 'Banco de Venezuela (0102)',
       id_document: 'J-50123456-9',
-      phone: '0412-3129425',
+      phone: '0412-0000000',
       instructions: 'Registrar los últimos dígitos del comprobante.'
     },
     {
@@ -163,6 +167,10 @@ export default function AuthPage({ initialMode = 'register', onModeSwitch, onLog
       return;
     }
 
+    if (!acceptedTerms) {
+      setError('Debes aceptar los Términos de Servicio y la Política de Privacidad para continuar.');
+      return;
+    }
     try {
       const proCostUsd = 10;
       const activeCurrency = selectedAccount?.currency_code || 'USD';
@@ -710,6 +718,43 @@ export default function AuthPage({ initialMode = 'register', onModeSwitch, onLog
               )}
             </div>
 
+            {/* Terms of Service & Privacy Checkbox */}
+            <div className="flex items-start gap-2.5 pt-2 pb-1 bg-zinc-950/40 p-3 rounded-xl border border-white/5">
+              <input
+                type="checkbox"
+                id="register-accept-terms"
+                checked={acceptedTerms}
+                onChange={(e) => setAcceptedTerms(e.target.checked)}
+                className="mt-1 h-4 w-4 rounded border-white/20 bg-zinc-900 text-[#c0ff00] focus:ring-[#c0ff00] accent-[#c0ff00] cursor-pointer"
+                required
+              />
+              <label htmlFor="register-accept-terms" className="text-xs text-zinc-400 leading-snug cursor-pointer select-none">
+                He leído y acepto los{' '}
+                <button
+                  type="button"
+                  onClick={() => { setLegalModalTab('terms'); setIsLegalModalOpen(true); }}
+                  className="text-[#c0ff00] hover:underline font-bold"
+                >
+                  Términos de Servicio
+                </button>
+                , la{' '}
+                <button
+                  type="button"
+                  onClick={() => { setLegalModalTab('privacy'); setIsLegalModalOpen(true); }}
+                  className="text-[#c0ff00] hover:underline font-bold"
+                >
+                  Política de Privacidad
+                </button>
+                {' '}y la{' '}
+                <button
+                  type="button"
+                  onClick={() => { setLegalModalTab('disclaimer'); setIsLegalModalOpen(true); }}
+                  className="text-[#c0ff00] hover:underline font-bold"
+                >
+                  Exoneración de Responsabilidad
+                </button>.
+              </label>
+            </div>
             {error && <p className="text-xs text-red-400 font-bold font-sans">⚠️ {error}</p>}
 
             <button
@@ -960,6 +1005,11 @@ export default function AuthPage({ initialMode = 'register', onModeSwitch, onLog
           Volver a las canchas
         </button>
       </div>
+      <LegalModal
+        isOpen={isLegalModalOpen}
+        onClose={() => setIsLegalModalOpen(false)}
+        initialTab={legalModalTab}
+      />
     </div>
   );
 }

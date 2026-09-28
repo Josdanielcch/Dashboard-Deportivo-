@@ -14,7 +14,23 @@ Frontend/node_modules/
 
 # Environment files
 .env
+.env.*
+!.env.example
 Backend/.env
+Backend/.env.*
+!Backend/.env.example
+Frontend/.env
+Frontend/.env.*
+!Frontend/.env.example
+Website/.env
+Website/.env.*
+!Website/.env.example
+
+# Database dumps & SQL backups (sensitive data protection)
+*.sql
+*.dump
+Database/*.sql
+database/*.sql
 
 # Production build directories
 dist/

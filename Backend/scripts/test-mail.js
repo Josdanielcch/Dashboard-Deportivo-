@@ -3,7 +3,7 @@ require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 const mailer = require('../src/config/mailer');
 
 async function testMail() {
-  const targetEmail = process.argv[2] || process.env.SMTP_USER || 'josdanielcch@gmail.com';
+  const targetEmail = process.argv[2] || process.env.SMTP_USER || 'admin@courtconnect.com';
   const fromEmail = process.env.SMTP_FROM || process.env.EMAIL_FROM || process.env.SMTP_USER;
 
   console.log("\n========================================================");
