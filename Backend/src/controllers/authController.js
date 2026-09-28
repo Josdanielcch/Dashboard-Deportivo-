@@ -166,7 +166,7 @@ const register = async (req, res) => {
 
       if (adminEmails.length > 0) {
         await mailer.sendMail({
-          from: process.env.SMTP_FROM || '"CourtManager" <no-reply@courtmanager.com>',
+          from: process.env.SMTP_FROM || process.env.EMAIL_FROM || (process.env.SMTP_USER ? `"CourtManager" <${process.env.SMTP_USER}>` : '"CourtManager" <no-reply@courtmanager.com>'),
           to: adminEmails.join(','),
           subject: "Nueva Cuenta de Usuario Pendiente de Aprobación",
           html: `
@@ -267,8 +267,9 @@ const recoverPassword = async (req, res) => {
     `;
     await pool.query(updateQuery, [token, expires, user.id]);
 
-    // Construimos el enlace para restablecer la contraseña
-    const resetLink = `${process.env.FRONTEND_URL || "http://localhost:5173"}?token=${token}`;
+    // Construimos el enlace para restablecer la contraseña en el Panel
+    const panelBase = process.env.PANEL_URL || (process.env.FRONTEND_URL ? (process.env.FRONTEND_URL.includes('/panel') ? process.env.FRONTEND_URL.replace(/\/$/, '') : `${process.env.FRONTEND_URL.replace(/\/$/, '')}/panel`) : "http://localhost:5173/panel");
+    const resetLink = `${panelBase}?token=${token}`;
 
     // Mostrar enlace en consola para desarrollo (útil sin SMTP)
     console.log("\n═══════════════════════════════════════════");
@@ -278,7 +279,7 @@ const recoverPassword = async (req, res) => {
 
     // Enviamos el correo usando Nodemailer
     await mailer.sendMail({
-      from: `"CourtManager" <larteas0@gmail.com>`,
+      from: process.env.SMTP_FROM || process.env.EMAIL_FROM || (process.env.SMTP_USER ? `"CourtManager" <${process.env.SMTP_USER}>` : '"CourtManager" <no-reply@courtmanager.com>'),
       to: email,
       subject: "Recuperación de contraseña - CourtManager",
       html: `
@@ -542,10 +543,12 @@ const clientRecoverPassword = async (req, res) => {
 
     await pool.query("UPDATE customers SET reset_token = $1, reset_token_expires = $2 WHERE id = $3", [token, expires, customer.id]);
 
-    const resetLink = `${process.env.FRONTEND_URL || "http://localhost:5173"}?token=${token}`;
+    // Construimos el enlace para restablecer la contraseña en la Website pública
+    const websiteBase = process.env.WEBSITE_URL || (process.env.FRONTEND_URL ? process.env.FRONTEND_URL.replace(/\/panel\/?$/, '').replace(/\/$/, '') : "http://localhost:5173");
+    const resetLink = `${websiteBase}?token=${token}`;
 
     await mailer.sendMail({
-      from: `"CourtConnect" <larteas0@gmail.com>`,
+      from: process.env.SMTP_FROM || process.env.EMAIL_FROM || (process.env.SMTP_USER ? `"CourtConnect" <${process.env.SMTP_USER}>` : '"CourtConnect" <no-reply@courtconnect.com>'),
       to: customer.email,
       subject: "Recuperación de contraseña - CourtConnect",
       html: `

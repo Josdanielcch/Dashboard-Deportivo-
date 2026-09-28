@@ -62,7 +62,7 @@ export default function AuthPage({ initialMode = 'register', onModeSwitch, onLog
       currency_code: 'VES',
       bank_name: 'Banco de Venezuela (0102)',
       id_document: 'J-50123456-9',
-      phone: '0412-3129425',
+      phone: '0412-0000000',
       instructions: 'Registrar los últimos dígitos del comprobante.'
     },
     {

@@ -212,9 +212,9 @@ export default function App() {
         timeSlot: '17:30 - 19:00',
         price: 338,
         status: 'pending',
-        userName: 'Josedaniel',
-        userEmail: 'josdanielcch@gmail.com',
-        userPhone: '+52 55 9876 5432',
+        userName: 'Usuario Demo',
+        userEmail: 'demo@courtconnect.com',
+        userPhone: '+58 412 000 0000',
         createdAt: new Date().toISOString()
       },
       {
@@ -227,9 +227,9 @@ export default function App() {
         timeSlot: '19:00 - 20:30',
         price: 675,
         status: 'pending',
-        userName: 'Josedaniel',
-        userEmail: 'josdanielcch@gmail.com',
-        userPhone: '+52 55 9876 5432',
+        userName: 'Usuario Demo',
+        userEmail: 'demo@courtconnect.com',
+        userPhone: '+58 412 000 0000',
         createdAt: new Date(Date.now() - 3600000).toISOString()
       }
     ];

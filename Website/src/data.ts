@@ -47,7 +47,7 @@ export const INITIAL_COURTS: Court[] = [
   {
     id: 'court-4',
     backendId: 4,
-    name: 'Duela NBA Pro',
+    name: 'Duela Básquetbol Pro',
     sport: 'basquet',
     type: 'Duela',
     club: 'Centro Deportivo Coyoacán',
