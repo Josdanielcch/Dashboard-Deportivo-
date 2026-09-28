@@ -20,15 +20,33 @@ const salesByDate = async (req, res) => {
           SELECT DATE_TRUNC('week', b.payment_date)::text AS period,
                  b.id AS billing_id,
                  b.total_amount,
-                 b.booking_id
+                 b.booking_id,
+                 COALESCE(sd.product_cost, 0) AS product_cost,
+                 COALESCE(sd.product_profit, 0) AS product_profit
           FROM billings b
+          LEFT JOIN (
+            SELECT sd_inner.billing_id,
+                   SUM(sd_inner.quantity * COALESCE(sd_inner.cost_price_at_sale, p.cost_price, 0)) AS product_cost,
+                   SUM(sd_inner.subtotal) - SUM(sd_inner.quantity * COALESCE(sd_inner.cost_price_at_sale, p.cost_price, 0)) AS product_profit
+            FROM sale_details sd_inner
+            JOIN products p ON sd_inner.products_id = p.id
+            GROUP BY sd_inner.billing_id
+          ) sd ON b.id = sd.billing_id
           WHERE b.payment_date >= $1 AND b.payment_date < ($2::date + INTERVAL '1 day')
         )
         SELECT p.period,
                COUNT(d.billing_id) AS count,
                COALESCE(SUM(d.total_amount), 0) AS total,
                COALESCE(SUM(CASE WHEN d.booking_id IS NOT NULL THEN d.total_amount ELSE 0 END), 0) AS booking_revenue,
-               COALESCE(SUM(CASE WHEN d.booking_id IS NULL THEN d.total_amount ELSE 0 END), 0) AS product_revenue
+               COALESCE(SUM(CASE WHEN d.booking_id IS NULL THEN d.total_amount ELSE 0 END), 0) AS product_revenue,
+               COALESCE(SUM(d.product_cost), 0) AS product_cost,
+               COALESCE(SUM(d.product_profit), 0) AS product_profit,
+               COALESCE(SUM(CASE WHEN d.booking_id IS NOT NULL THEN d.total_amount ELSE 0 END) + SUM(d.product_profit), 0) AS gross_profit,
+               CASE 
+                 WHEN SUM(d.total_amount) > 0 
+                 THEN ROUND(((SUM(CASE WHEN d.booking_id IS NOT NULL THEN d.total_amount ELSE 0 END) + SUM(d.product_profit)) / SUM(d.total_amount)) * 100, 1)
+                 ELSE 0
+               END AS margin_percent
         FROM periods p
         LEFT JOIN data d ON p.period = d.period
         GROUP BY p.period
@@ -44,15 +62,33 @@ const salesByDate = async (req, res) => {
           SELECT DATE_TRUNC('month', b.payment_date)::text AS period,
                  b.id AS billing_id,
                  b.total_amount,
-                 b.booking_id
+                 b.booking_id,
+                 COALESCE(sd.product_cost, 0) AS product_cost,
+                 COALESCE(sd.product_profit, 0) AS product_profit
           FROM billings b
+          LEFT JOIN (
+            SELECT sd_inner.billing_id,
+                   SUM(sd_inner.quantity * COALESCE(sd_inner.cost_price_at_sale, p.cost_price, 0)) AS product_cost,
+                   SUM(sd_inner.subtotal) - SUM(sd_inner.quantity * COALESCE(sd_inner.cost_price_at_sale, p.cost_price, 0)) AS product_profit
+            FROM sale_details sd_inner
+            JOIN products p ON sd_inner.products_id = p.id
+            GROUP BY sd_inner.billing_id
+          ) sd ON b.id = sd.billing_id
           WHERE b.payment_date >= $1 AND b.payment_date < ($2::date + INTERVAL '1 day')
         )
         SELECT p.period,
                COUNT(d.billing_id) AS count,
                COALESCE(SUM(d.total_amount), 0) AS total,
                COALESCE(SUM(CASE WHEN d.booking_id IS NOT NULL THEN d.total_amount ELSE 0 END), 0) AS booking_revenue,
-               COALESCE(SUM(CASE WHEN d.booking_id IS NULL THEN d.total_amount ELSE 0 END), 0) AS product_revenue
+               COALESCE(SUM(CASE WHEN d.booking_id IS NULL THEN d.total_amount ELSE 0 END), 0) AS product_revenue,
+               COALESCE(SUM(d.product_cost), 0) AS product_cost,
+               COALESCE(SUM(d.product_profit), 0) AS product_profit,
+               COALESCE(SUM(CASE WHEN d.booking_id IS NOT NULL THEN d.total_amount ELSE 0 END) + SUM(d.product_profit), 0) AS gross_profit,
+               CASE 
+                 WHEN SUM(d.total_amount) > 0 
+                 THEN ROUND(((SUM(CASE WHEN d.booking_id IS NOT NULL THEN d.total_amount ELSE 0 END) + SUM(d.product_profit)) / SUM(d.total_amount)) * 100, 1)
+                 ELSE 0
+               END AS margin_percent
         FROM periods p
         LEFT JOIN data d ON p.period = d.period
         GROUP BY p.period
@@ -68,15 +104,33 @@ const salesByDate = async (req, res) => {
           SELECT DATE(b.payment_date)::text AS period,
                  b.id AS billing_id,
                  b.total_amount,
-                 b.booking_id
+                 b.booking_id,
+                 COALESCE(sd.product_cost, 0) AS product_cost,
+                 COALESCE(sd.product_profit, 0) AS product_profit
           FROM billings b
+          LEFT JOIN (
+            SELECT sd_inner.billing_id,
+                   SUM(sd_inner.quantity * COALESCE(sd_inner.cost_price_at_sale, p.cost_price, 0)) AS product_cost,
+                   SUM(sd_inner.subtotal) - SUM(sd_inner.quantity * COALESCE(sd_inner.cost_price_at_sale, p.cost_price, 0)) AS product_profit
+            FROM sale_details sd_inner
+            JOIN products p ON sd_inner.products_id = p.id
+            GROUP BY sd_inner.billing_id
+          ) sd ON b.id = sd.billing_id
           WHERE b.payment_date >= $1 AND b.payment_date < ($2::date + INTERVAL '1 day')
         )
         SELECT p.period,
                COUNT(d.billing_id) AS count,
                COALESCE(SUM(d.total_amount), 0) AS total,
                COALESCE(SUM(CASE WHEN d.booking_id IS NOT NULL THEN d.total_amount ELSE 0 END), 0) AS booking_revenue,
-               COALESCE(SUM(CASE WHEN d.booking_id IS NULL THEN d.total_amount ELSE 0 END), 0) AS product_revenue
+               COALESCE(SUM(CASE WHEN d.booking_id IS NULL THEN d.total_amount ELSE 0 END), 0) AS product_revenue,
+               COALESCE(SUM(d.product_cost), 0) AS product_cost,
+               COALESCE(SUM(d.product_profit), 0) AS product_profit,
+               COALESCE(SUM(CASE WHEN d.booking_id IS NOT NULL THEN d.total_amount ELSE 0 END) + SUM(d.product_profit), 0) AS gross_profit,
+               CASE 
+                 WHEN SUM(d.total_amount) > 0 
+                 THEN ROUND(((SUM(CASE WHEN d.booking_id IS NOT NULL THEN d.total_amount ELSE 0 END) + SUM(d.product_profit)) / SUM(d.total_amount)) * 100, 1)
+                 ELSE 0
+               END AS margin_percent
         FROM periods p
         LEFT JOIN data d ON p.period = d.period
         GROUP BY p.period
@@ -86,10 +140,28 @@ const salesByDate = async (req, res) => {
 
     const summary = await pool.query(`
       SELECT COUNT(*) AS total_count,
-             COALESCE(SUM(total_amount), 0) AS total_revenue,
-             COALESCE(AVG(total_amount), 0) AS avg_amount
-      FROM billings
-      WHERE payment_date >= $1 AND payment_date < ($2::date + INTERVAL '1 day')
+             COALESCE(SUM(b.total_amount), 0) AS total_revenue,
+             COALESCE(AVG(b.total_amount), 0) AS avg_amount,
+             COALESCE(SUM(CASE WHEN b.booking_id IS NOT NULL THEN b.total_amount ELSE 0 END), 0) AS booking_revenue,
+             COALESCE(SUM(CASE WHEN b.booking_id IS NULL THEN b.total_amount ELSE 0 END), 0) AS product_revenue,
+             COALESCE(SUM(sd.product_cost), 0) AS total_product_cost,
+             COALESCE(SUM(sd.product_profit), 0) AS total_product_profit,
+             COALESCE(SUM(CASE WHEN b.booking_id IS NOT NULL THEN b.total_amount ELSE 0 END) + SUM(COALESCE(sd.product_profit, 0)), 0) AS total_gross_profit,
+             CASE 
+               WHEN SUM(b.total_amount) > 0 
+               THEN ROUND(((SUM(CASE WHEN b.booking_id IS NOT NULL THEN b.total_amount ELSE 0 END) + SUM(COALESCE(sd.product_profit, 0))) / SUM(b.total_amount)) * 100, 1)
+               ELSE 0
+             END AS overall_margin_percent
+      FROM billings b
+      LEFT JOIN (
+        SELECT sd_inner.billing_id,
+               SUM(sd_inner.quantity * COALESCE(sd_inner.cost_price_at_sale, p.cost_price, 0)) AS product_cost,
+               SUM(sd_inner.subtotal) - SUM(sd_inner.quantity * COALESCE(sd_inner.cost_price_at_sale, p.cost_price, 0)) AS product_profit
+        FROM sale_details sd_inner
+        JOIN products p ON sd_inner.products_id = p.id
+        GROUP BY sd_inner.billing_id
+      ) sd ON b.id = sd.billing_id
+      WHERE b.payment_date >= $1 AND b.payment_date < ($2::date + INTERVAL '1 day')
     `, [start_date, end_date]);
 
     res.json({
@@ -400,14 +472,59 @@ const summary = async (req, res) => {
         AND status IN ('Confirmed', 'Completed')
     `, [start_date, end_date]);
 
+    const purchases = await pool.query(`
+      SELECT COALESCE(SUM(total_amount), 0) AS total_purchases
+      FROM purchases
+      WHERE purchase_date >= $1 AND purchase_date < ($2::date + INTERVAL '1 day')
+    `, [start_date, end_date]);
+
+    const totalRev = parseFloat(sales.rows[0]?.total_revenue) || 0;
+    const bookingRev = parseFloat(bookingRevenue.rows[0]?.booking_revenue) || 0;
+    const productRev = parseFloat(products.rows[0]?.product_revenue) || 0;
+    const productCost = parseFloat(products.rows[0]?.product_cost) || 0;
+    const productProfit = parseFloat(products.rows[0]?.product_profit) || 0;
+    const totalPurchases = parseFloat(purchases.rows[0]?.total_purchases) || 0;
+
+    // Ganancia bruta: Facturación de reservas + Ganancia neta de productos
+    const grossProfit = bookingRev + productProfit;
+    const grossMarginPercent = totalRev > 0 ? Number(((grossProfit / totalRev) * 100).toFixed(1)) : 0;
+
+    // Margen sobre costo de productos (markup)
+    const productMarkupPercent = productCost > 0 ? Number(((productProfit / productCost) * 100).toFixed(1)) : (productRev > 0 ? 100 : 0);
+
+    // Margen sobre venta de productos
+    const productMarginOnSale = productRev > 0 ? Number(((productProfit / productRev) * 100).toFixed(1)) : 0;
+
+    // Ganancia Neta Global considerando compras/gastos del periodo
+    const netProfit = totalRev - totalPurchases;
+    const netMarginPercent = totalRev > 0 ? Number(((netProfit / totalRev) * 100).toFixed(1)) : 0;
+
     res.json({
       success: true,
       data: {
         sales: sales.rows[0],
         bookings: bookings.rows[0],
         customers: customers.rows[0],
-        products: products.rows[0],
-        bookingRevenue: bookingRevenue.rows[0].booking_revenue
+        products: {
+          ...products.rows[0],
+          markup_percent: productMarkupPercent,
+          margin_on_sale: productMarginOnSale
+        },
+        bookingRevenue: bookingRev,
+        financial: {
+          totalRevenue: totalRev,
+          bookingRevenue: bookingRev,
+          productRevenue: productRev,
+          productCost: productCost,
+          productProfit: productProfit,
+          productMarkupPercent: productMarkupPercent,
+          productMarginOnSale: productMarginOnSale,
+          grossProfit: grossProfit,
+          grossMarginPercent: grossMarginPercent,
+          totalPurchases: totalPurchases,
+          netProfit: netProfit,
+          netMarginPercent: netMarginPercent
+        }
       }
     });
   } catch (error) {

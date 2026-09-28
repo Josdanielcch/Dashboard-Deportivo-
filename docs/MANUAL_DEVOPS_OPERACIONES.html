@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>CourtManager — Manual de DevOps, Mantenimiento y SLAs</title>
+  <style>
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
+
+  @page {
+    size: A4;
+    margin: 14mm 14mm 14mm 14mm;
+  }
+
+  * {
+    box-sizing: border-box;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #1e293b;
+    background: #ffffff;
+    line-height: 1.55;
+    font-size: 10.5pt;
+    margin: 0;
+    padding: 0;
+  }
+
+  .header-card {
+    background: linear-gradient(135deg, #060a1a 0%, #0f1738 100%);
+    border-radius: 14px;
+    padding: 24px 28px;
+    color: #ffffff;
+    margin-bottom: 22px;
+    position: relative;
+    border: 1px solid #1e293b;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+  }
+
+  .header-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(204, 255, 0, 0.12);
+    border: 1px solid rgba(204, 255, 0, 0.35);
+    color: #ccff00;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 8pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 10px;
+  }
+
+  .header-title {
+    font-size: 22pt;
+    font-weight: 800;
+    margin: 0 0 6px 0;
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .header-title span.accent {
+    color: #ccff00;
+  }
+
+  .header-subtitle {
+    font-size: 11pt;
+    color: #94a3b8;
+    margin: 0 0 14px 0;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+
+  .header-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 8.5pt;
+    color: #cbd5e1;
+  }
+
+  .header-meta strong {
+    color: #ffffff;
+  }
+
+  h2 {
+    font-size: 14pt;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 22px 0 10px 0;
+    padding-bottom: 6px;
+    border-bottom: 2px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    page-break-after: avoid;
+  }
+
+  h2 .num {
+    background: #0f1738;
+    color: #ccff00;
+    font-size: 8.5pt;
+    padding: 2px 7px;
+    border-radius: 5px;
+    font-weight: 800;
+  }
+
+  h3 {
+    font-size: 11.5pt;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 14px 0 6px 0;
+    page-break-after: avoid;
+  }
+
+  h4 {
+    font-size: 10.5pt;
+    font-weight: 700;
+    color: #334155;
+    margin: 10px 0 4px 0;
+  }
+
+  p {
+    margin: 0 0 10px 0;
+    color: #334155;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin: 12px 0 16px 0;
+    border: 1px solid #cbd5e1;
+    border-radius: 9px;
+    overflow: hidden;
+    font-size: 9pt;
+    page-break-inside: avoid;
+  }
+
+  th {
+    background: #0f1738;
+    color: #ffffff;
+    padding: 9px 12px;
+    font-weight: 700;
+    text-align: left;
+    font-size: 8.5pt;
+    letter-spacing: 0.03em;
+  }
+
+  td {
+    padding: 9px 12px;
+    border-top: 1px solid #e2e8f0;
+    color: #334155;
+    vertical-align: top;
+  }
+
+  tr:nth-child(even) td {
+    background: #f8fafc;
+  }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 12px 0 16px 0;
+    page-break-inside: avoid;
+  }
+
+  .grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin: 12px 0 16px 0;
+    page-break-inside: avoid;
+  }
+
+  .feature-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 9px;
+    padding: 12px 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  }
+
+  .feature-card.highlight {
+    border-color: #0f1738;
+    background: linear-gradient(to bottom, #ffffff, #f8fafc);
+  }
+
+  .feature-title {
+    font-weight: 700;
+    font-size: 10pt;
+    color: #0f172a;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .feature-desc {
+    font-size: 8.5pt;
+    color: #64748b;
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  .step-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid #0f1738;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 12px;
+    page-break-inside: avoid;
+  }
+
+  .step-box.active {
+    border-left-color: #ccff00;
+    background: #fafcfe;
+  }
+
+  .step-header {
+    font-weight: 800;
+    font-size: 10.5pt;
+    color: #0f172a;
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .pill {
+    display: inline-block;
+    font-size: 7.5pt;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 5px;
+    text-transform: uppercase;
+  }
+
+  .pill-green {
+    background: #dcfce7;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+  }
+
+  .pill-blue {
+    background: #e0e7ff;
+    color: #3730a3;
+    border: 1px solid #c7d2fe;
+  }
+
+  .pill-volt {
+    background: #060a1a;
+    color: #ccff00;
+    border: 1px solid #1e293b;
+  }
+
+  .pill-purple {
+    background: #f3e8ff;
+    color: #7e22ce;
+    border: 1px solid #e9d5ff;
+  }
+
+  pre, code {
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  pre {
+    background: #0b112c;
+    color: #f8fafc;
+    padding: 12px 14px;
+    border-radius: 8px;
+    font-size: 8pt;
+    overflow-x: auto;
+    border: 1px solid #1e293b;
+    margin: 8px 0 12px 0;
+    line-height: 1.4;
+    page-break-inside: avoid;
+  }
+
+  code:not(pre code) {
+    background: #f1f5f9;
+    color: #0f172a;
+    padding: 2px 5px;
+    border-radius: 4px;
+    font-size: 8.5pt;
+    border: 1px solid #e2e8f0;
+  }
+
+  ul, ol {
+    margin: 6px 0 10px 0;
+    padding-left: 20px;
+    color: #334155;
+  }
+
+  li {
+    margin-bottom: 4px;
+    font-size: 9.5pt;
+  }
+
+  .doc-footer {
+    margin-top: 26px;
+    padding-top: 12px;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 8pt;
+    color: #64748b;
+    page-break-before: avoid;
+  }
+
+  .page-break {
+    page-break-before: always;
+  }
+
+  .callout {
+    background: #eff6ff;
+    border-left: 4px solid #3b82f6;
+    padding: 10px 14px;
+    border-radius: 6px;
+    margin: 10px 0;
+    font-size: 9pt;
+    color: #1e3a8a;
+  }
+</style>
+</head>
+<body>
+  <div class="header-card">
+    <div class="header-badge">★ Infraestructura & Mantenimiento • Guía DevOps v2.0</div>
+    <div class="header-title">Court<span class="accent">Manager</span> — DevOps & SLAs</div>
+    <div class="header-subtitle">Guía Oficial de Despliegue en Producción, Respaldos y Recuperación ante Desastres.</div>
+    <div class="header-meta">
+      <div><strong>Audiencia:</strong> SysAdmins, DevOps & Soporte L3</div>
+      <div><strong>Entorno:</strong> Linux Ubuntu 24.04 / Cloud PaaS</div>
+      <div><strong>RPO / RTO:</strong> &lt; 5 min / &lt; 30 min</div>
+      <div><strong>Emisión:</strong> Septiembre 2026</div>
+    </div>
+  </div>
+
+  <h2><span class="num">01</span> Variables de Entorno de Producción (<code>.env</code>)</h2>
+  <pre>PORT=3000
+NODE_ENV=production
+TRUST_PROXY=true
+TZ=America/Caracas
+
+# Base de Datos Neon Cloud
+DATABASE_URL=postgres://user:pass@ep-pooler.us-east-2.aws.neon.tech/neondb?sslmode=require
+
+# Criptografía
+JWT_SECRET=super_secret_jwt_key_prod_64_chars_min
+JWT_EXPIRES_IN=7d
+
+# Mensajería SMTP Brevo
+SMTP_HOST=smtp-relay.brevo.com
+SMTP_PORT=587
+SMTP_USER=notificaciones@courtmanager.app
+SMTP_PASS=tu_clave_smtp_brevo
+
+# CORS Autorizados
+CORS_ORIGINS=https://panel.courtmanager.app,https://reservas.courtmanager.app</pre>
+
+  <h2><span class="num">02</span> Procedimiento de Despliegue en Servidor Linux</h2>
+  <div class="step-box active">
+    <div class="step-header">
+      <span>1. Configuración de PM2 para el Backend</span>
+      <span class="pill pill-green">Producción</span>
+    </div>
+    <pre>cd /var/www/courtmanager/Backend
+npm install --omit=dev
+pm2 start server.js --name "courtmanager-api" -i max
+pm2 save && pm2 startup</pre>
+  </div>
+
+  <div class="step-box">
+    <div class="step-header">
+      <span>2. Configuración de Nginx con Soporte WebSockets</span>
+      <span class="pill pill-blue">Reverse Proxy</span>
+    </div>
+    <pre>location / {
+    proxy_pass http://127.0.0.1:3000;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+}</pre>
+  </div>
+
+  <div class="page-break"></div>
+
+  <h2><span class="num">03</span> Estrategia de Respaldo y Recuperación ante Desastres</h2>
+  <div class="grid-2">
+    <div class="feature-card highlight">
+      <div class="feature-title">📦 Respaldo Frío Programado (<code>pg_dump</code>)</div>
+      <pre style="margin: 6px 0 0 0; font-size: 7.5pt;">pg_dump "$DATABASE_URL" \
+  -F c -b -v \
+  -f "/var/backups/db_$(date +%Y%m%d).dump"</pre>
+      <p class="feature-desc" style="margin-top: 6px;">Se ejecuta diariamente mediante un cron job nocturno y se sincroniza con almacenamiento S3 secundario.</p>
+    </div>
+    <div class="feature-card highlight">
+      <div class="feature-title">⚡ Rebobinado Instantáneo en Neon</div>
+      <p class="feature-desc">Point-in-Time Recovery (PITR) nativo en Neon Cloud. Si un operador elimina accidentalmente datos, la base de datos puede rebobinarse al segundo exacto anterior al error en menos de 2 minutos.</p>
+    </div>
+  </div>
+
+  <h2><span class="num">04</span> Matriz de Resolución de Incidentes Críticos</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Falla Detectada</th>
+        <th>Causa Raíz</th>
+        <th>Acción de Mitigación</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>502 Bad Gateway</strong></td>
+        <td>Proceso Node.js caído por error no capturado.</td>
+        <td><code>pm2 reload courtmanager-api</code> y revisar <code>pm2 logs</code>.</td>
+      </tr>
+      <tr>
+        <td><strong>Sockets Caídos</strong></td>
+        <td>Falta directiva Upgrade en Nginx.</td>
+        <td>Verificar bloque <code>Connection "upgrade"</code> en config de Nginx.</td>
+      </tr>
+      <tr>
+        <td><strong>CORS Denied</strong></td>
+        <td>Dominio nuevo no listado en <code>.env</code>.</td>
+        <td>Agregar la URL completa en <code>CORS_ORIGINS</code> y recargar.</td>
+      </tr>
+      <tr>
+        <td><strong>Correos en Cola</strong></td>
+        <td>Límite diario alcanzado en Brevo.</td>
+        <td>Actualizar plan en Brevo o verificar credenciales SMTP.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="doc-footer">
+    <div><strong>CourtManager Tech Solutions</strong> • DevOps & Operations Manual</div>
+    <div>Documento de Infraestructura Confidencial © 2026. Todos los derechos reservados.</div>
+  </div>
+</body>
+</html>

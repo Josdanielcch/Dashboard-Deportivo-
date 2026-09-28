@@ -1,6 +1,6 @@
 'use client'
 
-import { FileText, Calendar, DollarSign, Package, Clock, RefreshCw, Filter, Activity, LayoutGrid, Printer, Users } from 'lucide-react'
+import { FileText, Calendar, DollarSign, Package, Clock, RefreshCw, Filter, Activity, LayoutGrid, Printer, Users, TrendingUp, Wallet, ArrowUpRight } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { reportService } from '@/services/reportService'
 import StackedAreaChart from '@/components/stacked-area-chart'
@@ -174,8 +174,39 @@ function DataTable<T extends Record<string, any>>({ columns, rows, emptyMessage 
   )
 }
 
-interface SummaryData { totalRevenue: number; totalBookings: number; averageTicket: number; activeCustomers: number }
-interface SalesRow { date: string; bookings: number; revenue: number; bookingRevenue: number; productRevenue: number }
+interface FinancialData {
+  totalRevenue: number
+  bookingRevenue: number
+  productRevenue: number
+  productCost: number
+  productProfit: number
+  productMarkupPercent: number
+  productMarginOnSale: number
+  grossProfit: number
+  grossMarginPercent: number
+  totalPurchases: number
+  netProfit: number
+  netMarginPercent: number
+}
+
+interface SummaryData { 
+  totalRevenue: number
+  totalBookings: number
+  averageTicket: number
+  activeCustomers: number
+  financial?: FinancialData
+}
+interface SalesRow { 
+  date: string
+  bookings: number
+  revenue: number
+  bookingRevenue: number
+  productRevenue: number
+  productCost?: number
+  productProfit?: number
+  grossProfit?: number
+  marginPercent?: number
+}
 interface ProductRow { name: string; quantity: number; revenue: number; cost: number; profit: number; margin: number }
 interface CourtRevenueRow { court: string; revenue: number; bookings: number }
 interface BookingStatusRow { status: string; count: number }
@@ -225,6 +256,7 @@ export default function InformesView() {
           totalBookings: parseInt(d.bookings?.total_bookings) || 0,
           averageTicket: parseFloat(d.sales?.avg_sale) || 0,
           activeCustomers: parseInt(d.customers?.active_customers) || 0,
+          financial: d.financial || undefined,
         })
       }
       if (salesRes.success && salesRes.data) {
@@ -233,7 +265,17 @@ export default function InformesView() {
           const period = (s.period || '').split('T')[0] || s.period || ''
           const parts = period.split('-')
           const label = parts.length === 3 ? parts[1] + '-' + parts[2] : period
-          return { date: label, bookings: parseInt(s.count) || 0, revenue: parseFloat(s.total) || 0, bookingRevenue: parseFloat(s.booking_revenue) || 0, productRevenue: parseFloat(s.product_revenue) || 0 }
+          return { 
+            date: label, 
+            bookings: parseInt(s.count) || 0, 
+            revenue: parseFloat(s.total) || 0, 
+            bookingRevenue: parseFloat(s.booking_revenue) || 0, 
+            productRevenue: parseFloat(s.product_revenue) || 0,
+            productCost: parseFloat(s.product_cost) || 0,
+            productProfit: parseFloat(s.product_profit) || 0,
+            grossProfit: parseFloat(s.gross_profit) || 0,
+            marginPercent: parseFloat(s.margin_percent) || 0,
+          }
         }))
       }
       if (productsRes.success && productsRes.data) {
@@ -290,7 +332,9 @@ export default function InformesView() {
       const pct = salesMax > 0 ? (s.revenue / salesMax) * 100 : 0
       const bookingPct = s.revenue > 0 ? (s.bookingRevenue / s.revenue) * 100 : 0
       const productPct = 100 - bookingPct
-      return '<tr><td style="padding:8px 12px;border-bottom:1px solid #1a1f3a;color:#a1a1aa;font-size:13px;">' + s.date + '</td><td style="padding:8px 12px;border-bottom:1px solid #1a1f3a;color:#fff;font-weight:700;text-align:right;">' + s.bookings + '</td><td style="padding:8px 12px;border-bottom:1px solid #1a1f3a;color:#6366f1;font-weight:600;text-align:right;">$' + s.bookingRevenue.toLocaleString() + '</td><td style="padding:8px 12px;border-bottom:1px solid #1a1f3a;color:#ccff00;font-weight:600;text-align:right;">$' + s.productRevenue.toLocaleString() + '</td><td style="padding:8px 12px;border-bottom:1px solid #1a1f3a;text-align:right;"><div style="display:flex;align-items:center;gap:8px;justify-content:flex-end;"><span style="color:#fff;font-weight:700;font-size:13px;">$' + s.revenue.toLocaleString() + '</span><div style="width:80px;height:8px;background:rgba(255,255,255,0.04);border-radius:4px;overflow:hidden;display:flex;"><div style="width:' + bookingPct + '%;height:100%;background:#6366f1;"></div><div style="width:' + productPct + '%;height:100%;background:#ccff00;"></div></div></div></td></tr>'
+      const profit = s.grossProfit || 0
+      const margin = s.marginPercent || 0
+      return '<tr><td style="padding:8px 12px;border-bottom:1px solid #1a1f3a;color:#a1a1aa;font-size:13px;">' + s.date + '</td><td style="padding:8px 12px;border-bottom:1px solid #1a1f3a;color:#fff;font-weight:700;text-align:right;">' + s.bookings + '</td><td style="padding:8px 12px;border-bottom:1px solid #1a1f3a;color:#6366f1;font-weight:600;text-align:right;">$' + s.bookingRevenue.toLocaleString() + '</td><td style="padding:8px 12px;border-bottom:1px solid #1a1f3a;color:#ccff00;font-weight:600;text-align:right;">$' + s.productRevenue.toLocaleString() + '</td><td style="padding:8px 12px;border-bottom:1px solid #1a1f3a;text-align:right;"><span style="color:#fff;font-weight:700;font-size:13px;">$' + s.revenue.toLocaleString() + '</span></td><td style="padding:8px 12px;border-bottom:1px solid #1a1f3a;color:#10b981;font-weight:700;text-align:right;">+$' + profit.toLocaleString() + '</td><td style="padding:8px 12px;border-bottom:1px solid #1a1f3a;color:#10b981;font-weight:700;text-align:right;">+' + margin.toFixed(1) + '%</td></tr>'
     }).join('')
 
     let productRows = productsData.map((p, i) => {
@@ -333,7 +377,7 @@ export default function InformesView() {
     html += '<div class="kg"><div class="k"><div class="kl">Ingresos Totales</div><div class="kv a">$' + summary.totalRevenue.toLocaleString() + '</div></div><div class="k"><div class="kl">Total Reservas</div><div class="kv">' + summary.totalBookings.toLocaleString() + '</div></div><div class="k"><div class="kl">Ticket Promedio</div><div class="kv">$' + summary.averageTicket.toLocaleString() + '</div></div><div class="k"><div class="kl">Clientes Activos</div><div class="kv">' + summary.activeCustomers.toLocaleString() + '</div></div></div>'
 
     if (activeTab === 'sales') {
-      html += '<h2>Ventas Diarias</h2><div style="display:flex;gap:16px;margin-bottom:12px;"><div style="display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;border-radius:3px;background:#6366f1;"></div><span style="color:#a1a1aa;font-size:12px;">Reservas de Cancha</span></div><div style="display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;border-radius:3px;background:#ccff00;"></div><span style="color:#a1a1aa;font-size:12px;">Productos Vendidos</span></div></div><table><thead><tr><th style="' + thStyle + 'text-align:left;">Fecha</th><th style="' + thStyle + 'text-align:right;">Reservas</th><th style="' + thStyle + 'text-align:right;">Ingresos Reservas</th><th style="' + thStyle + 'text-align:right;">Ingresos Productos</th><th style="' + thStyle + 'text-align:right;">Total Ingresos</th></tr></thead><tbody>' + salesRows + '</tbody></table>'
+      html += '<h2>Ventas Diarias</h2><div style="display:flex;gap:16px;margin-bottom:12px;"><div style="display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;border-radius:3px;background:#6366f1;"></div><span style="color:#a1a1aa;font-size:12px;">Reservas de Cancha</span></div><div style="display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;border-radius:3px;background:#ccff00;"></div><span style="color:#a1a1aa;font-size:12px;">Productos Vendidos</span></div></div><table><thead><tr><th style="' + thStyle + 'text-align:left;">Fecha</th><th style="' + thStyle + 'text-align:right;">Reservas</th><th style="' + thStyle + 'text-align:right;">Ingresos Reservas</th><th style="' + thStyle + 'text-align:right;">Ingresos Productos</th><th style="' + thStyle + 'text-align:right;">Total Ingresos</th><th style="' + thStyle + 'text-align:right;">Ganancia Neta</th><th style="' + thStyle + 'text-align:right;">Margen %</th></tr></thead><tbody>' + salesRows + '</tbody></table>'
     } else if (activeTab === 'products') {
       html += '<h2>Top Productos</h2><table><thead><tr><th style="' + thStyle + 'text-align:left;">Producto</th><th style="' + thStyle + 'text-align:left;">Vendidos</th><th style="' + thStyle + 'text-align:right;">Ingresos</th></tr></thead><tbody>' + productRows + '</tbody></table>'
     } else if (activeTab === 'courts') {
@@ -495,6 +539,85 @@ export default function InformesView() {
 
           {activeTab === 'sales' && (
             <div className="space-y-6">
+              {/* Financial KPI Banner for Sales */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Ingresos Totales */}
+                <div className="bg-gradient-to-br from-[#0f1533]/80 to-[#0a0e27]/80 border border-[#1a1f3a] rounded-2xl p-5 hover:border-emerald-500/30 transition-all duration-300">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider">Ingresos Facturados</span>
+                    <div className="h-8 w-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                      <DollarSign size={16} />
+                    </div>
+                  </div>
+                  <div className="text-2xl font-black text-white mb-1.5">
+                    ${(summary.financial?.totalRevenue ?? summary.totalRevenue).toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                  <div className="flex items-center justify-between text-[11px] text-zinc-400">
+                    <span>Canchas: ${(summary.financial?.bookingRevenue || 0).toLocaleString()}</span>
+                    <span>Prod: ${(summary.financial?.productRevenue || 0).toLocaleString()}</span>
+                  </div>
+                </div>
+
+                {/* Ganancia en Productos */}
+                <div className="bg-gradient-to-br from-[#0f1533]/80 to-[#0a0e27]/80 border border-[#1a1f3a] rounded-2xl p-5 hover:border-indigo-500/30 transition-all duration-300">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider">Ganancia Productos</span>
+                    <div className="h-8 w-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+                      <Package size={16} />
+                    </div>
+                  </div>
+                  <div className="text-2xl font-black text-white mb-1.5 flex items-baseline gap-2">
+                    <span className="text-indigo-400">+${(summary.financial?.productProfit || 0).toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
+                      +{(summary.financial?.productMarkupPercent || 0).toFixed(1)}% mrg.
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-zinc-400">
+                    Costo adquisición: ${(summary.financial?.productCost || 0).toLocaleString()}
+                  </div>
+                </div>
+
+                {/* Ganancia Bruta Operativa */}
+                <div className="bg-gradient-to-br from-[#0f1533]/80 to-[#0a0e27]/80 border border-[#1a1f3a] rounded-2xl p-5 hover:border-[#ccff00]/30 transition-all duration-300">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider">Ganancia Bruta Ventas</span>
+                    <div className="h-8 w-8 rounded-xl bg-[#ccff00]/10 border border-[#ccff00]/20 flex items-center justify-center text-[#ccff00]">
+                      <TrendingUp size={16} />
+                    </div>
+                  </div>
+                  <div className="text-2xl font-black text-white mb-1.5 flex items-baseline gap-2">
+                    <span className="text-[#ccff00]">+${(summary.financial?.grossProfit || summary.totalRevenue || 0).toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[#ccff00]/10 text-[#ccff00] border border-[#ccff00]/20">
+                      {(summary.financial?.grossMarginPercent || 100).toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-zinc-400">
+                    Margen bruto sobre ventas
+                  </div>
+                </div>
+
+                {/* Utilidad Neta Real */}
+                <div className="bg-gradient-to-br from-[#0f1533]/80 to-[#0a0e27]/80 border border-[#1a1f3a] rounded-2xl p-5 hover:border-cyan-500/30 transition-all duration-300">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider">Utilidad Neta (Pérd/Gan)</span>
+                    <div className="h-8 w-8 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
+                      <Wallet size={16} />
+                    </div>
+                  </div>
+                  <div className="text-2xl font-black text-white mb-1.5 flex items-baseline gap-2">
+                    <span className={(summary.financial?.netProfit ?? summary.totalRevenue) >= 0 ? 'text-emerald-400' : 'text-red-400'}>
+                      {(summary.financial?.netProfit ?? summary.totalRevenue) >= 0 ? '+' : ''}${(summary.financial?.netProfit ?? summary.totalRevenue).toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${(summary.financial?.netMarginPercent ?? 100) >= 0 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
+                      {(summary.financial?.netMarginPercent ?? 100).toFixed(1)}% neto
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-zinc-400">
+                    Compras/Gastos: -${(summary.financial?.totalPurchases || 0).toLocaleString()}
+                  </div>
+                </div>
+              </div>
+
               <div className="bg-gradient-to-br from-[#0f1533]/80 to-[#0a0e27]/80 border border-[#1a1f3a] rounded-2xl p-5 md:p-6">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
@@ -536,6 +659,16 @@ export default function InformesView() {
                     )},
                     { key: 'revenue', label: 'Total Ingresos', align: 'right', render: (row) => (
                       <span className="text-white font-bold">{'$'}{row.revenue.toLocaleString()}</span>
+                    )},
+                    { key: 'grossProfit', label: 'Ganancia Neta', align: 'right', render: (row) => (
+                      <span className="text-emerald-400 font-bold">
+                        +${(row.grossProfit || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    )},
+                    { key: 'marginPercent', label: 'Margen %', align: 'right', render: (row) => (
+                      <span className={`px-2 py-0.5 rounded text-xs font-bold ${(row.marginPercent || 0) >= 0 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
+                        +{(row.marginPercent || 0).toFixed(1)}%
+                      </span>
                     )},
                   ]}
                   rows={salesData}

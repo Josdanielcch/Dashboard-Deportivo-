@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>CourtManager — Arquitectura, Seguridad e Infraestructura Cloud</title>
+  <style>
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
+
+  @page {
+    size: A4;
+    margin: 14mm 14mm 14mm 14mm;
+  }
+
+  * {
+    box-sizing: border-box;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #1e293b;
+    background: #ffffff;
+    line-height: 1.55;
+    font-size: 10.5pt;
+    margin: 0;
+    padding: 0;
+  }
+
+  .header-card {
+    background: linear-gradient(135deg, #060a1a 0%, #0f1738 100%);
+    border-radius: 14px;
+    padding: 24px 28px;
+    color: #ffffff;
+    margin-bottom: 22px;
+    position: relative;
+    border: 1px solid #1e293b;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+  }
+
+  .header-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(204, 255, 0, 0.12);
+    border: 1px solid rgba(204, 255, 0, 0.35);
+    color: #ccff00;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 8pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 10px;
+  }
+
+  .header-title {
+    font-size: 22pt;
+    font-weight: 800;
+    margin: 0 0 6px 0;
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .header-title span.accent {
+    color: #ccff00;
+  }
+
+  .header-subtitle {
+    font-size: 11pt;
+    color: #94a3b8;
+    margin: 0 0 14px 0;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+
+  .header-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 8.5pt;
+    color: #cbd5e1;
+  }
+
+  .header-meta strong {
+    color: #ffffff;
+  }
+
+  h2 {
+    font-size: 14pt;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 22px 0 10px 0;
+    padding-bottom: 6px;
+    border-bottom: 2px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    page-break-after: avoid;
+  }
+
+  h2 .num {
+    background: #0f1738;
+    color: #ccff00;
+    font-size: 8.5pt;
+    padding: 2px 7px;
+    border-radius: 5px;
+    font-weight: 800;
+  }
+
+  h3 {
+    font-size: 11.5pt;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 14px 0 6px 0;
+    page-break-after: avoid;
+  }
+
+  h4 {
+    font-size: 10.5pt;
+    font-weight: 700;
+    color: #334155;
+    margin: 10px 0 4px 0;
+  }
+
+  p {
+    margin: 0 0 10px 0;
+    color: #334155;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin: 12px 0 16px 0;
+    border: 1px solid #cbd5e1;
+    border-radius: 9px;
+    overflow: hidden;
+    font-size: 9pt;
+    page-break-inside: avoid;
+  }
+
+  th {
+    background: #0f1738;
+    color: #ffffff;
+    padding: 9px 12px;
+    font-weight: 700;
+    text-align: left;
+    font-size: 8.5pt;
+    letter-spacing: 0.03em;
+  }
+
+  td {
+    padding: 9px 12px;
+    border-top: 1px solid #e2e8f0;
+    color: #334155;
+    vertical-align: top;
+  }
+
+  tr:nth-child(even) td {
+    background: #f8fafc;
+  }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 12px 0 16px 0;
+    page-break-inside: avoid;
+  }
+
+  .grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin: 12px 0 16px 0;
+    page-break-inside: avoid;
+  }
+
+  .feature-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 9px;
+    padding: 12px 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  }
+
+  .feature-card.highlight {
+    border-color: #0f1738;
+    background: linear-gradient(to bottom, #ffffff, #f8fafc);
+  }
+
+  .feature-title {
+    font-weight: 700;
+    font-size: 10pt;
+    color: #0f172a;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .feature-desc {
+    font-size: 8.5pt;
+    color: #64748b;
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  .step-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid #0f1738;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 12px;
+    page-break-inside: avoid;
+  }
+
+  .step-box.active {
+    border-left-color: #ccff00;
+    background: #fafcfe;
+  }
+
+  .step-header {
+    font-weight: 800;
+    font-size: 10.5pt;
+    color: #0f172a;
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .pill {
+    display: inline-block;
+    font-size: 7.5pt;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 5px;
+    text-transform: uppercase;
+  }
+
+  .pill-green {
+    background: #dcfce7;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+  }
+
+  .pill-blue {
+    background: #e0e7ff;
+    color: #3730a3;
+    border: 1px solid #c7d2fe;
+  }
+
+  .pill-volt {
+    background: #060a1a;
+    color: #ccff00;
+    border: 1px solid #1e293b;
+  }
+
+  .pill-purple {
+    background: #f3e8ff;
+    color: #7e22ce;
+    border: 1px solid #e9d5ff;
+  }
+
+  pre, code {
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  pre {
+    background: #0b112c;
+    color: #f8fafc;
+    padding: 12px 14px;
+    border-radius: 8px;
+    font-size: 8pt;
+    overflow-x: auto;
+    border: 1px solid #1e293b;
+    margin: 8px 0 12px 0;
+    line-height: 1.4;
+    page-break-inside: avoid;
+  }
+
+  code:not(pre code) {
+    background: #f1f5f9;
+    color: #0f172a;
+    padding: 2px 5px;
+    border-radius: 4px;
+    font-size: 8.5pt;
+    border: 1px solid #e2e8f0;
+  }
+
+  ul, ol {
+    margin: 6px 0 10px 0;
+    padding-left: 20px;
+    color: #334155;
+  }
+
+  li {
+    margin-bottom: 4px;
+    font-size: 9.5pt;
+  }
+
+  .doc-footer {
+    margin-top: 26px;
+    padding-top: 12px;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 8pt;
+    color: #64748b;
+    page-break-before: avoid;
+  }
+
+  .page-break {
+    page-break-before: always;
+  }
+
+  .callout {
+    background: #eff6ff;
+    border-left: 4px solid #3b82f6;
+    padding: 10px 14px;
+    border-radius: 6px;
+    margin: 10px 0;
+    font-size: 9pt;
+    color: #1e3a8a;
+  }
+</style>
+</head>
+<body>
+  <div class="header-card">
+    <div class="header-badge">★ Whitepaper Técnico • Seguridad & Alta Disponibilidad v2.0</div>
+    <div class="header-title">Court<span class="accent">Manager</span> — Arquitectura Cloud</div>
+    <div class="header-subtitle">Especificación Técnica de Topología de Red, Seguridad de Datos y Tiempo Real.</div>
+    <div class="header-meta">
+      <div><strong>Audiencia:</strong> CTOs, Ingenieros de Software & Auditores</div>
+      <div><strong>Infraestructura:</strong> Cloud Native Serverless</div>
+      <div><strong>Protocolo:</strong> WebSockets Bidireccionales (&lt;50ms)</div>
+      <div><strong>Emisión:</strong> Septiembre 2026</div>
+    </div>
+  </div>
+
+  <h2><span class="num">01</span> Topología de Red y Arquitectura de Tres Capas</h2>
+  <p>
+    CourtManager está construido sobre una arquitectura desacoplada orientada a eventos, diseñada para soportar alta concurrencia de reservas simultáneas con latencias de respuesta imperceptibles:
+  </p>
+
+  <div class="grid-3">
+    <div class="feature-card highlight">
+      <div class="feature-title">🌐 1. Presentación (SPA)</div>
+      <p class="feature-desc">React 19 con Vite, Tailwind CSS y componentes Shadcn UI. Servido a través de CDN global en el Edge con compresión Brotli y First Contentful Paint &lt; 0.8s.</p>
+    </div>
+    <div class="feature-card highlight">
+      <div class="feature-title">⚡ 2. API & WebSockets</div>
+      <p class="feature-desc">Node.js LTS con Express y Socket.IO. Servidor no bloqueante para gestionar cientos de conexiones concurrentes y salas aisladas para cada complejo deportivo.</p>
+    </div>
+    <div class="feature-card highlight">
+      <div class="feature-title">☁️ 3. Persistencia Cloud</div>
+      <p class="feature-desc">PostgreSQL 16 Serverless en Neon Cloud. Separación de cómputo y almacenamiento con escalado instantáneo, cifrado SSL forzado y backups PITR continuos.</p>
+    </div>
+  </div>
+
+  <h2><span class="num">02</span> Algoritmo Transaccional Anti-Overbooking</h2>
+  <p>
+    Para evitar que dos usuarios reserven el mismo turno al mismo milisegundo, la API implementa bloqueos a nivel de fila mediante transacciones ACID en PostgreSQL:
+  </p>
+  <pre>BEGIN TRANSACTION ISOLATION LEVEL READ COMMITTED;
+
+-- Bloqueo pesimista de filas en conflicto
+SELECT id FROM bookings
+WHERE court_id = $court_id 
+  AND booking_date = $booking_date 
+  AND status NOT IN ('cancelled', 'rejected')
+  AND (start_time &lt; $end_time AND end_time &gt; $start_time)
+FOR UPDATE;
+
+-- Si existe solapamiento -> ROLLBACK y HTTP 409 Conflict
+-- Si está libre -> INSERT INTO bookings (...) VALUES (...);
+COMMIT;
+
+-- Emisión inmediata del evento WebSocket a todos los paneles
+io.to('dashboard').emit('booking:created', { bookingId, courtId });</pre>
+
+  <h2><span class="num">03</span> Matriz de Seguridad y Protección de Datos</h2>
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 30%;">Vector de Seguridad</th>
+        <th style="width: 40%;">Mecanismo de Protección</th>
+        <th style="width: 30%;">Estándar / Nivel</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Criptografía de Contraseñas</strong></td>
+        <td>Hashing unidireccional adaptativo con salt rounds.</td>
+        <td><span class="pill pill-green">bcrypt (10 Rondas)</span></td>
+      </tr>
+      <tr>
+        <td><strong>Autenticación de API</strong></td>
+        <td>Tokens criptográficos firmados sin estado en cabeceras.</td>
+        <td><span class="pill pill-blue">JWT (HMAC-SHA256)</span></td>
+      </tr>
+      <tr>
+        <td><strong>Mitigación DDoS & Brute Force</strong></td>
+        <td>Limitador de peticiones por ventana de tiempo por IP.</td>
+        <td><span class="pill pill-purple">express-rate-limit</span></td>
+      </tr>
+      <tr>
+        <td><strong>Aislamiento de Recursos</strong></td>
+        <td>Lista blanca estricta de dominios autorizados y credenciales.</td>
+        <td><span class="pill pill-blue">Strict CORS Whitelist</span></td>
+      </tr>
+      <tr>
+        <td><strong>Inyección SQL & XSS</strong></td>
+        <td>Consultas parametrizadas obligatorias y cabeceras seguras.</td>
+        <td><span class="pill pill-green">Helmet + Prepared Stmts</span></td>
+      </tr>
+      <tr>
+        <td><strong>Auditoría Inmutable</strong></td>
+        <td>Bitácora de auditoría de solo inserción con IP, usuario y hora.</td>
+        <td><span class="pill pill-volt">Append-Only Audit</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="page-break"></div>
+
+  <h2><span class="num">04</span> Políticas de Continuidad del Negocio y SLAs</h2>
+  <div class="grid-2">
+    <div class="feature-card">
+      <div class="feature-title">🛡️ Respaldo Continuo (RPO &lt; 5 min)</div>
+      <p class="feature-desc">Neon Cloud realiza snapshots automáticos de cada transacción mediante WAL (Write-Ahead Logging), permitiendo rebobinar la base de datos a cualquier segundo de los últimos 30 días.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-title">⚡ Disponibilidad Garantizada (99.9% SLA)</div>
+      <p class="feature-desc">Arquitectura multizona sin punto único de fallo. Si un nodo de cómputo se reinicia, el balanceador redirige el tráfico en menos de 3 segundos sin pérdida de información.</p>
+    </div>
+  </div>
+
+  <h2><span class="num">05</span> Cumplimiento y Privacidad de la Información</h2>
+  <p>
+    CourtManager cumple con los principios de privacidad desde el diseño:
+  </p>
+  <ul>
+    <li><strong>Cifrado Integral:</strong> TLS 1.3 con certificados RSA de 2048 bits para todo el tráfico web y cifrado AES-256 en reposo en la base de datos cloud.</li>
+    <li><strong>Segmentación de Datos:</strong> Cada complejo deportivo opera de forma aislada, evitando cualquier cruce de clientes, facturas o métricas financieras entre negocios.</li>
+    <li><strong>Sin Almacenamiento de Tarjetas:</strong> CourtManager no almacena números de tarjeta de crédito ni claves bancarias, delegando la captura a pasarelas certificadas y comprobantes bancarios directos.</li>
+  </ul>
+
+  <div class="doc-footer">
+    <div><strong>CourtManager Tech Solutions</strong> • Cloud Architecture Whitepaper</div>
+    <div>Documento Técnico Confidencial © 2026. Todos los derechos reservados.</div>
+  </div>
+</body>
+</html>

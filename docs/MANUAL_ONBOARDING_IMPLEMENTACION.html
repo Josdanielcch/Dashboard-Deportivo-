@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>CourtManager — Manual de Implementación y Onboarding</title>
+  <style>
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
+
+  @page {
+    size: A4;
+    margin: 14mm 14mm 14mm 14mm;
+  }
+
+  * {
+    box-sizing: border-box;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #1e293b;
+    background: #ffffff;
+    line-height: 1.55;
+    font-size: 10.5pt;
+    margin: 0;
+    padding: 0;
+  }
+
+  .header-card {
+    background: linear-gradient(135deg, #060a1a 0%, #0f1738 100%);
+    border-radius: 14px;
+    padding: 24px 28px;
+    color: #ffffff;
+    margin-bottom: 22px;
+    position: relative;
+    border: 1px solid #1e293b;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+  }
+
+  .header-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(204, 255, 0, 0.12);
+    border: 1px solid rgba(204, 255, 0, 0.35);
+    color: #ccff00;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 8pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 10px;
+  }
+
+  .header-title {
+    font-size: 22pt;
+    font-weight: 800;
+    margin: 0 0 6px 0;
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .header-title span.accent {
+    color: #ccff00;
+  }
+
+  .header-subtitle {
+    font-size: 11pt;
+    color: #94a3b8;
+    margin: 0 0 14px 0;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+
+  .header-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 8.5pt;
+    color: #cbd5e1;
+  }
+
+  .header-meta strong {
+    color: #ffffff;
+  }
+
+  h2 {
+    font-size: 14pt;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 22px 0 10px 0;
+    padding-bottom: 6px;
+    border-bottom: 2px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    page-break-after: avoid;
+  }
+
+  h2 .num {
+    background: #0f1738;
+    color: #ccff00;
+    font-size: 8.5pt;
+    padding: 2px 7px;
+    border-radius: 5px;
+    font-weight: 800;
+  }
+
+  h3 {
+    font-size: 11.5pt;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 14px 0 6px 0;
+    page-break-after: avoid;
+  }
+
+  h4 {
+    font-size: 10.5pt;
+    font-weight: 700;
+    color: #334155;
+    margin: 10px 0 4px 0;
+  }
+
+  p {
+    margin: 0 0 10px 0;
+    color: #334155;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin: 12px 0 16px 0;
+    border: 1px solid #cbd5e1;
+    border-radius: 9px;
+    overflow: hidden;
+    font-size: 9pt;
+    page-break-inside: avoid;
+  }
+
+  th {
+    background: #0f1738;
+    color: #ffffff;
+    padding: 9px 12px;
+    font-weight: 700;
+    text-align: left;
+    font-size: 8.5pt;
+    letter-spacing: 0.03em;
+  }
+
+  td {
+    padding: 9px 12px;
+    border-top: 1px solid #e2e8f0;
+    color: #334155;
+    vertical-align: top;
+  }
+
+  tr:nth-child(even) td {
+    background: #f8fafc;
+  }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 12px 0 16px 0;
+    page-break-inside: avoid;
+  }
+
+  .grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin: 12px 0 16px 0;
+    page-break-inside: avoid;
+  }
+
+  .feature-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 9px;
+    padding: 12px 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  }
+
+  .feature-card.highlight {
+    border-color: #0f1738;
+    background: linear-gradient(to bottom, #ffffff, #f8fafc);
+  }
+
+  .feature-title {
+    font-weight: 700;
+    font-size: 10pt;
+    color: #0f172a;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .feature-desc {
+    font-size: 8.5pt;
+    color: #64748b;
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  .step-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid #0f1738;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 12px;
+    page-break-inside: avoid;
+  }
+
+  .step-box.active {
+    border-left-color: #ccff00;
+    background: #fafcfe;
+  }
+
+  .step-header {
+    font-weight: 800;
+    font-size: 10.5pt;
+    color: #0f172a;
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .pill {
+    display: inline-block;
+    font-size: 7.5pt;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 5px;
+    text-transform: uppercase;
+  }
+
+  .pill-green {
+    background: #dcfce7;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+  }
+
+  .pill-blue {
+    background: #e0e7ff;
+    color: #3730a3;
+    border: 1px solid #c7d2fe;
+  }
+
+  .pill-volt {
+    background: #060a1a;
+    color: #ccff00;
+    border: 1px solid #1e293b;
+  }
+
+  .pill-purple {
+    background: #f3e8ff;
+    color: #7e22ce;
+    border: 1px solid #e9d5ff;
+  }
+
+  pre, code {
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  pre {
+    background: #0b112c;
+    color: #f8fafc;
+    padding: 12px 14px;
+    border-radius: 8px;
+    font-size: 8pt;
+    overflow-x: auto;
+    border: 1px solid #1e293b;
+    margin: 8px 0 12px 0;
+    line-height: 1.4;
+    page-break-inside: avoid;
+  }
+
+  code:not(pre code) {
+    background: #f1f5f9;
+    color: #0f172a;
+    padding: 2px 5px;
+    border-radius: 4px;
+    font-size: 8.5pt;
+    border: 1px solid #e2e8f0;
+  }
+
+  ul, ol {
+    margin: 6px 0 10px 0;
+    padding-left: 20px;
+    color: #334155;
+  }
+
+  li {
+    margin-bottom: 4px;
+    font-size: 9.5pt;
+  }
+
+  .doc-footer {
+    margin-top: 26px;
+    padding-top: 12px;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 8pt;
+    color: #64748b;
+    page-break-before: avoid;
+  }
+
+  .page-break {
+    page-break-before: always;
+  }
+
+  .callout {
+    background: #eff6ff;
+    border-left: 4px solid #3b82f6;
+    padding: 10px 14px;
+    border-radius: 6px;
+    margin: 10px 0;
+    font-size: 9pt;
+    color: #1e3a8a;
+  }
+</style>
+</head>
+<body>
+  <div class="header-card">
+    <div class="header-badge">★ Customer Success & Guía Operativa • Edición Comercial v2.0</div>
+    <div class="header-title">Court<span class="accent">Manager</span> — Onboarding</div>
+    <div class="header-subtitle">Manual de Implementación y Puesta en Marcha en 15 Minutos para Centros Deportivos.</div>
+    <div class="header-meta">
+      <div><strong>Dirigido a:</strong> Administradores, Gerentes y Cajeros</div>
+      <div><strong>Tiempo Estimado:</strong> 15 Minutos</div>
+      <div><strong>Alcance:</strong> Canchas, POS, Personal & Web</div>
+      <div><strong>Emisión:</strong> Septiembre 2026</div>
+    </div>
+  </div>
+
+  <h2><span class="num">01</span> Introducción y Requisitos Previos</h2>
+  <p>
+    Esta guía permite a cualquier centro deportivo (*pádel, fútbol 5/7, tenis o polideportivo*) configurar y poner en marcha CourtManager en <strong>menos de 15 minutos</strong>, logrando un control operativo total desde el primer turno.
+  </p>
+
+  <div class="grid-2">
+    <div class="feature-card highlight">
+      <div class="feature-title">📋 Lista de Verificación Inicial</div>
+      <ul style="margin: 4px 0 0 0; padding-left: 16px;">
+        <li>Datos fiscales, RIF/NIT y logo de la empresa.</li>
+        <li>Cuentas receptoras de pago (Pago Móvil, Zelle, Transferencias).</li>
+        <li>Nombres de canchas, duración y tarifas por hora.</li>
+      </ul>
+    </div>
+    <div class="feature-card highlight">
+      <div class="feature-title">⚡ Objetivos del Onboarding</div>
+      <ul style="margin: 4px 0 0 0; padding-left: 16px;">
+        <li>Publicar el portal web para reservas de jugadores 24/7.</li>
+        <li>Habilitar el POS de mostrador con margen de ganancia.</li>
+        <li>Crear usuarios con permisos aislados para recepcionistas.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2><span class="num">02</span> Proceso de Configuración en 6 Pasos</h2>
+
+  <div class="step-box active">
+    <div class="step-header">
+      <span>Paso 1: Configuración de la Empresa y Moneda Base</span>
+      <span class="pill pill-blue">2 Minutos</span>
+    </div>
+    <p>Ingresa a <code>⚙️ Configuración / Ajustes</code> con tu usuario SuperAdmin:</p>
+    <ul>
+      <li><strong>Razón Social y Teléfono:</strong> Visibles en los recibos y portal web.</li>
+      <li><strong>Moneda Base:</strong> Dólar Estadounidense (<code>USD</code>) para proteger las finanzas de la inflación.</li>
+      <li><strong>Tasa de Cambio del Día:</strong> Introduce la tasa oficial de referencia (BCV). Esta tasa se sincronizará automáticamente con todas las pantallas y el checkout en línea.</li>
+    </ul>
+  </div>
+
+  <div class="step-box">
+    <div class="step-header">
+      <span>Paso 2: Registro de Cuentas Bancarias de Cobro</span>
+      <span class="pill pill-blue">3 Minutos</span>
+    </div>
+    <p>Dirígete a <code>💳 Finanzas ➔ Cuentas de Pago</code> y agrega tus canales de recaudación:</p>
+    <ul>
+      <li><strong>Pago Móvil & Transferencias (VES):</strong> Banco, teléfono, RIF/Cédula y número de cuenta.</li>
+      <li><strong>Zelle / Internacional (USD):</strong> Correo o titular.</li>
+      <li><strong>Caja en Efectivo:</strong> Habilitada para pagos en mostrador en dólares o bolívares.</li>
+      <li>Marca <em>"Visible en Portal Público"</em> para que los clientes vean las cuentas bancarias al reservar por la web.</li>
+    </ul>
+  </div>
+
+  <div class="step-box">
+    <div class="step-header">
+      <span>Paso 3: Alta de Deportes y Canchas</span>
+      <span class="pill pill-blue">3 Minutos</span>
+    </div>
+    <p>En <code>🎾 Deportes y Canchas</code>, crea cada cancha del club:</p>
+    <ul>
+      <li><strong>Nombre:</strong> Ej. <em>"Cancha 1 — Cristal Panorámica"</em> o <em>"Cancha 2 — Fútbol 5 Techado"</em>.</li>
+      <li><strong>Tarifa por Hora:</strong> Precio estándar en USD (ej. <code>$25.00/h</code>).</li>
+      <li><strong>Iluminación & Superficie:</strong> Indica si tiene reflectores nocturnos y tipo de suelo.</li>
+      <li><strong>Foto:</strong> Sube una imagen de buena calidad para el catálogo web de clientes.</li>
+    </ul>
+  </div>
+
+  <div class="page-break"></div>
+
+  <div class="step-box">
+    <div class="step-header">
+      <span>Paso 4: Carga de Inventario Inicial y Margen en POS</span>
+      <span class="pill pill-blue">3 Minutos</span>
+    </div>
+    <p>En <code>🛍️ Inventario / POS ➔ Productos</code>, da de alta los consumibles de cantina:</p>
+    <ul>
+      <li><strong>Producto:</strong> Agua Mineral 500ml, Gatorade, Pelotas Head Pro, etc.</li>
+      <li><strong>Costo de Compra:</strong> Lo que te cobra el proveedor (ej. <code>$0.80</code>).</li>
+      <li><strong>Precio de Venta:</strong> Lo que paga el jugador (ej. <code>$2.00</code>).</li>
+      <li><strong>Cálculo Automático:</strong> El sistema calcula la <strong>Ganancia Neta ($1.20)</strong> y el <strong>Margen (60%)</strong> en tiempo real.</li>
+      <li><strong>Alerta de Stock Mínimo:</strong> Se activa la campana si el inventario desciende del umbral de seguridad.</li>
+    </ul>
+  </div>
+
+  <div class="step-box">
+    <div class="step-header">
+      <span>Paso 5: Creación de Personal y Permisos de Acceso</span>
+      <span class="pill pill-blue">2 Minutos</span>
+    </div>
+    <p>En <code>👥 Usuarios y Permisos</code>, genera una cuenta individual para cada recepcionista:</p>
+    <ul>
+      <li><strong>Rol Administrador:</strong> Acceso total a reportes financieros, utilidades netas y auditoría.</li>
+      <li><strong>Rol Operador / Recepción:</strong> Acceso enfocado a registrar reservas, cobrar en caja y despachar en POS. Protege la información financiera sensible de la empresa.</li>
+    </ul>
+  </div>
+
+  <div class="step-box">
+    <div class="step-header">
+      <span>Paso 6: Lanzamiento y Prueba del Portal de Clientes</span>
+      <span class="pill pill-blue">2 Minutos</span>
+    </div>
+    <p>Abre el enlace de tu portal web (ej. <code>reservas.tuclub.com</code>) en un teléfono móvil:</p>
+    <ul>
+      <li>Selecciona una cancha, escoge horario libre y adjunta un comprobante de prueba.</li>
+      <li>Verifica que la campana en el panel de recepción emita la notificación sonora.</li>
+      <li>El turno quedará bloqueado de inmediato en el cuadrante para prevenir solapamientos.</li>
+    </ul>
+  </div>
+
+  <h2><span class="num">03</span> Rutina Diaria del Operador de Recepción</h2>
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 25%;">Momento del Día</th>
+        <th style="width: 45%;">Acción Operativa</th>
+        <th style="width: 30%;">Impacto en el Sistema</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>🌅 Apertura (08:00 AM)</strong></td>
+        <td>Abrir turno de caja e ingresar fondo inicial en USD y Bs. Verificar tasa BCV en header.</td>
+        <td><span class="pill pill-green">Caja Activa & Calibrada</span></td>
+      </tr>
+      <tr>
+        <td><strong>🎾 Operación Continua</strong></td>
+        <td>Validar comprobantes web, cobrar turnos de mostrador y registrar ventas de tienda en POS.</td>
+        <td><span class="pill pill-blue">Stock & Cuadrante en Vivo</span></td>
+      </tr>
+      <tr>
+        <td><strong>🌙 Cierre (11:00 PM)</strong></td>
+        <td>Realizar arqueo de caja, conteo de efectivo y emitir reporte de cuadre de turno.</td>
+        <td><span class="pill pill-volt">Auditoría Cerrada</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2><span class="num">04</span> Matriz de Soporte Rápido para Recepcionistas</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Incidencia</th>
+        <th>Causa</th>
+        <th>Solución Inmediata</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Turno bloqueado sin pago</strong></td>
+        <td>El cliente no completó la reserva web.</td>
+        <td>Clic derecho en el cuadrante ➔ <em>Liberar Turno</em>.</td>
+      </tr>
+      <tr>
+        <td><strong>La campana no suena</strong></td>
+        <td>Audio bloqueado por el navegador.</td>
+        <td>Hacer clic en el candado de la URL y cambiar Sonido a <em>Permitir</em>.</td>
+      </tr>
+      <tr>
+        <td><strong>Monto en Bs. desactualizado</strong></td>
+        <td>Variación de la tasa oficial del BCV.</td>
+        <td>Tocar la píldora de tasa en el header y actualizar el valor.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="doc-footer">
+    <div><strong>CourtManager Tech Solutions</strong> • Customer Success Guide</div>
+    <div>Documento de Operaciones Confidencial © 2026. Todos los derechos reservados.</div>
+  </div>
+</body>
+</html>
