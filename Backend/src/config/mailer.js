@@ -54,15 +54,39 @@ const createEthereal = async () => {
 };
 
 const sendMail = async (options) => {
+  const defaultFrom =
+    process.env.SMTP_FROM ||
+    process.env.EMAIL_FROM ||
+    (process.env.SMTP_USER ? `"CourtManager" <${process.env.SMTP_USER}>` : '"CourtManager" <no-reply@courtmanager.com>');
+
+  const mailOptions = {
+    ...options,
+    from: options.from || defaultFrom,
+  };
+
+  // Prevenir rechazo de remitente en Brevo u otros SMTP estrictos si viene una dirección dummy/heredada
+  if (
+    defaultFrom &&
+    mailOptions.from &&
+    (mailOptions.from.includes("larteas0@gmail.com") ||
+      mailOptions.from.includes("no-reply@courtmanager.com") ||
+      mailOptions.from.includes("no-reply@courtconnect.com") ||
+      mailOptions.from.includes("no-reply@sportspaces.com")) &&
+    (process.env.SMTP_FROM || process.env.EMAIL_FROM || process.env.SMTP_USER)
+  ) {
+    mailOptions.from = defaultFrom;
+  }
+
   if (transporter) {
     try {
-      const info = await transporter.sendMail(options);
+      const info = await transporter.sendMail(mailOptions);
       const previewUrl = nodemailer.getTestMessageUrl(info);
       console.log("");
       console.log("╔══════════════════════════════════════════════════╗");
       console.log("║        📧 EMAIL ENVIADO CON ÉXITO              ║");
-      console.log("║  Para:    " + (options.to || "").padEnd(30) + "║");
-      console.log("║  Asunto:  " + (options.subject || "").substring(0, 28).padEnd(28) + "║");
+      console.log("║  Para:    " + (mailOptions.to || "").padEnd(30) + "║");
+      console.log("║  De:      " + (mailOptions.from || "").substring(0, 28).padEnd(28) + "║");
+      console.log("║  Asunto:  " + (mailOptions.subject || "").substring(0, 28).padEnd(28) + "║");
       if (previewUrl) {
         console.log("║  Preview: " + previewUrl.substring(0, 28).padEnd(28) + "║");
       }
@@ -76,11 +100,12 @@ const sendMail = async (options) => {
   } else {
     console.log("\n═══════════════════════════════════════════");
     console.log("📧 EMAIL (fallback - sin SMTP configurado):");
-    console.log("  Para:", options.to);
-    console.log("  Asunto:", options.subject);
+    console.log("  Para:", mailOptions.to);
+    console.log("  De:", mailOptions.from);
+    console.log("  Asunto:", mailOptions.subject);
     console.log("  Contenido HTML incluido");
-    console.log("═══════════════════════════════════════════\n");
-    return { messageId: "console-fallback", to: options.to };
+    console.log("═══════════════════════════════════\n");
+    return { messageId: "console-fallback", to: mailOptions.to };
   }
 };
 

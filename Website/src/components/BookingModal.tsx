@@ -11,6 +11,7 @@ import {
   ArrowRight, ArrowLeft, Edit3
 } from 'lucide-react';
 import { io } from 'socket.io-client';
+import LegalModal, { LegalTab } from './LegalModal';
 
 interface BookingModalProps {
   court: Court;
@@ -66,6 +67,9 @@ export default function BookingModal({
   const [paymentAccounts, setPaymentAccounts] = useState<PaymentMethodAccount[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<number | string>(4);
   const [paymentReference, setPaymentReference] = useState('');
+  const [acceptedBookingTerms, setAcceptedBookingTerms] = useState(false);
+  const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
+  const [legalModalTab, setLegalModalTab] = useState<LegalTab>('terms');
 
   // Fallbacks de cuentas (Taquilla predeterminado)
   const fallbackAccounts: PaymentMethodAccount[] = [
@@ -83,7 +87,7 @@ export default function BookingModal({
       currency_code: 'VES',
       bank_name: 'Banco de Venezuela (0102)',
       id_document: 'J-50123456-9',
-      phone: '0412-3129425',
+      phone: '0412-0000000',
       instructions: 'Registrar los últimos dígitos del comprobante.'
     },
     {
@@ -379,6 +383,10 @@ export default function BookingModal({
       return;
     }
 
+    if (!acceptedBookingTerms) {
+      setFormError('Debes aceptar las políticas de cancelación y la exoneración de responsabilidad deportiva para confirmar tu reserva.');
+      return;
+    }
     setIsSubmitting(true);
 
     try {
@@ -1262,6 +1270,36 @@ export default function BookingModal({
                   </div>
                 </div>
 
+                {/* Checkbox de Condiciones de Reserva y Exoneración */}
+                <div className="flex items-start gap-2.5 p-3 rounded-xl bg-zinc-950/40 border border-white/5">
+                  <input
+                    type="checkbox"
+                    id="booking-accept-terms"
+                    checked={acceptedBookingTerms}
+                    onChange={(e) => setAcceptedBookingTerms(e.target.checked)}
+                    className="mt-1 h-4 w-4 rounded border-white/20 bg-zinc-900 text-[#c0ff00] focus:ring-[#c0ff00] accent-[#c0ff00] cursor-pointer"
+                    required
+                  />
+                  <label htmlFor="booking-accept-terms" className="text-xs text-zinc-400 leading-snug cursor-pointer select-none">
+                    Acepto la{' '}
+                    <button
+                      type="button"
+                      onClick={() => { setLegalModalTab('terms'); setIsLegalModalOpen(true); }}
+                      className="text-[#c0ff00] hover:underline font-bold"
+                    >
+                      política de cancelación (24h)
+                    </button>
+                    {' '}y la{' '}
+                    <button
+                      type="button"
+                      onClick={() => { setLegalModalTab('disclaimer'); setIsLegalModalOpen(true); }}
+                      className="text-[#c0ff00] hover:underline font-bold"
+                    >
+                      exoneración de responsabilidad deportiva
+                    </button>
+                    {' '}en las instalaciones del complejo.
+                  </label>
+                </div>
                 {/* Error de Paso 2 */}
                 {formError && (
                   <p className="text-xs text-red-400 font-bold font-sans bg-red-950/30 border border-red-900/40 p-3 rounded-xl">
@@ -1301,6 +1339,11 @@ export default function BookingModal({
           </form>
         )}
       </div>
+      <LegalModal
+        isOpen={isLegalModalOpen}
+        onClose={() => setIsLegalModalOpen(false)}
+        initialTab={legalModalTab}
+      />
     </div>
   );
 }

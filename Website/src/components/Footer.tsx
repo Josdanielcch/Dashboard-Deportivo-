@@ -1,5 +1,6 @@
-import React from 'react';
-import { Share2, MessageSquare, MapPin, Trophy, Lock, ArrowUp } from 'lucide-react';
+import React, { useState } from 'react';
+import { Share2, MessageSquare, MapPin, Trophy, Lock, ArrowUp, Scale } from 'lucide-react';
+import LegalModal, { LegalTab } from './LegalModal';
 
 interface FooterProps {
   setCurrentTab: (tab: string) => void;
@@ -35,6 +36,13 @@ export default function Footer({ setCurrentTab }: FooterProps) {
 
   const panelUrl = import.meta.env.VITE_PANEL_URL || '/panel/';
 
+  const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
+  const [legalModalTab, setLegalModalTab] = useState<LegalTab>('terms');
+
+  const openLegal = (tab: LegalTab) => {
+    setLegalModalTab(tab);
+    setIsLegalModalOpen(true);
+  };
   return (
     <footer className="w-full bg-zinc-950/80 text-zinc-300 border-t border-white/10 mt-20 relative z-10">
       {/* Grid principal */}
@@ -109,36 +117,35 @@ export default function Footer({ setCurrentTab }: FooterProps) {
           <h4 className="text-sm font-bold tracking-wider uppercase text-white mb-4 border-b border-[#c0ff00]/20 pb-1 w-fit">Compañía</h4>
           <ul className="space-y-2.5">
             <li>
-              <a
-                href="#privacy"
-                onClick={(e) => {
-                  e.preventDefault();
-                  alert('Aviso de Privacidad: Protegemos tus datos de contacto y de pago bajo estándares avanzados de cifrado SSL.');
-                }}
-                className="text-sm text-zinc-400 hover:text-[#c0ff00] hover:underline transition-colors block font-semibold"
+              <button
+                type="button"
+                onClick={() => openLegal('privacy')}
+                className="text-sm text-zinc-400 hover:text-[#c0ff00] hover:underline transition-colors block font-semibold text-left cursor-pointer"
               >
-                Privacidad
-              </a>
+                Privacidad y Datos
+              </button>
             </li>
             <li>
-              <a
-                href="#terms"
-                onClick={(e) => {
-                  e.preventDefault();
-                  alert('Términos de Servicio: Las canchas deben cancelarse con al menos 24 horas de anticipación para reembolsos totales.');
-                }}
-                className="text-sm text-zinc-400 hover:text-[#c0ff00] hover:underline transition-colors block font-semibold"
+              <button
+                type="button"
+                onClick={() => openLegal('terms')}
+                className="text-sm text-zinc-400 hover:text-[#c0ff00] hover:underline transition-colors block font-semibold text-left cursor-pointer"
               >
                 Términos de Servicio
-              </a>
+              </button>
+            </li>
+            <li>
+              <button
+                type="button"
+                onClick={() => openLegal('disclaimer')}
+                className="text-sm text-zinc-400 hover:text-[#c0ff00] hover:underline transition-colors block font-semibold text-left cursor-pointer"
+              >
+                Exoneración y Aviso Legal
+              </button>
             </li>
             <li>
               <a
-                href="#contact"
-                onClick={(e) => {
-                  e.preventDefault();
-                  alert('Contacto: soporte@courtconnect.com | Teléfono: +52 (55) 4123-9876');
-                }}
+                href="mailto:soporte@courtconnect.com"
                 className="text-sm text-zinc-400 hover:text-[#c0ff00] hover:underline transition-colors block font-semibold"
               >
                 Contacto
@@ -204,6 +211,11 @@ export default function Footer({ setCurrentTab }: FooterProps) {
           <span className="font-mono">Administración</span>
         </a>
       </div>
+      <LegalModal
+        isOpen={isLegalModalOpen}
+        onClose={() => setIsLegalModalOpen(false)}
+        initialTab={legalModalTab}
+      />
     </footer>
   );
 }
