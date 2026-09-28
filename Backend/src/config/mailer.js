@@ -104,7 +104,7 @@ const sendMail = async (options) => {
     console.log("  De:", mailOptions.from);
     console.log("  Asunto:", mailOptions.subject);
     console.log("  Contenido HTML incluido");
-    console.log("═══════════════════════════════════════════\n");
+    console.log("═══════════════════════════════════\n");
     return { messageId: "console-fallback", to: mailOptions.to };
   }
 };
