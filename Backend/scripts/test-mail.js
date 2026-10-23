@@ -1,8 +1,12 @@
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 const mailer = require('../src/config/mailer');
-
 async function testMail() {
+  if (!mailer) {
+    console.error('Mailer is null. SMTP variables not loaded.');
+    process.exit(1);
+  }
+
   const targetEmail = process.argv[2] || process.env.SMTP_USER || 'admin@courtconnect.com';
   const fromEmail = process.env.SMTP_FROM || process.env.EMAIL_FROM || process.env.SMTP_USER;
 
@@ -26,6 +30,7 @@ async function testMail() {
   try {
     console.log("⏳ Enviando correo de prueba...");
     const result = await mailer.sendMail({
+      from: fromEmail,
       to: targetEmail,
       subject: "⚽ Prueba de Envío SMTP - Brevo / CourtManager",
       html: `
@@ -80,5 +85,4 @@ async function testMail() {
   }
 }
 
-// Breve retraso para permitir que la verificación inicial del transporter finalice
 setTimeout(testMail, 1500);

@@ -43,7 +43,6 @@ export default function Footer({ setCurrentTab }: FooterProps) {
     setLegalModalTab(tab);
     setIsLegalModalOpen(true);
   };
-
   return (
     <footer className="w-full bg-zinc-950/80 text-zinc-300 border-t border-white/10 mt-20 relative z-10">
       {/* Grid principal */}
@@ -212,7 +211,6 @@ export default function Footer({ setCurrentTab }: FooterProps) {
           <span className="font-mono">Administración</span>
         </a>
       </div>
-
       <LegalModal
         isOpen={isLegalModalOpen}
         onClose={() => setIsLegalModalOpen(false)}

@@ -171,7 +171,6 @@ export default function AuthPage({ initialMode = 'register', onModeSwitch, onLog
       setError('Debes aceptar los Términos de Servicio y la Política de Privacidad para continuar.');
       return;
     }
-
     try {
       const proCostUsd = 10;
       const activeCurrency = selectedAccount?.currency_code || 'USD';
@@ -756,7 +755,6 @@ export default function AuthPage({ initialMode = 'register', onModeSwitch, onLog
                 </button>.
               </label>
             </div>
-
             {error && <p className="text-xs text-red-400 font-bold font-sans">⚠️ {error}</p>}
 
             <button
@@ -1007,7 +1005,6 @@ export default function AuthPage({ initialMode = 'register', onModeSwitch, onLog
           Volver a las canchas
         </button>
       </div>
-
       <LegalModal
         isOpen={isLegalModalOpen}
         onClose={() => setIsLegalModalOpen(false)}

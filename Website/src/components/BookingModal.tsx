@@ -387,7 +387,6 @@ export default function BookingModal({
       setFormError('Debes aceptar las políticas de cancelación y la exoneración de responsabilidad deportiva para confirmar tu reserva.');
       return;
     }
-
     setIsSubmitting(true);
 
     try {
@@ -1301,7 +1300,6 @@ export default function BookingModal({
                     {' '}en las instalaciones del complejo.
                   </label>
                 </div>
-
                 {/* Error de Paso 2 */}
                 {formError && (
                   <p className="text-xs text-red-400 font-bold font-sans bg-red-950/30 border border-red-900/40 p-3 rounded-xl">
@@ -1341,7 +1339,6 @@ export default function BookingModal({
           </form>
         )}
       </div>
-
       <LegalModal
         isOpen={isLegalModalOpen}
         onClose={() => setIsLegalModalOpen(false)}
