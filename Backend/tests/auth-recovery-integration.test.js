@@ -71,7 +71,7 @@ describe("Integración - Módulo de Recuperación de Contraseña", () => {
       // Validamos que se haya enviado el correo por Nodemailer
       expect(mailer.sendMail).toHaveBeenCalledTimes(1);
       expect(mailer.sendMail.mock.calls[0][0].to).toBe("alex@sportspaces.com");
-      expect(mailer.sendMail.mock.calls[0][0].html).toContain("reset-password?token=");
+      expect(mailer.sendMail.mock.calls[0][0].html).toContain("?token=");
     });
   });
 

@@ -175,6 +175,9 @@ export default function ConfiguracionView() {
       if (res?.success) {
         showToast('¡Tasas de cambio actualizadas correctamente!', 'success')
         fetchRates()
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('exchange-rates-updated'))
+        }
       } else {
         showToast(res?.error || 'Error al actualizar tasas', 'error')
       }

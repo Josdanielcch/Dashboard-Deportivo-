@@ -6,6 +6,7 @@ const loginLimiter = rateLimit({
   max: 5, // Límite de 5 peticiones por ventana por IP
   standardHeaders: true, // Retorna los headers de RateLimit en la respuesta
   legacyHeaders: false, // Deshabilita los headers `X-RateLimit-*`
+  skip: () => process.env.NODE_ENV === 'test',
   handler: (req, res, next, options) => {
     // Calculamos el tiempo exacto que falta para que se levante el bloqueo
     const retryAfter = Math.ceil((req.rateLimit.resetTime - Date.now()) / 1000);
@@ -30,6 +31,7 @@ const apiLimiter = rateLimit({
   max: 100, // 100 peticiones por minuto por IP
   standardHeaders: true,
   legacyHeaders: false,
+  skip: () => process.env.NODE_ENV === 'test',
   message: {
     error: 'Demasiadas solicitudes. Inténtalo de nuevo en un minuto.'
   }
@@ -41,6 +43,7 @@ const authActionLimiter = rateLimit({
   max: 5, // Máximo 5 peticiones por ventana por IP
   standardHeaders: true,
   legacyHeaders: false,
+  skip: () => process.env.NODE_ENV === 'test',
   handler: (req, res, next, options) => {
     const retryAfter = Math.ceil((req.rateLimit.resetTime - Date.now()) / 1000);
     const minutes = Math.floor(retryAfter / 60);

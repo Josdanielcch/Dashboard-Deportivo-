@@ -28,6 +28,195 @@ const generateRefreshToken = (payload) => {
   });
 };
 
+const generatePasswordResetHtml = ({ appName, subtitle, userName, resetLink }) => `
+<!DOCTYPE html>
+<html lang="es" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
+  <title>Recuperación de Contraseña — ${appName}</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      supported-color-schemes: light dark;
+    }
+    body, table, td, a {
+      -webkit-text-size-adjust: 100%;
+      -ms-text-size-adjust: 100%;
+    }
+    table, td {
+      mso-table-lspace: 0pt;
+      mso-table-rspace: 0pt;
+    }
+    img {
+      -ms-interpolation-mode: bicubic;
+      border: 0;
+      outline: none;
+      text-decoration: none;
+    }
+    @media (prefers-color-scheme: dark) {
+      .email-bg {
+        background-color: #0b0f19 !important;
+      }
+      .card-box {
+        background-color: #111827 !important;
+        border-color: #1f2937 !important;
+      }
+      .brand-title {
+        color: #ffffff !important;
+      }
+      .heading-title {
+        color: #f3f4f6 !important;
+      }
+      .text-body {
+        color: #cbd5e1 !important;
+      }
+      .text-strong {
+        color: #ffffff !important;
+      }
+      .link-wrapper {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+      }
+      .link-text {
+        color: #38bdf8 !important;
+      }
+      .notice-box {
+        background-color: #261616 !important;
+        border-color: #7f1d1d !important;
+        color: #fca5a5 !important;
+      }
+      .footer-text {
+        color: #64748b !important;
+      }
+    }
+  </style>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;" class="email-bg">
+  <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f1f5f9; padding: 32px 12px;" class="email-bg">
+    <tr>
+      <td align="center">
+        <!-- Tarjeta Principal -->
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 580px; background-color: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);" class="card-box">
+          <!-- Borde Superior de Acento Deportivo -->
+          <tr>
+            <td height="5" style="background: linear-gradient(90deg, #15803d, #84cc16, #15803d); font-size: 0; line-height: 0;">&nbsp;</td>
+          </tr>
+
+          <!-- Cabecera de Marca -->
+          <tr>
+            <td style="padding: 32px 32px 24px 32px; text-align: center;">
+              <!-- Icono Deportivo -->
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" align="center" style="margin: 0 auto 12px auto;">
+                <tr>
+                  <td width="56" height="56" align="center" valign="middle" style="background-color: #0f172a; border: 2px solid #84cc16; border-radius: 16px; font-size: 26px; line-height: 56px;">
+                    🏟️
+                  </td>
+                </tr>
+              </table>
+              <h1 class="brand-title" style="margin: 0 0 8px 0; color: #0f172a; font-size: 24px; font-weight: 900; letter-spacing: -0.5px;">${appName}</h1>
+              <!-- Badge Subtítulo de Alto Contraste -->
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" align="center" style="margin: 0 auto;">
+                <tr>
+                  <td style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 9999px; padding: 4px 14px;">
+                    <span style="color: #15803d; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; display: inline-block;">${subtitle}</span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Separador -->
+          <tr>
+            <td style="padding: 0 32px;">
+              <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 0;">
+            </td>
+          </tr>
+
+          <!-- Cuerpo del Mensaje -->
+          <tr>
+            <td style="padding: 28px 32px 20px 32px;">
+              <h2 class="heading-title" style="margin: 0 0 16px 0; color: #0f172a; font-size: 19px; font-weight: 800; letter-spacing: -0.3px;">Recuperación de Contraseña</h2>
+              <p class="text-body" style="margin: 0 0 14px 0; color: #334155; font-size: 15px; line-height: 1.6;">
+                Hola, <strong class="text-strong" style="color: #0f172a; font-weight: 700;">${userName}</strong>:
+              </p>
+              <p class="text-body" style="margin: 0 0 16px 0; color: #334155; font-size: 15px; line-height: 1.6;">
+                Recibimos una solicitud para restablecer la contraseña de acceso a tu cuenta en <strong>${appName}</strong>.
+              </p>
+              <p class="text-body" style="margin: 0 0 24px 0; color: #334155; font-size: 15px; line-height: 1.6;">
+                Para continuar y crear tu nueva clave, haz clic en el siguiente botón:
+              </p>
+
+              <!-- Botón Bulletproof compatible con móviles y modo oscuro -->
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" align="center" width="100%" style="margin: 28px auto;">
+                <tr>
+                  <td align="center">
+                    <table role="presentation" border="0" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td align="center" bgcolor="#15803d" style="background-color: #15803d; border-radius: 12px; box-shadow: 0 4px 14px rgba(21, 128, 61, 0.35);">
+                          <a href="${resetLink}" target="_blank" rel="noopener noreferrer" style="background-color: #15803d; border: 16px solid #15803d; border-left-width: 32px; border-right-width: 32px; display: inline-block; color: #ffffff !important; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 15px; font-weight: 800; text-decoration: none; border-radius: 12px; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.2; text-align: center;">
+                            Restablecer Contraseña &rarr;
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Caja de Expiración -->
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin: 24px 0 20px 0;">
+                <tr>
+                  <td class="notice-box" style="background-color: #fef2f2; border: 1px solid #fee2e2; border-left: 4px solid #ef4444; border-radius: 8px; padding: 12px 16px;">
+                    <p style="margin: 0; color: #991b1b; font-size: 13px; font-weight: 600; line-height: 1.5;">
+                      ⏱️ <strong>Aviso de seguridad:</strong> Este enlace es de un solo uso y expirará en <strong>1 hora</strong>.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Enlace alternativo directo -->
+              <p class="text-body" style="margin: 24px 0 8px 0; color: #64748b; font-size: 13px; line-height: 1.5;">
+                Si el botón no abre automáticamente tu navegador, puedes hacer clic o copiar directamente el siguiente enlace:
+              </p>
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                  <td class="link-wrapper" style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 10px; padding: 12px 16px; word-break: break-all;">
+                    <span class="link-text" style="color: #0284c7; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; line-height: 1.6; text-decoration: underline; word-break: break-all; -webkit-user-select: all; user-select: all; cursor: text;">
+                      ${resetLink}
+                    </span>
+                  </td>
+                </tr>
+              </table>
+
+              <p class="text-body" style="margin: 24px 0 0 0; color: #64748b; font-size: 13px; line-height: 1.5;">
+                Si no solicitaste este cambio, puedes ignorar este correo con total tranquilidad. Tu cuenta permanece protegida y tu contraseña actual no cambiará.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Pie de página -->
+          <tr>
+            <td style="padding: 20px 32px 28px 32px; background-color: #f8fafc; border-top: 1px solid #e2e8f0; text-align: center;" class="card-box">
+              <p class="footer-text" style="margin: 0 0 4px 0; color: #94a3b8; font-size: 12px; font-weight: 500;">
+                © ${new Date().getFullYear()} ${appName} · SportSpaces OS
+              </p>
+              <p class="footer-text" style="margin: 0; color: #cbd5e1; font-size: 11px;">
+                Correo automático de seguridad del sistema. Por favor no respondas a este mensaje.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+`;
+
 const login = async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -257,19 +446,22 @@ const recoverPassword = async (req, res) => {
 
     // Generamos un token temporal seguro de 32 bytes
     const token = crypto.randomBytes(32).toString("hex");
-    const expires = new Date(Date.now() + 3600000); // 1 hora de validez
 
     // Guardamos el token y su expiración en el usuario de la BD
+    // Usamos NOW() + INTERVAL '1 hour' directamente en PostgreSQL para garantizar consistencia absoluta sin desajustes de zona horaria
     const updateQuery = `
       UPDATE users 
-      SET reset_token = $1, reset_token_expires = $2 
-      WHERE id = $3
+      SET reset_token = $1, reset_token_expires = NOW() + INTERVAL '1 hour' 
+      WHERE id = $2
     `;
-    await pool.query(updateQuery, [token, expires, user.id]);
+    await pool.query(updateQuery, [token, user.id]);
 
     // Construimos el enlace para restablecer la contraseña en el Panel
-    const panelBase = process.env.PANEL_URL || (process.env.FRONTEND_URL ? (process.env.FRONTEND_URL.includes('/panel') ? process.env.FRONTEND_URL.replace(/\/$/, '') : `${process.env.FRONTEND_URL.replace(/\/$/, '')}/panel`) : "http://localhost:5173/panel");
+    const rawPanelBase = process.env.PANEL_URL || (process.env.FRONTEND_URL ? (process.env.FRONTEND_URL.includes('/panel') ? process.env.FRONTEND_URL.replace(/\/$/, '') : `${process.env.FRONTEND_URL.replace(/\/$/, '')}/panel`) : "http://localhost:5173/panel");
+    const panelBase = rawPanelBase.endsWith('/') ? rawPanelBase : `${rawPanelBase}/`;
     const resetLink = `${panelBase}?token=${token}`;
+
+    const userName = user.full_name || user.username || "Usuario";
 
     // Mostrar enlace en consola para desarrollo (útil sin SMTP)
     console.log("\n═══════════════════════════════════════════");
@@ -282,30 +474,13 @@ const recoverPassword = async (req, res) => {
       from: process.env.SMTP_FROM || process.env.EMAIL_FROM || (process.env.SMTP_USER ? `"CourtManager" <${process.env.SMTP_USER}>` : '"CourtManager" <no-reply@courtmanager.com>'),
       to: email,
       subject: "Recuperación de contraseña - CourtManager",
-      html: `
-        <div style="font-family: 'Inter', Arial, sans-serif; max-width: 580px; margin: 0 auto; background: #0a0e27; padding: 40px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.06);">
-          <div style="text-align: center; margin-bottom: 30px;">
-            <div style="display: inline-block; width: 56px; height: 56px; background: linear-gradient(135deg, #ccff00, #a6e000); border-radius: 14px; line-height: 56px; margin-bottom: 12px;">
-              <span style="font-size: 24px;">🏟️</span>
-            </div>
-            <h1 style="color: #ffffff; font-size: 22px; font-weight: 900; margin: 0; letter-spacing: -0.5px;">CourtManager</h1>
-            <p style="color: #ccff00; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 3px; margin: 4px 0 0 0;">Sistema de Gestión Integral</p>
-          </div>
-          <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.06); margin: 24px 0;">
-          <p style="color: #a0a0b0; font-size: 14px; line-height: 1.6;">Hola, <strong style="color: #ffffff;">${user.full_name || user.username}</strong>,</p>
-          <p style="color: #a0a0b0; font-size: 14px; line-height: 1.6;">Recibimos una solicitud para restablecer tu contraseña en <strong style="color: #ffffff;">CourtManager</strong>.</p>
-          <p style="color: #a0a0b0; font-size: 14px; line-height: 1.6;">Haz clic en el botón para continuar:</p>
-          <div style="text-align: center; margin: 32px 0;">
-            <a href="${resetLink}" style="background: linear-gradient(135deg, #ccff00, #a6e000); color: #0a0e27; padding: 14px 32px; text-decoration: none; border-radius: 12px; font-weight: 900; font-size: 14px; display: inline-block; letter-spacing: 0.5px; box-shadow: 0 0 30px rgba(204,255,0,0.15);">Restablecer Contraseña</a>
-          </div>
-          <p style="font-size: 12px; color: #ef4444; font-weight: 600; text-align: center;">Este enlace expira en 1 hora</p>
-          <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.06); margin: 24px 0;">
-          <p style="font-size: 12px; color: #555566;">Si el botón no funciona, copia este enlace en tu navegador:</p>
-          <p style="font-size: 12px; color: #ccff00; word-break: break-all; font-family: monospace; background: rgba(255,255,255,0.03); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);">${resetLink}</p>
-          <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.06); margin: 24px 0;">
-          <p style="font-size: 12px; color: #555566; text-align: center;">Si no solicitaste esto, ignora este correo.</p>
-        </div>
-      `,
+      html: generatePasswordResetHtml({
+        appName: "CourtManager",
+        subtitle: "Sistema de Gestión Integral",
+        userName,
+        resetLink,
+      }),
+      text: `Hola ${userName},\n\nRecibimos una solicitud para restablecer tu contraseña en CourtManager.\n\nHaz clic en el siguiente enlace para continuar (válido por 1 hora):\n${resetLink}\n\nSi no solicitaste esto, puedes ignorar este correo de forma segura.`,
     });
 
     return res.json({
@@ -331,12 +506,28 @@ const resetPassword = async (req, res) => {
         .json({ error: "El token y la nueva contraseña son requeridos" });
     }
 
-    // Buscamos al usuario que tenga el token de restablecimiento y que no haya expirado
+    // Buscamos al usuario que tenga el token de restablecimiento y que no haya expirado en users
     const query =
       "SELECT id, username FROM users WHERE reset_token = $1 AND reset_token_expires > NOW()";
-    const result = await pool.query(query, [token]);
+    let result = await pool.query(query, [token]);
+    let targetTable = "users";
 
-    if (result.rows.length === 0) {
+    // Si no se encuentra en users, verificamos si el token corresponde a customers
+    if (!result || !result.rows || result.rows.length === 0) {
+      try {
+        const clientQuery =
+          "SELECT id, first_name, email FROM customers WHERE reset_token = $1 AND reset_token_expires > NOW()";
+        const clientResult = await pool.query(clientQuery, [token]);
+        if (clientResult && clientResult.rows && clientResult.rows.length > 0) {
+          result = clientResult;
+          targetTable = "customers";
+        }
+      } catch (err) {
+        // Fallback silente si la tabla customers no responde o no está mockeada
+      }
+    }
+
+    if (!result || !result.rows || result.rows.length === 0) {
       return res
         .status(400)
         .json({ error: "El token de recuperación es inválido o ha expirado" });
@@ -351,7 +542,7 @@ const resetPassword = async (req, res) => {
     // Actualizamos la base de datos con la nueva contraseña encriptada
     // y limpiamos el token de recuperación
     const updateQuery = `
-      UPDATE users 
+      UPDATE ${targetTable} 
       SET password_hash = $1, reset_token = NULL, reset_token_expires = NULL 
       WHERE id = $2
     `;
@@ -539,42 +730,27 @@ const clientRecoverPassword = async (req, res) => {
 
     const customer = result.rows[0];
     const token = crypto.randomBytes(32).toString("hex");
-    const expires = new Date(Date.now() + 3600000);
 
-    await pool.query("UPDATE customers SET reset_token = $1, reset_token_expires = $2 WHERE id = $3", [token, expires, customer.id]);
+    await pool.query("UPDATE customers SET reset_token = $1, reset_token_expires = NOW() + INTERVAL '1 hour' WHERE id = $2", [token, customer.id]);
 
     // Construimos el enlace para restablecer la contraseña en la Website pública
-    const websiteBase = process.env.WEBSITE_URL || (process.env.FRONTEND_URL ? process.env.FRONTEND_URL.replace(/\/panel\/?$/, '').replace(/\/$/, '') : "http://localhost:5173");
+    const rawWebsiteBase = process.env.WEBSITE_URL || (process.env.FRONTEND_URL ? process.env.FRONTEND_URL.replace(/\/panel\/?$/, '').replace(/\/$/, '') : "http://localhost:5173");
+    const websiteBase = rawWebsiteBase.endsWith('/') ? rawWebsiteBase : `${rawWebsiteBase}/`;
     const resetLink = `${websiteBase}?token=${token}`;
+
+    const userName = customer.first_name || customer.username || "Cliente";
 
     await mailer.sendMail({
       from: process.env.SMTP_FROM || process.env.EMAIL_FROM || (process.env.SMTP_USER ? `"CourtConnect" <${process.env.SMTP_USER}>` : '"CourtConnect" <no-reply@courtconnect.com>'),
       to: customer.email,
       subject: "Recuperación de contraseña - CourtConnect",
-      html: `
-        <div style="font-family: 'Inter', Arial, sans-serif; max-width: 580px; margin: 0 auto; background: #0a0e27; padding: 40px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.06);">
-          <div style="text-align: center; margin-bottom: 30px;">
-            <div style="display: inline-block; width: 56px; height: 56px; background: linear-gradient(135deg, #ccff00, #a6e000); border-radius: 14px; line-height: 56px; margin-bottom: 12px;">
-              <span style="font-size: 24px;">🏟️</span>
-            </div>
-            <h1 style="color: #ffffff; font-size: 22px; font-weight: 900; margin: 0; letter-spacing: -0.5px;">CourtConnect</h1>
-            <p style="color: #ccff00; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 3px; margin: 4px 0 0 0;">Plataforma de Reservas Premium</p>
-          </div>
-          <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.06); margin: 24px 0;">
-          <p style="color: #a0a0b0; font-size: 14px; line-height: 1.6;">Hola, <strong style="color: #ffffff;">${customer.first_name}</strong>,</p>
-          <p style="color: #a0a0b0; font-size: 14px; line-height: 1.6;">Recibimos una solicitud para restablecer tu contraseña en <strong style="color: #ffffff;">CourtConnect</strong>.</p>
-          <p style="color: #a0a0b0; font-size: 14px; line-height: 1.6;">Haz clic en el botón para continuar:</p>
-          <div style="text-align: center; margin: 32px 0;">
-            <a href="${resetLink}" style="background: linear-gradient(135deg, #ccff00, #a6e000); color: #0a0e27; padding: 14px 32px; text-decoration: none; border-radius: 12px; font-weight: 900; font-size: 14px; display: inline-block; letter-spacing: 0.5px; box-shadow: 0 0 30px rgba(204,255,0,0.15);">Restablecer Contraseña</a>
-          </div>
-          <p style="font-size: 12px; color: #ef4444; font-weight: 600; text-align: center;">Este enlace expira en 1 hora</p>
-          <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.06); margin: 24px 0;">
-          <p style="font-size: 12px; color: #555566;">Si el botón no funciona, copia este enlace en tu navegador:</p>
-          <p style="font-size: 12px; color: #ccff00; word-break: break-all; font-family: monospace; background: rgba(255,255,255,0.03); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);">${resetLink}</p>
-          <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.06); margin: 24px 0;">
-          <p style="font-size: 12px; color: #555566; text-align: center;">Si no solicitaste esto, ignora este correo.</p>
-        </div>
-      `,
+      html: generatePasswordResetHtml({
+        appName: "CourtConnect",
+        subtitle: "Plataforma de Reservas Premium",
+        userName,
+        resetLink,
+      }),
+      text: `Hola ${userName},\n\nRecibimos una solicitud para restablecer tu contraseña en CourtConnect.\n\nHaz clic en el siguiente enlace para continuar (válido por 1 hora):\n${resetLink}\n\nSi no solicitaste esto, puedes ignorar este correo de forma segura.`,
     });
 
     return res.json({ success: true, message: "Si el correo existe, recibirás un enlace." });
@@ -590,14 +766,28 @@ const clientResetPassword = async (req, res) => {
     if (!token || !password) return res.status(400).json({ error: "El token y la nueva contraseña son requeridos" });
 
     const query = "SELECT id FROM customers WHERE reset_token = $1 AND reset_token_expires > NOW()";
-    const result = await pool.query(query, [token]);
+    let result = await pool.query(query, [token]);
+    let targetTable = "customers";
 
-    if (result.rows.length === 0) return res.status(400).json({ error: "El token de recuperación es inválido o ha expirado" });
+    if (!result || !result.rows || result.rows.length === 0) {
+      try {
+        const userQuery = "SELECT id, username FROM users WHERE reset_token = $1 AND reset_token_expires > NOW()";
+        const userResult = await pool.query(userQuery, [token]);
+        if (userResult && userResult.rows && userResult.rows.length > 0) {
+          result = userResult;
+          targetTable = "users";
+        }
+      } catch (err) {
+        // Fallback silente
+      }
+    }
+
+    if (!result || !result.rows || result.rows.length === 0) return res.status(400).json({ error: "El token de recuperación es inválido o ha expirado" });
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    await pool.query("UPDATE customers SET password_hash = $1, reset_token = NULL, reset_token_expires = NULL WHERE id = $2", [hashedPassword, result.rows[0].id]);
+    await pool.query(`UPDATE ${targetTable} SET password_hash = $1, reset_token = NULL, reset_token_expires = NULL WHERE id = $2`, [hashedPassword, result.rows[0].id]);
 
     return res.json({ success: true, message: "Tu contraseña ha sido restablecida exitosamente." });
   } catch (error) {

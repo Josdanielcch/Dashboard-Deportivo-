@@ -5,7 +5,7 @@ let transporter = null;
 
 const createTransporter = async () => {
   if (process.env.SMTP_HOST) {
-    const port = parseInt(process.env.SMTP_PORT || "587");
+    const port = parseInt(process.env.SMTP_PORT || "2525");
     transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: port,
@@ -104,7 +104,7 @@ const sendMail = async (options) => {
     console.log("  De:", mailOptions.from);
     console.log("  Asunto:", mailOptions.subject);
     console.log("  Contenido HTML incluido");
-    console.log("═══════════════════════════════════════════\n");
+    console.log("═══════════════════════════════════\n");
     return { messageId: "console-fallback", to: mailOptions.to };
   }
 };
