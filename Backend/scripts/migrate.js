@@ -21,6 +21,17 @@ async function migrate() {
     `);
     console.log('✅ Migración de columnas de pago en bookings verificada.');
 
+    const migrationsDir = require('path').join(__dirname, '..', '..', 'Database', 'migrations');
+    if (require('fs').existsSync(migrationsDir)) {
+      const files = require('fs').readdirSync(migrationsDir).filter(f => f.endsWith('.sql')).sort();
+      for (const file of files) {
+        const filePath = require('path').join(migrationsDir, file);
+        const sql = require('fs').readFileSync(filePath, 'utf8');
+        await client.query(sql);
+        console.log(`✅ Migración aplicada: ${file}`);
+      }
+    }
+
     client.release();
     console.log('✅ Migraciones completadas');
   } catch (err) {

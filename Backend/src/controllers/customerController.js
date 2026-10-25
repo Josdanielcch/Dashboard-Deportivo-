@@ -29,6 +29,7 @@ const getAllCustomers = async (req, res) => {
              COALESCE((SELECT SUM(balance) FROM accounts_receivable WHERE customer_id = c.id AND status != 'Pagado'), 0) as pending_debt,
              c.tax_id, c.first_name || ' ' || c.last_name AS full_name
       FROM customers c
+      WHERE c.deleted_at IS NULL
       ORDER BY c.id DESC
     `);
     res.json({ success: true, count: result.rows.length, data: result.rows });
@@ -42,6 +43,17 @@ const getAllCustomers = async (req, res) => {
 const getCustomerById = async (req, res) => {
   try {
     const { id } = req.params;
+
+    // Control de acceso IDOR: Solo personal autorizado o el propio cliente
+    if (req.user) {
+      const isStaff = [1, 2, 5].includes(req.user.role_id ?? req.user.role);
+      const isSelf = (req.user.customer_id && String(req.user.customer_id) === String(id)) ||
+                     (String(req.user.id) === String(id));
+      if (!isStaff && !isSelf) {
+        return res.status(403).json({ error: 'Acceso denegado. No tienes permisos para consultar este cliente.' });
+      }
+    }
+
     const result = await pool.query(`
       SELECT c.*, c.first_name || ' ' || c.last_name AS full_name,
         (SELECT COUNT(*) FROM bookings WHERE customer_id = c.id) as total_bookings,
@@ -71,7 +83,7 @@ const searchCustomers = async (req, res) => {
              COALESCE((SELECT SUM(balance) FROM accounts_receivable WHERE customer_id = c.id AND status != 'Pagado'), 0) as pending_debt,
              c.first_name || ' ' || c.last_name AS full_name
       FROM customers c
-      WHERE c.first_name ILIKE $1 OR c.last_name ILIKE $1 OR c.tax_id ILIKE $1 OR c.phone ILIKE $1
+      WHERE c.deleted_at IS NULL AND (c.first_name ILIKE $1 OR c.last_name ILIKE $1 OR c.tax_id ILIKE $1 OR c.phone ILIKE $1)
       LIMIT 10
     `, [`%${q}%`]);
     
@@ -111,6 +123,17 @@ const createCustomer = async (req, res) => {
 const updateCustomer = async (req, res) => {
   try {
     const { id } = req.params;
+
+    // Control de acceso IDOR: Solo personal autorizado o el propio cliente
+    if (req.user) {
+      const isStaff = [1, 2, 5].includes(req.user.role_id ?? req.user.role);
+      const isSelf = (req.user.customer_id && String(req.user.customer_id) === String(id)) ||
+                     (String(req.user.id) === String(id));
+      if (!isStaff && !isSelf) {
+        return res.status(403).json({ error: 'Acceso denegado. No tienes permisos para actualizar este cliente.' });
+      }
+    }
+
     const { first_name, last_name, phone, email, tax_id } = req.body;
     
     const result = await withAuditContext(req, async (client) => {
@@ -175,18 +198,19 @@ const deleteCustomer = async (req, res) => {
     const { id } = req.params;
     
     const result = await withAuditContext(req, async (client) => {
-      return client.query('DELETE FROM customers WHERE id = $1 RETURNING id', [id]);
+      // Soft Delete: marca deleted_at para preservar integridad financiera y auditoría
+      return client.query(
+        'UPDATE customers SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL RETURNING id',
+        [id]
+      );
     });
     
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Cliente no encontrado' });
+      return res.status(404).json({ error: 'Cliente no encontrado o ya eliminado' });
     }
     
     res.json({ success: true, message: 'Cliente eliminado correctamente' });
   } catch (error) {
-    if (error.code === '23503') { // Foreign key violation
-      return res.status(409).json({ error: 'No se puede eliminar el cliente porque tiene registros asociados (reservas, facturas, etc.).' });
-    }
     res.status(500).json({ error: 'Error al eliminar cliente' });
   }
 };

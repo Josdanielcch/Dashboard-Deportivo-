@@ -6,7 +6,10 @@ const pool = require("../config/database");
 const mailer = require("../config/mailer");
 
 const isProduction = process.env.NODE_ENV === 'production';
-const REFRESH_SECRET = process.env.REFRESH_TOKEN_SECRET || (process.env.JWT_SECRET ? process.env.JWT_SECRET + '_refresh' : 'cc_refresh_secret');
+const REFRESH_SECRET = process.env.REFRESH_TOKEN_SECRET || (process.env.JWT_SECRET ? process.env.JWT_SECRET + '_refresh' : null);
+if (!REFRESH_SECRET && isProduction) {
+  console.error("FATAL: REFRESH_TOKEN_SECRET o JWT_SECRET debe estar configurado en producción.");
+}
 
 const getCookieOptions = (maxAge = 7 * 24 * 60 * 60 * 1000) => ({
   httpOnly: true,
@@ -249,10 +252,18 @@ const login = async (req, res) => {
 
     const isHashed =
       typeof user.password_hash === "string" &&
-      user.password_hash.startsWith("$2");
-    const passwordMatch = isHashed
-      ? await bcrypt.compare(password, user.password_hash)
-      : password === user.password_hash;
+      (user.password_hash.startsWith("$2a$") || user.password_hash.startsWith("$2b$") || user.password_hash.startsWith("$2y$"));
+
+    let passwordMatch = false;
+    if (isHashed) {
+      passwordMatch = await bcrypt.compare(password, user.password_hash);
+    } else if (!isProduction && user.password_hash === password) {
+      // Migración automática en desarrollo: actualizar inmediatamente a Bcrypt
+      passwordMatch = true;
+      const salt = await bcrypt.genSalt(10);
+      const newHash = await bcrypt.hash(password, salt);
+      await pool.query("UPDATE users SET password_hash = $1 WHERE id = $2", [newHash, user.id]);
+    }
 
     if (!passwordMatch) {
       return res.status(401).json({ error: "Credenciales inválidas" });
@@ -577,10 +588,20 @@ const clientLogin = async (req, res) => {
 
     const customer = result.rows[0];
 
-    const isHashed = typeof customer.password_hash === "string" && customer.password_hash.startsWith("$2");
-    const passwordMatch = isHashed
-      ? await bcrypt.compare(password, customer.password_hash)
-      : password === customer.password_hash;
+    const isHashed =
+      typeof customer.password_hash === "string" &&
+      (customer.password_hash.startsWith("$2a$") || customer.password_hash.startsWith("$2b$") || customer.password_hash.startsWith("$2y$"));
+
+    let passwordMatch = false;
+    if (isHashed) {
+      passwordMatch = await bcrypt.compare(password, customer.password_hash);
+    } else if (!isProduction && customer.password_hash === password) {
+      // Migración automática en desarrollo: actualizar inmediatamente a Bcrypt
+      passwordMatch = true;
+      const salt = await bcrypt.genSalt(10);
+      const newHash = await bcrypt.hash(password, salt);
+      await pool.query("UPDATE customers SET password_hash = $1 WHERE id = $2", [newHash, customer.id]);
+    }
 
     if (!passwordMatch) {
       return res.status(401).json({ error: "Credenciales inválidas" });
@@ -811,6 +832,25 @@ const clientGoogleLogin = async (req, res) => {
     }
 
     const payload = await fetchResponse.json();
+    if (!payload.email_verified) {
+      return res.status(403).json({ error: "El correo electrónico de Google no está verificado." });
+    }
+
+    // Si está configurado GOOGLE_CLIENT_ID, validar que el token de Google haya sido emitido para esta app (anti-Confused Deputy)
+    if (process.env.GOOGLE_CLIENT_ID) {
+      try {
+        const tokenInfoRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?access_token=${access_token}`);
+        if (tokenInfoRes.ok) {
+          const tokenInfo = await tokenInfoRes.json();
+          if (tokenInfo.aud && tokenInfo.aud !== process.env.GOOGLE_CLIENT_ID) {
+            return res.status(403).json({ error: "Token de Google no emitido para esta aplicación." });
+          }
+        }
+      } catch (err) {
+        console.warn("No se pudo verificar audience de Google:", err.message);
+      }
+    }
+
     const email = payload.email.toLowerCase();
     const firstName = payload.given_name || 'Google User';
     const lastName = payload.family_name || '';

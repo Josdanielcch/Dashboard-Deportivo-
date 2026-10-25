@@ -26,7 +26,11 @@ const sportRoutes = require('./routes/sportRoutes');
 const reportRoutes = require('./routes/reportRoutes');
 const exchangeRateRoutes = require('./routes/exchangeRateRoutes');
 const paymentAccountRoutes = require('./routes/paymentAccountRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
+const docsRoutes = require('./routes/docsRoutes');
 
+const pool = require('./config/database');
+const { tenantContext } = require('./middleware/tenantContext');
 const { apiLimiter } = require('./middleware/rateLimiter');
 
 // Middleware de error
@@ -65,6 +69,7 @@ app.use(morgan('combined'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+app.use(tenantContext);
 
 // Servir la carpeta pública de avatares con cabeceras seguras (evita exponer la raíz de /uploads)
 app.use('/uploads/avatars', express.static(path.join(__dirname, '..', 'uploads', 'avatars'), {
@@ -87,15 +92,29 @@ app.use((req, res, next) => {
   next();
 });
 
-// Ruta de salud
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'OK',
+// Ruta de salud diagnóstica para orquestadores en producción
+app.get('/api/health', async (req, res) => {
+  let dbStatus = 'healthy';
+  try {
+    await pool.query('SELECT 1');
+  } catch (err) {
+    dbStatus = 'unhealthy';
+  }
+
+  const isHealthy = dbStatus === 'healthy';
+  res.status(isHealthy ? 200 : 503).json({
+    status: isHealthy ? 'OK' : 'DEGRADED',
     timestamp: new Date().toISOString(),
-    service: 'Canchas API',
-    environment: process.env.NODE_ENV
+    service: 'SportSpaces OS API',
+    environment: process.env.NODE_ENV,
+    database: dbStatus,
+    uptime_seconds: Math.floor(process.uptime()),
+    memory_usage_mb: Math.round(process.memoryUsage().rss / (1024 * 1024))
   });
 });
+
+// Documentación interactiva Swagger UI y especificación OpenAPI
+app.use('/api/docs', docsRoutes);
 
 // Rate limit general para toda la API
 app.use('/api', apiLimiter);
@@ -120,6 +139,7 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/exchange-rates', exchangeRateRoutes);
 app.use('/api/payment-methods', paymentAccountRoutes);
 app.use('/api/payment-accounts', paymentAccountRoutes);
+app.use('/api/payments', paymentRoutes);
 
 // Ruta 404
 app.use((req, res) => {

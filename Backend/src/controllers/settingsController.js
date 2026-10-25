@@ -32,7 +32,11 @@ const getSettings = async (req, res) => {
 
 const updateSettings = async (req, res) => {
   try {
-    const { business_name, legal_id, address, phone, email, invoice_footer_message } = req.body;
+    const { 
+      business_name, legal_id, address, phone, email, invoice_footer_message,
+      tax_rate, timezone, default_currency, logo_url, primary_color, secondary_color,
+      terms_and_conditions, privacy_policy
+    } = req.body;
 
     if (!business_name) {
       return res.status(400).json({ success: false, error: 'El nombre del negocio es obligatorio' });
@@ -41,16 +45,34 @@ const updateSettings = async (req, res) => {
     const result = await withAuditContext(req, async (client) => {
       return client.query(`
         UPDATE business_settings 
-        SET business_name = $1, 
-            legal_id = $2, 
-            address = $3, 
-            phone = $4, 
-            email = $5, 
-            invoice_footer_message = $6,
+        SET business_name = COALESCE($1, business_name), 
+            legal_id = COALESCE($2, legal_id), 
+            address = COALESCE($3, address), 
+            phone = COALESCE($4, phone), 
+            email = COALESCE($5, email), 
+            invoice_footer_message = COALESCE($6, invoice_footer_message),
+            tax_rate = COALESCE($7, tax_rate),
+            timezone = COALESCE($8, timezone),
+            default_currency = COALESCE($9, default_currency),
+            logo_url = COALESCE($10, logo_url),
+            primary_color = COALESCE($11, primary_color),
+            secondary_color = COALESCE($12, secondary_color),
+            terms_and_conditions = COALESCE($13, terms_and_conditions),
+            privacy_policy = COALESCE($14, privacy_policy),
             updated_at = CURRENT_TIMESTAMP
         WHERE id = (SELECT id FROM business_settings ORDER BY id ASC LIMIT 1)
         RETURNING *
-      `, [business_name, legal_id, address, phone, email, invoice_footer_message]);
+      `, [
+        business_name, legal_id, address, phone, email, invoice_footer_message,
+        tax_rate !== undefined ? tax_rate : null,
+        timezone || null,
+        default_currency || null,
+        logo_url || null,
+        primary_color || null,
+        secondary_color || null,
+        terms_and_conditions || null,
+        privacy_policy || null
+      ]);
     });
 
     if (result.rows.length === 0) {

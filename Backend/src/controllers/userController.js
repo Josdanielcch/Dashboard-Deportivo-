@@ -1,5 +1,6 @@
 const pool = require('../config/database');
 const bcrypt = require('bcryptjs');
+const { saveFile } = require('../services/storageService');
 
 // Helper: ejecutar query dentro de una transacción con contexto de auditoría
 const withAuditContext = async (req, queryFn) => {
@@ -118,7 +119,7 @@ const deleteUser = async (req, res) => {
     const result = await withAuditContext(req, async (client) => {
       return client.query(`
         UPDATE users 
-        SET status = 'Disabled'
+        SET status = 'Disabled', deleted_at = NOW()
         WHERE id = $1
         RETURNING id, username, status
       `, [id]);
@@ -232,7 +233,7 @@ const uploadAvatar = async (req, res) => {
       return res.status(400).json({ error: 'No se subió ningún archivo' });
     }
 
-    const avatar_url = `/uploads/avatars/${req.file.filename}`;
+    const avatar_url = await saveFile(req.file, `user-${id}`);
 
     const result = await withAuditContext(req, async (client) => {
       return client.query(`
@@ -250,7 +251,7 @@ const uploadAvatar = async (req, res) => {
     res.json({ success: true, message: 'Avatar actualizado exitosamente', data: result.rows[0] });
   } catch (error) {
     console.error('Error al subir avatar:', error);
-    res.status(500).json({ error: 'Error al subir avatar' });
+    res.status(500).json({ error: 'Error al subir avatar', detail: error.message });
   }
 };
 

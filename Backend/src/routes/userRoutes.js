@@ -6,42 +6,11 @@ const userController = require('../controllers/userController');
 const { validate } = require('../middleware/validate');
 const { z } = require('zod');
 const multer = require('multer');
-const path = require('path');
+const { uploadMiddleware } = require('../services/storageService');
 
-// Configuración de multer con validación de tipo y tamaño (máx 2MB)
-const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
-const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp'];
-
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, path.join(__dirname, '../../uploads/avatars'));
-  },
-  filename: function (req, file, cb) {
-    const ext = path.extname(file.originalname).toLowerCase();
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, req.params.id + '-' + uniqueSuffix + ext);
-  }
-});
-
-const upload = multer({
-  storage: storage,
-  limits: {
-    fileSize: 2 * 1024 * 1024, // 2MB
-    files: 1
-  },
-  fileFilter: function (req, file, cb) {
-    const ext = path.extname(file.originalname).toLowerCase();
-    if (allowedMimeTypes.includes(file.mimetype) && allowedExtensions.includes(ext)) {
-      cb(null, true);
-    } else {
-      cb(new Error('Solo se permiten imágenes en formato JPG, PNG o WEBP de hasta 2MB'));
-    }
-  }
-});
-
-// Middleware para capturar y responder amigablemente a errores de Multer (ej. archivo muy grande)
+// Middleware para capturar y responder amigablemente a errores de subida
 const uploadAvatarMiddleware = (req, res, next) => {
-  upload.single('avatar')(req, res, (err) => {
+  uploadMiddleware.single('avatar')(req, res, (err) => {
     if (err) {
       if (err instanceof multer.MulterError) {
         if (err.code === 'LIMIT_FILE_SIZE') {

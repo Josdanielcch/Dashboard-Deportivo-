@@ -1,6 +1,9 @@
 // src/controllers/billingController.js
 const pool = require('../config/database');
 
+// Helper de precisión financiera: previene errores de coma flotante (ej. 0.1 + 0.2 !== 0.3)
+const roundMoney = (val) => Math.round((Number(val || 0) + Number.EPSILON) * 100) / 100;
+
 // Crear factura (puede incluir reserva y productos)
 const createBilling = async (req, res) => {
   const client = req.dbClient || await pool.connect();
@@ -20,8 +23,9 @@ const createBilling = async (req, res) => {
     
     if (products && products.length > 0) {
       for (const item of products) {
+        // Bloqueo pesimista FOR UPDATE: serializa ventas simultáneas del mismo producto y previene stock negativo
         const productResult = await client.query(
-          'SELECT price, cost_price, stock FROM products WHERE id = $1',
+          'SELECT price, cost_price, stock FROM products WHERE id = $1 FOR UPDATE',
           [item.product_id]
         );
         if (productResult.rows.length === 0) {
@@ -29,12 +33,12 @@ const createBilling = async (req, res) => {
         }
         const product = productResult.rows[0];
         if (product.stock < item.quantity) {
-          throw new Error(`Stock insuficiente para producto ${item.product_id}`);
+          throw new Error(`Stock insuficiente para producto ${item.product_id} (disponible: ${product.stock})`);
         }
-        const unitPrice = product.price;
-        const costPrice = Number(product.cost_price || 0);
-        const subtotal = unitPrice * item.quantity;
-        productSubtotal += subtotal;
+        const unitPrice = roundMoney(product.price);
+        const costPrice = roundMoney(product.cost_price || 0);
+        const subtotal = roundMoney(unitPrice * item.quantity);
+        productSubtotal = roundMoney(productSubtotal + subtotal);
         
         saleDetails.push({
           product_id: item.product_id,
@@ -59,13 +63,25 @@ const createBilling = async (req, res) => {
       if (bookingResult.rows.length > 0) {
         const booking = bookingResult.rows[0];
         const hoursDiff = (new Date(`1970-01-01T${booking.end_time}`) - new Date(`1970-01-01T${booking.start_time}`)) / (1000 * 60 * 60);
-        bookingAmount = booking.hourly_rate * hoursDiff;
+        bookingAmount = roundMoney(Number(booking.hourly_rate || 0) * hoursDiff);
       }
     }
     
-    const totalAmount = productSubtotal + bookingAmount;
-    const tax = totalAmount * 0.16; // IVA 16% (ajustar según tu país)
-    const grandTotal = totalAmount + tax;
+    const totalAmount = roundMoney(productSubtotal + bookingAmount);
+    
+    // Obtener tasa de impuesto configurable (default 16% / 0.16)
+    let taxRate = 0.16;
+    try {
+      const settingsRes = await client.query('SELECT tax_rate FROM business_settings LIMIT 1');
+      if (settingsRes.rows.length > 0 && settingsRes.rows[0].tax_rate !== null) {
+        taxRate = parseFloat(settingsRes.rows[0].tax_rate);
+      }
+    } catch (_) {
+      taxRate = parseFloat(process.env.DEFAULT_TAX_RATE || '0.16');
+    }
+
+    const tax = roundMoney(totalAmount * taxRate);
+    const grandTotal = roundMoney(totalAmount + tax);
     
     // Crear factura
     const billingResult = await client.query(`

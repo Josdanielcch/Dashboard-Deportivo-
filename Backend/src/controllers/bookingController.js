@@ -1,6 +1,7 @@
 // src/controllers/bookingController.js
 const pool = require('../config/database');
 const mailer = require('../config/mailer');
+const { getBusinessTimezone, isPastDateTime } = require('../utils/dateUtils');
 
 // Obtener todas las reservas (con datos relacionados)
 const getAllBookings = async (req, res) => {
@@ -29,16 +30,21 @@ const getAllBookings = async (req, res) => {
 const getBookingsByDate = async (req, res) => {
   try {
     const { date } = req.params;
+    const isStaff = req.user && [1, 2, 5].includes(req.user.role_id ?? req.user.role);
+
     const result = await pool.query(`
       SELECT b.id, b.start_time, b.end_time, b.status,
-             c.first_name || ' ' || c.last_name as customer_name,
+             CASE 
+               WHEN $2 = true THEN c.first_name || ' ' || c.last_name
+               ELSE 'Reservado'
+             END as customer_name,
              co.court_name
       FROM bookings b
       JOIN customers c ON b.customer_id = c.id
       JOIN courts co ON b.court_id = co.id
       WHERE b.booking_date = $1
       ORDER BY b.start_time
-    `, [date]);
+    `, [date, !!isStaff]);
     res.json({ success: true, data: result.rows });
   } catch (error) {
     res.status(500).json({ error: 'Error al obtener reservas' });
@@ -54,9 +60,9 @@ const checkAvailability = async (req, res) => {
       return res.status(400).json({ error: 'Faltan parámetros' });
     }
 
-    // Crear fechas en la zona horaria local (-04:00)
-    const bookingDateTime = new Date(`${booking_date}T${start_time}-04:00`);
-    if (bookingDateTime < new Date()) {
+    // Validar fecha y hora en la zona horaria del complejo deportivo
+    const timezone = await getBusinessTimezone();
+    if (isPastDateTime(booking_date, start_time, timezone)) {
       return res.json({ success: true, available: false, message: 'La fecha y hora deben ser posteriores al momento actual' });
     }
 
@@ -70,7 +76,8 @@ const checkAvailability = async (req, res) => {
       FROM bookings
       WHERE court_id = $1 
         AND booking_date = $2
-        AND status NOT IN ('Cancelled', 'No_show')
+        AND status NOT IN ('Cancelled', 'No_show', 'Expired')
+        AND (status != 'Pending_Payment' OR holding_expires_at IS NULL OR holding_expires_at > NOW())
         AND (start_time, end_time) OVERLAPS ($3::time, $4::time)
     `, [court_id, booking_date, start_time, end_time]);
     
@@ -98,7 +105,8 @@ const getOccupiedSlots = async (req, res) => {
       FROM bookings
       WHERE court_id = $1
         AND booking_date = $2
-        AND status NOT IN ('Cancelled', 'No_show')
+        AND status NOT IN ('Cancelled', 'No_show', 'Expired')
+        AND (status != 'Pending_Payment' OR holding_expires_at IS NULL OR holding_expires_at > NOW())
       ORDER BY start_time
     `, [court_id, booking_date]);
 
@@ -116,20 +124,46 @@ const createBooking = async (req, res) => {
   try {
     await client.query('BEGIN');
     
-    const { customer_id, court_id, booking_date, start_time, end_time, user_id, payment_method, payment_reference, total_amount, currency_code, exchange_rate, amount_in_currency } = req.body;
-    // Use provided user_id or null (user_id is nullable in bookings)
+    let { customer_id, court_id, booking_date, start_time, end_time, user_id, payment_method, payment_reference, total_amount, currency_code, exchange_rate, amount_in_currency } = req.body;
+
+    // Validación de seguridad de identidad:
+    // Si la petición viene de un usuario autenticado (cliente), forzar su propio customer_id para evitar IDOR/suplantación
+    if (req.user) {
+      if (req.user.customer_id) {
+        customer_id = req.user.customer_id;
+      }
+      if (!user_id && req.user.id) {
+        user_id = req.user.id;
+      }
+    }
     const bookingUserId = user_id || null;
     
     // Validaciones
     if (!customer_id || !court_id || !booking_date || !start_time || !end_time) {
+      await client.query('ROLLBACK');
       return res.status(400).json({ error: 'Todos los campos son requeridos' });
     }
+
+    if (start_time >= end_time) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'La hora de inicio debe ser anterior a la hora de fin' });
+    }
     
-    // Validar fecha y hora pasada
-    const bookingDateTime = new Date(`${booking_date}T${start_time}-04:00`);
-    if (bookingDateTime < new Date()) {
+    // Validar fecha y hora pasada en la zona horaria del complejo deportivo
+    const timezone = await getBusinessTimezone();
+    if (isPastDateTime(booking_date, start_time, timezone)) {
       await client.query('ROLLBACK');
       return res.status(400).json({ error: 'No se permiten reservas en fechas u horas pasadas' });
+    }
+
+    // Bloqueo consultivo por cancha y fecha para serializar solicitudes concurrentes (anti-race condition)
+    try {
+      await client.query(
+        "SELECT pg_advisory_xact_lock(hashtext('court_lock_' || $1::text || '_' || $2::text))",
+        [court_id, booking_date]
+      );
+    } catch (_) {
+      // Si el entorno mock o pool no implementa advisory lock, continuar con el flujo
     }
 
     // Validar estado de la cancha
@@ -152,10 +186,12 @@ const createBooking = async (req, res) => {
     }
     // --------------------------------------------------------
     
-    // Verificar disponibilidad
+    // Verificar disponibilidad (excluyendo canceladas, expiradas y turnos de holding vencidos)
     const conflict = await client.query(`
       SELECT COUNT(*) FROM bookings
-      WHERE court_id = $1 AND booking_date = $2 AND status NOT IN ('Cancelled', 'No_show')
+      WHERE court_id = $1 AND booking_date = $2 
+      AND status NOT IN ('Cancelled', 'No_show', 'Expired')
+      AND (status != 'Pending_Payment' OR holding_expires_at IS NULL OR holding_expires_at > NOW())
       AND (start_time, end_time) OVERLAPS ($3::time, $4::time)
     `, [court_id, booking_date, start_time, end_time]);
     
@@ -164,7 +200,7 @@ const createBooking = async (req, res) => {
       return res.status(409).json({ error: 'Horario no disponible' });
     }
     
-    // Calcular horas (la cancha no tiene hourly_rate en DB, calculamos duración)
+    // Calcular horas
     const hoursDiff = (new Date(`1970-01-01T${end_time}`) - new Date(`1970-01-01T${start_time}`)) / (1000 * 60 * 60);
     
     // Crear reserva
@@ -235,8 +271,13 @@ const createBooking = async (req, res) => {
       }
     });
   } catch (error) {
-    await client.query('ROLLBACK');
+    try { await client.query('ROLLBACK'); } catch (_) {}
     console.error('Error createBooking:', error);
+    if (error.code === '23P01') {
+      return res.status(409).json({
+        error: 'El horario seleccionado acaba de ser reservado por otro usuario. Por favor selecciona otro turno.'
+      });
+    }
     res.status(500).json({ error: 'Error al crear reserva', detail: error.message });
   } finally {
     if (releaseClient) client.release();
@@ -546,6 +587,18 @@ const updateBooking = async (req, res) => {
 const getCustomerBookings = async (req, res) => {
   try {
     const { customerId } = req.params;
+    const requestingUser = req.user;
+
+    // Validación anti-IDOR: Solo staff o el cliente dueño de la cuenta
+    if (requestingUser) {
+      const isStaff = [1, 2, 5].includes(requestingUser.role_id ?? requestingUser.role);
+      const isSelf = (requestingUser.customer_id && String(requestingUser.customer_id) === String(customerId)) ||
+                     (String(requestingUser.id) === String(customerId));
+      if (!isStaff && !isSelf) {
+        return res.status(403).json({ error: 'Acceso denegado. No tienes permisos para ver las reservas de este cliente.' });
+      }
+    }
+
     const result = await pool.query(`
       SELECT b.*, co.court_name, s.name as sport_name, s.image_url as sport_image
       FROM bookings b

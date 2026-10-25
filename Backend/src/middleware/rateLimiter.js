@@ -61,9 +61,24 @@ const authActionLimiter = rateLimit({
   }
 });
 
+// Limita solicitudes de creación de reservas para prevenir spam y bloqueo masivo de turnos
+const bookingLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutos
+  max: 15, // Máximo 15 solicitudes de reserva por cada 5 minutos por IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: () => process.env.NODE_ENV === 'test',
+  handler: (req, res, next, options) => {
+    res.status(429).json({
+      error: 'Has alcanzado el límite de intentos de reserva. Por favor espera unos minutos antes de crear otra reserva.'
+    });
+  }
+});
+
 module.exports = {
   loginLimiter,
   apiLimiter,
-  authActionLimiter
+  authActionLimiter,
+  bookingLimiter
 };
 
